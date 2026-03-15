@@ -63,6 +63,9 @@ run-example: run-examples
 run-examples: check-python
 	PYTHONPATH=src $(PYTHON) examples/basic_usage.py
 	PYTHONPATH=src $(PYTHON) examples/argparse_cli_wrapper.py
+	PYTHONPATH=src $(PYTHON) examples/command_scaffold.py
+	PYTHONPATH=src $(PYTHON) examples/openapi_scaffold.py
+	PYTHONPATH=src $(PYTHON) examples/package_scaffold.py
 	PYTHONPATH=src $(PYTHON) examples/subprocess_wrapper.py
 	PYTHONPATH=src $(PYTHON) examples/runtime_server.py
 

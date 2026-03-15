@@ -222,13 +222,16 @@ def _execute_python_binding(
     started_monotonic = time.perf_counter()
     signature = inspect.signature(callable_obj)
     hints = get_type_hints(callable_obj, include_extras=True)
-    coerced_arguments = {
-        parameter.name: coerce_value(
+    coerced_arguments: dict[str, Any] = {}
+    for parameter in signature.parameters.values():
+        if parameter.name not in arguments:
+            if parameter.default is inspect.Signature.empty:
+                raise KeyError(parameter.name)
+            continue
+        coerced_arguments[parameter.name] = coerce_value(
             arguments[parameter.name],
             hints.get(parameter.name, parameter.annotation),
         )
-        for parameter in signature.parameters.values()
-    }
     stdout_buffer = io.StringIO()
     stderr_buffer = io.StringIO()
     with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):

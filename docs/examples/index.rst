@@ -12,6 +12,9 @@ checked-in source file, so the code and prose stay aligned.
 
    argparse_cli_wrapper
    basic_usage
+   command_scaffold
+   openapi_scaffold
+   package_scaffold
    runtime_server
    subprocess_wrapper
 
@@ -20,5 +23,8 @@ Example Inventory
 
 - ``examples/argparse_cli_wrapper.py``: This example wraps a small command-line engineering helper that already exposes
 - ``examples/basic_usage.py``: This example shows the simplest useful `mcpme` workflow: expose a typed Python
+- ``examples/command_scaffold.py``: This example shows how to ingest a standalone command-line tool whose public
+- ``examples/openapi_scaffold.py``: This example shows how to ingest an OpenAPI specification without adding any
+- ``examples/package_scaffold.py``: This example shows how to ingest an installed-style Python package that mixes
 - ``examples/runtime_server.py``: This example demonstrates the smallest practical MCP runtime loop you can build
 - ``examples/subprocess_wrapper.py``: This example wraps a legacy-style batch solver that communicates through input

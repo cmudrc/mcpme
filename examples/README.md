@@ -14,6 +14,9 @@ Included examples:
 
 - `basic_usage.py`: wrap a typed Python callable and inspect the generated manifest.
 - `argparse_cli_wrapper.py`: wrap an existing `argparse` CLI using `ArgparseCommand`.
+- `command_scaffold.py`: ingest a standalone CLI through `mcpme scaffold-command`.
+- `openapi_scaffold.py`: ingest an OpenAPI document through `mcpme scaffold-openapi`.
+- `package_scaffold.py`: ingest a package with functions and classes through `mcpme scaffold-package`.
 - `subprocess_wrapper.py`: wrap a file-driven legacy-style batch tool from TOML config.
 - `runtime_server.py`: send JSON-RPC requests through `McpServer` and optionally serve stdio.
 
@@ -22,6 +25,9 @@ Run it locally with:
 ```bash
 PYTHONPATH=src python examples/basic_usage.py
 PYTHONPATH=src python examples/argparse_cli_wrapper.py
+PYTHONPATH=src python examples/command_scaffold.py
+PYTHONPATH=src python examples/openapi_scaffold.py
+PYTHONPATH=src python examples/package_scaffold.py
 PYTHONPATH=src python examples/subprocess_wrapper.py
 PYTHONPATH=src python examples/runtime_server.py
 ```

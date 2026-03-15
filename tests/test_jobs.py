@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
 import pytest
 
 from mcpme import build_manifest
-from mcpme._jobs import JobManager, _pid_exists, _tail_text_file
+from mcpme._jobs import JobManager, _pid_exists, _read_json_file, _tail_text_file, _write_json_file
 from mcpme.execution import PythonCallableBinding, SubprocessBinding
 from mcpme.manifest import ArtifactPolicy, Manifest, SourceReference, ToolManifest
 
@@ -182,6 +183,24 @@ def test_job_manager_handles_edge_records_and_validation(tmp_path: Path) -> None
         assert manager.cancel("live")["cancelRequested"] is True
     finally:
         live_process.wait(timeout=5)
+
+
+def test_job_record_json_helpers_handle_transient_partial_writes(tmp_path: Path) -> None:
+    """Job record JSON helpers should tolerate a brief partial-write window."""
+    path = tmp_path / "job.json"
+    path.write_text("", encoding="utf-8")
+
+    def writer() -> None:
+        """Write a valid job record after a short delay."""
+        time.sleep(0.02)
+        _write_json_file(path, {"jobId": "abc123", "status": "running"})
+
+    thread = threading.Thread(target=writer, daemon=True)
+    thread.start()
+    try:
+        assert _read_json_file(path, attempts=10, delay_seconds=0.01)["jobId"] == "abc123"
+    finally:
+        thread.join(timeout=1)
 
 
 def test_job_manager_records_timeouts_and_result_errors(tmp_path: Path) -> None:

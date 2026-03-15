@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -88,3 +90,32 @@ def test_cli_manifest_and_inspect_commands_emit_deterministic_output(
     assert main(["inspect", str(source)]) == 0
     inspect_output = capsys.readouterr().out
     assert "mesh_model: Generate a mesh." in inspect_output
+
+
+def test_module_invocation_runs_cli_main(tmp_path: Path) -> None:
+    """`python -m mcpme.cli` should execute the CLI entry point."""
+    source = tmp_path / "mesh_tools.py"
+    source.write_text(
+        """def mesh_model(input_path: str) -> str:\n"""
+        '''    """Generate a mesh.\n\n'''
+        """    Args:\n"""
+        """        input_path: CAD path.\n\n"""
+        """    Returns:\n"""
+        """        Mesh path.\n"""
+        '''    """\n'''
+        """    return input_path\n""",
+        encoding="utf-8",
+    )
+
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+    completed = subprocess.run(
+        [sys.executable, "-m", "mcpme.cli", "manifest", str(source)],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert '"name": "mesh_model"' in completed.stdout

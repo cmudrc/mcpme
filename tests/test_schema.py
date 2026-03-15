@@ -6,7 +6,7 @@ import base64
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Any, Literal, TypedDict
 
 import pytest
 
@@ -102,6 +102,16 @@ def test_schema_supports_paths_bytes_and_annotated_metadata() -> None:
     assert coerce_value("mesh.inp", Path) == Path("mesh.inp")
     assert coerce_value(base64.b64encode(b"abc").decode("ascii"), bytes) == b"abc"
     assert to_json_compatible(b"abc") == base64.b64encode(b"abc").decode("ascii")
+
+
+def test_schema_supports_any_as_a_permissive_escape_hatch() -> None:
+    """``Any`` should remain a deterministic but permissive schema."""
+
+    schema = schema_from_annotation(Any)
+
+    assert schema == {}
+    validate_value({"arbitrary": ["payload", 3]}, schema)
+    assert coerce_value({"nested": True}, Any) == {"nested": True}
 
 
 def test_schema_errors_are_explicit_for_unsupported_or_invalid_values() -> None:

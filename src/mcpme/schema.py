@@ -41,6 +41,8 @@ def schema_from_annotation(annotation: Any) -> dict[str, Any]:
     Raises:
         SchemaGenerationError: Raised when the annotation is unsupported.
     """
+    if annotation in (Any, object):
+        return {}
     if annotation is inspect.Signature.empty:
         raise SchemaGenerationError("Missing type annotation.")
     if annotation is str:
@@ -176,6 +178,13 @@ def validate_value(value: Any, schema: dict[str, Any], path: str = "$") -> None:
     Raises:
         SchemaValidationError: Raised when validation fails.
     """
+    if not schema:
+        return
+    if not any(
+        key in schema
+        for key in ("type", "anyOf", "enum", "properties", "additionalProperties", "items")
+    ):
+        return
     if "anyOf" in schema:
         errors: list[SchemaValidationError] = []
         for item_schema in schema["anyOf"]:

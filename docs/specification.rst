@@ -152,11 +152,14 @@ Phase 1 input kinds:
 * Python file paths
 * Directories containing Python scripts
 * Explicitly registered Python callables
+* Standalone CLI commands wrapped through generated facades
+* OpenAPI JSON or YAML documents wrapped through generated facades
 
 Phase 2 input kinds:
 
-* CLI commands whose interface can be read from framework metadata
 * Non-Python executables paired with explicit config
+* JSON Schema or protobuf-described tools
+* Workflow descriptors such as CWL, WDL, Nextflow, Snakemake, or Galaxy tool specifications
 
 For opaque shell scripts or binaries, the library should not pretend to infer a
 rich schema from help text alone. Those targets should require sidecar metadata
@@ -178,9 +181,9 @@ Python CLIs built with ``argparse``
    explicitly registered.
 
 Python CLIs built with Click or Typer
-   Deterministic support path in stage 1 through manifest-driven subprocess
-   wrappers. Native framework introspection can be added later as a deterministic
-   adapter.
+   Deterministic support path in stage 1 through generated subprocess-backed
+   facades created from CLI help output. Native framework introspection can be
+   added later as a deterministic adapter.
 
 Config-file-driven executables
    Native support in stage 1 through manifest-driven subprocess wrappers with
@@ -206,8 +209,8 @@ HPC job-backed tools
    though cluster-specific adapters may be added later.
 
 OpenAPI, JSON Schema, or protobuf-described tools
-   Deterministic adapter target for later work. These formats are good metadata
-   sources, but they are not part of the first implementation pass.
+   OpenAPI is supported in stage 1 through generated HTTP facades. JSON Schema
+   and protobuf remain deterministic adapter targets for later work.
 
 Workflow descriptors such as CWL, WDL, Nextflow, Snakemake, or Galaxy tool specifications
    Deterministic adapter target for later work. The first-pass runtime should
@@ -253,6 +256,12 @@ Discovery should be deterministic and testable. The proposed pipeline is:
 Each step should produce inspectable intermediate data so failures are easy to
 debug.
 
+For source types that are not natively executable Python functions, discovery
+may begin with a deterministic scaffolding step that writes a plain Python
+facade module first. That generated file is then discovered like any other
+source-backed wrapper, which keeps the ingestion boundary inspectable and
+reviewable.
+
 Public Discovery Rules
 ----------------------
 
@@ -285,6 +294,49 @@ Registered callables
 The library should allow direct registration of a callable object for cases
 where discovery has already happened elsewhere or where a user wants full
 programmatic control.
+
+Generated package facades
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For installed packages that are not already organized around a small function
+surface, the CLI may generate a facade module that:
+
+* wraps public functions directly,
+* wraps public classes through explicit create, method, and close tools, and
+* preserves source references and docstring summaries in generated code.
+
+Because this flow inspects live importable objects, it necessarily imports the
+target package or selected submodules during scaffolding. The generated facade
+is therefore the reviewable artifact that freezes the inferred interface before
+normal manifest generation and serving.
+
+Generated CLI facades
+^^^^^^^^^^^^^^^^^^^^^
+
+Standalone CLI tools may be ingested through a generated facade module that:
+
+* captures deterministic help text from the target command,
+* maps stable options and positionals into named Python parameters when the
+  help contract is clear, and
+* falls back to an explicit ``argv`` passthrough wrapper when the CLI surface
+  is too ambiguous to name safely.
+
+This keeps one-shot CLI ingestion useful without pretending that arbitrary
+shell help text is a perfect schema language.
+
+Generated OpenAPI facades
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+OpenAPI documents may be ingested through a generated facade module that:
+
+* resolves local ``#/...`` references,
+* generates one Python function per supported operation,
+* maps path, query, header, and cookie parameters into named inputs, and
+* preserves the HTTP method, path, and default base URL in generated code.
+
+The generated module becomes the inspectable adapter artifact. Runtime
+execution then flows through normal Python discovery and generic execution
+rules instead of a separate OpenAPI-only runtime.
 
 V1 exclusions
 ^^^^^^^^^^^^^
@@ -580,6 +632,9 @@ Candidate CLI commands:
 * ``mcpme inspect <target>``
 * ``mcpme manifest <target>``
 * ``mcpme serve <target>``
+* ``mcpme scaffold-package <package> <output.py>``
+* ``mcpme scaffold-command <output.py> -- <command ...>``
+* ``mcpme scaffold-openapi <spec.json> <output.py>``
 
 The CLI should expose the same discovery engine as the Python library instead of
 maintaining a parallel implementation.

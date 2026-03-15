@@ -11,7 +11,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from uuid import uuid4
 
 from .execution import (
@@ -302,16 +302,13 @@ class JobManager:
             record_path = job_dir / "job.json"
             if not record_path.exists():
                 continue
-            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record = _read_json_file(record_path)
             if record.get("status") == "running":
                 pid = record.get("pid")
                 if not isinstance(pid, int) or not _pid_exists(pid):
                     record["status"] = "lost"
                     record["updatedAt"] = _utc_timestamp()
-                    record_path.write_text(
-                        json.dumps(record, indent=2, sort_keys=True),
-                        encoding="utf-8",
-                    )
+                    _write_json_file(record_path, record)
 
     def _job_dir(self, job_id: str) -> Path:
         """Return the persisted artifact directory for one job ID."""
@@ -323,16 +320,13 @@ class JobManager:
     def _read_job_record(self, job_id: str) -> dict[str, Any]:
         """Read one persisted job record from disk."""
         job_dir = self._job_dir(job_id)
-        return cast(dict[str, Any], json.loads((job_dir / "job.json").read_text(encoding="utf-8")))
+        return _read_json_file(job_dir / "job.json")
 
     def _write_job_record(self, job_id: str, record: dict[str, Any]) -> None:
         """Persist one job record to disk."""
         job_dir = self._jobs_root / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
-        (job_dir / "job.json").write_text(
-            json.dumps(record, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+        _write_json_file(job_dir / "job.json", record)
 
 
 def _safe_read_text(path: Path) -> str:
@@ -340,6 +334,63 @@ def _safe_read_text(path: Path) -> str:
     if not path.exists():
         return ""
     return path.read_text(encoding="utf-8")
+
+
+def _read_json_file(
+    path: Path,
+    *,
+    attempts: int = 5,
+    delay_seconds: float = 0.01,
+) -> dict[str, Any]:
+    """Read one JSON mapping from disk with a small retry budget.
+
+    Job records are polled while background monitor threads update them. The
+    write path uses atomic replacement, but a bounded retry keeps reads robust
+    against pre-existing partial files from older runs or interrupted writes.
+
+    Args:
+        path: JSON file path to load.
+        attempts: Maximum read attempts before surfacing the decode failure.
+        delay_seconds: Sleep duration between attempts.
+
+    Returns:
+        Parsed JSON object.
+
+    Raises:
+        json.JSONDecodeError: If the file never contains valid JSON.
+    """
+    last_error: json.JSONDecodeError | None = None
+    for attempt in range(1, max(1, attempts) + 1):
+        text = path.read_text(encoding="utf-8")
+        try:
+            loaded = json.loads(text)
+        except json.JSONDecodeError as error:
+            last_error = error
+            if attempt == attempts:
+                raise
+            time.sleep(delay_seconds)
+            continue
+        if isinstance(loaded, dict):
+            return loaded
+        raise ValueError(f"{path}: job record must contain a JSON object.")
+    assert last_error is not None
+    raise last_error
+
+
+def _write_json_file(path: Path, payload: dict[str, Any]) -> None:
+    """Write one JSON mapping to disk atomically.
+
+    Args:
+        path: Destination JSON path.
+        payload: Mapping to serialize.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_name(f"{path.name}.{uuid4().hex}.tmp")
+    temp_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    temp_path.replace(path)
 
 
 def _tail_text_file(path: Path, lines: int) -> str:

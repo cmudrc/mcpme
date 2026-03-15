@@ -16,6 +16,9 @@ The stage-1 baseline is intentionally non-AI:
 - Source-first Python discovery for modules, packages, files, and directories
 - Explicit callable registration when you want runtime reflection by choice
 - Explicitly registered `argparse` command wrappers
+- Deterministic one-shot scaffolding for installed packages and modules
+- Deterministic one-shot scaffolding for standalone CLI tools
+- Deterministic one-shot scaffolding for OpenAPI JSON or YAML specs
 - Manifest-driven subprocess tools loaded from `pyproject.toml` or `mcpme.toml`
 - Deterministic hydration/dehydration for subprocess-based tools
 - Path- and binary-aware schemas, including `Path`, `bytes`, and `Annotated`
@@ -49,6 +52,9 @@ Generate a manifest from the bundled example:
 ```bash
 PYTHONPATH=src python examples/basic_usage.py
 PYTHONPATH=src python examples/argparse_cli_wrapper.py
+PYTHONPATH=src python examples/command_scaffold.py
+PYTHONPATH=src python examples/openapi_scaffold.py
+PYTHONPATH=src python examples/package_scaffold.py
 PYTHONPATH=src python examples/subprocess_wrapper.py
 PYTHONPATH=src python examples/runtime_server.py
 ```
@@ -56,8 +62,17 @@ PYTHONPATH=src python examples/runtime_server.py
 Use the CLI against a target module or file:
 
 ```bash
-PYTHONPATH=src python -m mcpme.cli inspect examples/basic_usage.py
-PYTHONPATH=src python -m mcpme.cli manifest examples/basic_usage.py
+mcpme inspect examples/basic_usage.py
+mcpme manifest examples/basic_usage.py
+```
+
+Generate a deterministic facade first when the source surface is a package,
+standalone CLI, or OpenAPI spec:
+
+```bash
+mcpme scaffold-package some_package artifacts/generated_package.py
+mcpme scaffold-command artifacts/generated_cli.py -- tool
+mcpme scaffold-openapi api.json artifacts/generated_api.py
 ```
 
 For Python files and source-backed modules, discovery is source-first by
@@ -65,6 +80,17 @@ default. `mcpme` parses signatures, annotations, and docstrings without
 importing user code, then lazily loads the callable only when execution
 happens. If you need import-based discovery for a special case, set
 `python_discovery_mode = "import"` in config.
+
+The one-shot scaffolding flows are deliberately inspectable, but they do have
+different trust boundaries:
+
+- `scaffold-package` imports the target package or selected submodules so it can
+  inspect live functions and classes, then writes a reviewable facade module.
+- `scaffold-command` executes the target command with `--help` and only emits
+  named parameters when that help contract is clear enough to parse
+  deterministically.
+- `scaffold-openapi` reads the local OpenAPI document and generates plain Python
+  HTTP wrappers that you can review or edit before serving.
 
 ## Configuration
 

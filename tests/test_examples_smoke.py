@@ -18,6 +18,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
     [
         ("basic_usage.py", "summarize_mesh"),
         ("argparse_cli_wrapper.py", "cantilever"),
+        ("command_scaffold.py", "run_beam_cli"),
+        ("openapi_scaffold.py", "get_case"),
+        ("package_scaffold.py", "create_counter_session"),
         ("subprocess_wrapper.py", "legacy_solver"),
         ("runtime_server.py", "inspect_case"),
     ],

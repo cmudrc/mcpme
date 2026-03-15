@@ -31,6 +31,7 @@ _PRIMITIVE_SCHEMAS = {
     "bool": {"type": "boolean"},
     "None": {"type": "null"},
 }
+_ANY_NAMES = {"Any", "typing.Any", "object", "builtins.object"}
 _PATH_NAMES = {"Path", "pathlib.Path"}
 _BYTES_NAMES = {"bytes"}
 _LIST_NAMES = {"list", "typing.List"}
@@ -359,6 +360,8 @@ class StaticPythonResolver:
         primitive = _PRIMITIVE_SCHEMAS.get(canonical_name)
         if primitive is not None:
             return dict(primitive)
+        if canonical_name in _ANY_NAMES:
+            return {}
         if canonical_name in _PATH_NAMES:
             return {
                 "type": "string",

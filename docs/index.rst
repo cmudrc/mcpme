@@ -11,6 +11,7 @@ inspectable execution artifacts rather than AI-based interface inference.
 
    specification
    quickstart
+   development_notes
    examples/index
    dependencies_and_extras
    api
