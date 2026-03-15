@@ -95,10 +95,9 @@ ipython_config.py
 #Pipfile.lock
 
 # UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
+#   This project treats uv as optional contributor tooling rather than a
+#   reproducibility boundary, so `uv.lock` stays untracked.
+uv.lock
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
@@ -193,6 +192,7 @@ cython_debug/
 
 # Project-local generated artifacts
 artifacts/
+.mcpme-artifacts/
 
 # PyPI configuration file
 .pypirc

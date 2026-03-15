@@ -8,13 +8,6 @@ source .venv/bin/activate
 make dev
 ```
 
-For a reproducible install based on `uv.lock`:
-
-```bash
-make lock
-make repro
-```
-
 ## Local Quality Checks
 
 Run these before opening a pull request:
@@ -25,6 +18,7 @@ make lint
 make type
 make docstrings-check
 make test
+make run-examples
 make docs-check
 make docs
 ```
@@ -41,6 +35,8 @@ pre-commit run --all-files
 - Keep changes small enough to review quickly.
 - Add or update tests for behavior changes.
 - Update docs and examples when interfaces change.
+- Regenerate checked-in example docs when example docstrings change.
+- Keep the top-level `mcpme` public API small and deliberate.
 - Describe what changed and how you validated it.
 
 ## Code Style

@@ -1,7 +1,7 @@
 Quickstart
 ==========
 
-This template targets Python 3.12+ and assumes a standard `src/` layout.
+`mcpme` targets Python 3.12+ and assumes a standard `src/` layout.
 
 Local development setup:
 
@@ -11,12 +11,60 @@ Local development setup:
    source .venv/bin/activate
    make dev
    make test
+   make run-examples
 
 Run the bundled example:
 
 .. code-block:: bash
 
    make run-example
+
+Inspect a target with the CLI:
+
+.. code-block:: bash
+
+   PYTHONPATH=src python -m mcpme.cli inspect examples/basic_usage.py
+
+`mcpme` discovers Python files and source-backed modules without importing them
+by default. Discovery reads signatures, annotations, and docstrings from source
+and defers imports until execution time.
+
+Standalone subprocess tools are configured explicitly in TOML. A minimal
+example that retains a report directory looks like:
+
+.. code-block:: toml
+
+   [tool.mcpme]
+   artifact_mode = "summary"
+   python_discovery_mode = "source"
+
+   [[tool.mcpme.subprocess]]
+   name = "emit_artifacts"
+   description = "Render an input file and retain a report directory."
+   argv = ["python", "emit_artifacts.py", "input.json"]
+   result_kind = "file_bytes"
+   result_path = "report.bin"
+
+   [tool.mcpme.subprocess.input_schema]
+   type = "object"
+   required = ["message"]
+
+   [tool.mcpme.subprocess.input_schema.properties.message]
+   type = "string"
+
+   [[tool.mcpme.subprocess.files]]
+   path = "input.json"
+   template = "{{\"message\": \"{message}\"}}"
+
+   [[tool.mcpme.subprocess.outputs]]
+   path = "reports"
+   kind = "directory"
+   when = "success"
+
+Long-running subprocess tools can also be started in background mode through
+``tools/call`` by adding ``_meta = {"mcpme/runMode": "async"}`` to the request
+params. The runtime then exposes ``mcpme/jobs/list``, ``mcpme/jobs/get``,
+``mcpme/jobs/tail``, and ``mcpme/jobs/cancel`` for deterministic job control.
 
 Build the docs:
 

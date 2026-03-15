@@ -2,19 +2,18 @@
 
 ## Purpose
 
-This repository is a reusable Python 3.12+ package template for small,
-well-tested libraries. Keep changes focused, keep the public API intentional,
-and prefer standard-library solutions unless a third-party dependency clearly
-improves the maintenance story.
+This repository builds `mcpme`, a deterministic Python 3.12+ library for
+wrapping engineering tools as MCP servers. Keep changes focused, keep the
+public API intentional, and prefer standard-library solutions unless a
+third-party dependency clearly improves the maintenance story.
 
 ## Setup
 
 - Create and activate a virtual environment:
   - `python -m venv .venv`
   - `source .venv/bin/activate`
-- The reproducible interpreter target lives in `.python-version` (`3.12.12`).
+- The preferred interpreter target lives in `.python-version` (`3.12.12`).
 - Install local tooling with `make dev`.
-- For a frozen environment based on `uv.lock`, use `make repro`.
 
 ## Testing And Validation
 
@@ -30,7 +29,8 @@ merging.
   - `make docs-check`
   - `make docs`
 - If the example changed:
-  - `make run-example`
+  - `make run-examples`
+  - `python scripts/generate_example_docs.py`
 - Pre-merge baseline:
   - `make ci`
 - Pre-publish baseline:
@@ -39,7 +39,9 @@ merging.
 ## Public Vs Private Boundaries
 
 - The supported public surface is whatever is re-exported from
-  `src/python_template/__init__.py`.
+  `src/mcpme/__init__.py`.
+- Keep that top-level surface minimal. Prefer stable entry points and a small
+  set of user-facing types over re-exporting every internal model.
 - Prefer adding new public behavior to stable top-level modules before creating
   deeper internal package trees.
 - If you add internal helper modules later, prefix them with `_` and keep them
@@ -49,8 +51,14 @@ merging.
 
 - Keep tests deterministic and offline by default.
 - Update tests, docs, and examples alongside behavior changes.
+- Keep example module docstrings authoritative. Generated example docs should be
+  refreshed whenever examples change.
 - Avoid broad dependency growth in the base install.
-- Keep this template easy to fork: simple defaults beat clever abstractions.
+- Keep stage 1 fully non-AI. Do not add LLM-based discovery or generation to
+  the baseline path.
+- Preserve inspectable artifacts and avoid hiding what the wrapped tool
+  actually ran.
+- Prefer wrapping and explicit manifests over rewriting validated tools.
 
 ## Keep This File Up To Date
 

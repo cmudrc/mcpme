@@ -6,43 +6,29 @@ MYPY ?= $(PYTHON) -m mypy
 SPHINX ?= $(PYTHON) -m sphinx
 BUILD ?= $(PYTHON) -m build
 TWINE ?= $(PYTHON) -m twine
-UV ?= $(if $(wildcard .venv/bin/uv),.venv/bin/uv,uv)
-REPRO_PYTHON ?= $(shell cat .python-version 2>/dev/null || echo 3.12.12)
-REPRO_EXTRAS ?= dev
 
-.PHONY: help check-python check-uv dev install-dev repro lock \
+.PHONY: help check-python dev install-dev generate-example-docs \
 	lint fmt fmt-check type test qa coverage docstrings-check \
-	run-example docs docs-build docs-check docs-linkcheck \
+	run-example run-examples docs docs-build docs-check docs-linkcheck \
 	release-check ci clean
 
 help:
 	@echo "Common targets:"
 	@echo "  dev              Install the project in editable mode with dev dependencies."
-	@echo "  repro            Frozen reproducible install using uv.lock."
-	@echo "  lock             Regenerate uv.lock."
 	@echo "  test             Run the pytest suite."
 	@echo "  qa               Run lint, fmt-check, type, and test."
-	@echo "  run-example      Execute the bundled example script."
+	@echo "  run-examples     Execute the runnable example scripts."
 	@echo "  docs             Build the HTML docs."
 	@echo "  ci               Run the main local CI checks."
 
 check-python:
 	@$(PYTHON) -c "import pathlib, sys; print(f'Using Python {sys.version.split()[0]} at {pathlib.Path(sys.executable)}'); raise SystemExit(0 if sys.version_info >= (3, 12) else 1)" || (echo "Python >= 3.12 is required by pyproject.toml"; exit 1)
 
-check-uv:
-	@command -v $(UV) >/dev/null 2>&1 || (echo "uv is required for lock/repro targets. Install it from https://docs.astral.sh/uv/getting-started/installation/"; exit 1)
-
 dev:
 	$(PIP) install --upgrade pip setuptools wheel
 	$(PIP) install -e ".[dev]"
 
 install-dev: dev
-
-repro: check-uv
-	$(UV) sync --frozen --python $(REPRO_PYTHON) $(foreach extra,$(REPRO_EXTRAS),--extra $(extra))
-
-lock: check-uv
-	$(UV) lock --python $(REPRO_PYTHON)
 
 lint: check-python
 	$(RUFF) check .
@@ -63,19 +49,28 @@ qa: lint fmt-check type test
 
 coverage: check-python
 	mkdir -p artifacts/coverage
-	PYTHONPATH=src $(PYTEST) --cov=src/python_template --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
+	PYTHONPATH=src $(PYTEST) --cov=src/mcpme --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
 	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json
 
 docstrings-check: check-python
 	$(PYTHON) scripts/check_google_docstrings.py
 
-run-example: check-python
-	PYTHONPATH=src $(PYTHON) examples/basic_usage.py
+generate-example-docs: check-python
+	$(PYTHON) scripts/generate_example_docs.py
 
-docs-build: check-python
+run-example: run-examples
+
+run-examples: check-python
+	PYTHONPATH=src $(PYTHON) examples/basic_usage.py
+	PYTHONPATH=src $(PYTHON) examples/argparse_cli_wrapper.py
+	PYTHONPATH=src $(PYTHON) examples/subprocess_wrapper.py
+	PYTHONPATH=src $(PYTHON) examples/runtime_server.py
+
+docs-build: generate-example-docs
 	PYTHONPATH=src $(SPHINX) -b html docs docs/_build/html -n -W --keep-going -E
 
 docs-check: check-python
+	$(PYTHON) scripts/generate_example_docs.py --check
 	$(PYTHON) scripts/check_docs_consistency.py
 
 docs-linkcheck: check-python

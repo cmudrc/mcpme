@@ -3,16 +3,16 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "python-template"
+name = "mcpme"
 version = "0.1.0"
-description = "An opinionated starter template for typed Python libraries"
+description = "Deterministic wrappers for exposing engineering tools as MCP servers"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "The Design Research Collective" }]
 maintainers = [{ name = "Christopher C. McComb", email = "ccm@cmu.edu" }]
-keywords = ["python", "template", "library", "tooling", "design"]
+keywords = ["mcp", "engineering", "wrappers", "deterministic", "tooling"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -25,6 +25,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+mcpme = "mcpme.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "build>=1.2,<2",
@@ -36,13 +39,12 @@ dev = [
   "sphinx>=7.4,<9",
   "sphinx-rtd-theme>=2.0,<4",
   "twine>=5.1,<7",
-  "uv>=0.6,<1",
 ]
 
 [project.urls]
-Homepage = "https://github.com/cmudrc/python-template"
-Repository = "https://github.com/cmudrc/python-template"
-Issues = "https://github.com/cmudrc/python-template/issues"
+Homepage = "https://github.com/cmudrc/mcpme"
+Repository = "https://github.com/cmudrc/mcpme"
+Issues = "https://github.com/cmudrc/mcpme/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -52,7 +54,7 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-python_template = ["py.typed"]
+mcpme = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
@@ -79,7 +81,7 @@ convention = "google"
 "tests/*.py" = ["D"]
 
 [tool.mypy]
-packages = ["python_template"]
+packages = ["mcpme"]
 python_version = "3.12"
 warn_unused_configs = true
 check_untyped_defs = true

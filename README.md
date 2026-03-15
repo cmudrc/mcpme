@@ -1,19 +1,36 @@
-# python-template
+# mcpme
 
-`python-template` is a compact starter for typed Python
-libraries. It borrows the shared project shape from
-`design-research-agents` and `design-research-problems`, but keeps the initial
-surface area small enough to customize quickly.
+`mcpme` is a deterministic Python library for exposing engineering tools as MCP
+servers.
 
-## Overview
+The stage-1 baseline is intentionally non-AI:
 
-This template includes:
+- No LLMs are used for discovery, schema generation, translation, or execution.
+- Wrappers preserve trusted tools instead of trying to replace them.
+- Inputs, outputs, and execution artifacts stay inspectable.
 
-- A `src/` layout package with a small public API and type marker
-- `pyproject.toml` settings for packaging, Ruff, mypy, and pytest
-- A `Makefile` with common development, docs, coverage, and release targets
-- Basic Sphinx docs, a runnable example, and GitHub Actions workflows
-- Contributor guidance in `AGENTS.md` and `CONTRIBUTING.md`
+## What It Does
+
+`mcpme` currently supports:
+
+- Source-first Python discovery for modules, packages, files, and directories
+- Explicit callable registration when you want runtime reflection by choice
+- Explicitly registered `argparse` command wrappers
+- Manifest-driven subprocess tools loaded from `pyproject.toml` or `mcpme.toml`
+- Deterministic hydration/dehydration for subprocess-based tools
+- Path- and binary-aware schemas, including `Path`, `bytes`, and `Annotated`
+- Explicit retained-output rules for file and directory artifacts
+- Artifact capture plus MCP `_meta` execution records for reproducibility and trust
+- Background subprocess jobs with persisted records, log tailing, and cancellation
+- A small stdio MCP runtime plus `inspect`, `manifest`, and `serve` CLI flows
+
+The top-level public API is intentionally small. Stable imports live at the
+package root, while lower-level config and manifest model details stay in
+submodules until they prove they should be part of the long-term contract.
+
+The runnable examples are treated as part of that contract. They use only the
+top-level public API, their module docstrings generate checked-in Sphinx pages,
+and automated tests verify that examples and docs stay aligned.
 
 ## Quickstart
 
@@ -24,107 +41,151 @@ python -m venv .venv
 source .venv/bin/activate
 make dev
 make test
-make run-example
+make run-examples
 ```
 
-For a frozen local environment, `make dev` installs `uv`, so you can generate
-and use `uv.lock` immediately:
+Generate a manifest from the bundled example:
 
 ```bash
-make lock
-make repro
+PYTHONPATH=src python examples/basic_usage.py
+PYTHONPATH=src python examples/argparse_cli_wrapper.py
+PYTHONPATH=src python examples/subprocess_wrapper.py
+PYTHONPATH=src python examples/runtime_server.py
 ```
 
-## Repository Shape
+Use the CLI against a target module or file:
 
-```text
-.
-├── .github
-│   └── workflows
-│       ├── ci.yml
-│       └── docs-pages.yml
-├── .gitignore
-├── .pre-commit-config.yaml
-├── .python-version
-├── AGENTS.md
-├── CONTRIBUTING.md
-├── LICENSE
-├── Makefile
-├── README.md
-├── docs
-│   ├── api.rst
-│   ├── conf.py
-│   ├── dependencies_and_extras.rst
-│   ├── drc.png
-│   ├── index.rst
-│   └── quickstart.rst
-├── examples
-│   ├── README.md
-│   └── basic_usage.py
-├── pyproject.toml
-├── scripts
-│   ├── check_coverage_thresholds.py
-│   ├── check_docs_consistency.py
-│   └── check_google_docstrings.py
-├── src
-│   └── python_template
-│       ├── __init__.py
-│       ├── core.py
-│       └── py.typed
-├── tests
-│   ├── test_core.py
-│   └── test_public_api.py
-└── uv.lock
+```bash
+PYTHONPATH=src python -m mcpme.cli inspect examples/basic_usage.py
+PYTHONPATH=src python -m mcpme.cli manifest examples/basic_usage.py
 ```
 
-The top-level tree above is the minimum working package scaffold. Each element
-has a specific job:
+For Python files and source-backed modules, discovery is source-first by
+default. `mcpme` parses signatures, annotations, and docstrings without
+importing user code, then lazily loads the callable only when execution
+happens. If you need import-based discovery for a special case, set
+`python_discovery_mode = "import"` in config.
 
-- `.github/` stores GitHub-specific automation and repository metadata.
-  - `.github/workflows/` contains the GitHub Actions pipelines for this repository.
-    - `.github/workflows/ci.yml` runs the main validation pipeline, centered on `make ci`.
-    - `.github/workflows/docs-pages.yml` builds the docs and publishes them to GitHub Pages.
-- `.gitignore` keeps local caches, IDE files, build outputs, and virtualenvs out of version control.
-- `.pre-commit-config.yaml` defines the optional local pre-commit hook configuration.
-- `.python-version` pins the preferred reproducible interpreter version for local setup.
-- `AGENTS.md` provides repository-specific instructions for coding agents and automation.
-- `CONTRIBUTING.md` documents the contributor workflow, quality checks, and review expectations.
-- `LICENSE` defines the repository's software license terms.
-- `Makefile` is the main command surface for setup, linting, typing, testing, docs, and release checks.
-- `README.md` is the onboarding document that explains the template and how to use it.
-- `docs/` contains the Sphinx documentation source tree.
-  - `docs/api.rst` builds the API reference from the package's Python docstrings.
-  - `docs/conf.py` configures Sphinx extensions, theme settings, and the docs build behavior.
-  - `docs/dependencies_and_extras.rst` explains the dependency model and optional extras.
-  - `docs/drc.png` is the shared DRC logo used in the generated docs site.
-  - `docs/index.rst` is the documentation landing page and toctree entry point.
-  - `docs/quickstart.rst` provides the short setup path for local development.
-- `examples/` contains small runnable examples intended to show the public API in use.
-  - `examples/README.md` explains what examples exist and how to run them.
-  - `examples/basic_usage.py` is the minimal working example for the template package.
-- `pyproject.toml` defines package metadata, dependencies, build settings, and tool configuration.
-- `scripts/` contains helper scripts used by the Make targets and local checks.
-  - `scripts/check_coverage_thresholds.py` enforces the minimum coverage percentage from the coverage report.
-  - `scripts/check_docs_consistency.py` verifies that the docs tree and package references stay in sync.
-  - `scripts/check_google_docstrings.py` checks for required module, class, and function docstrings.
-- `src/` is the source root for the `src`-layout package.
-  - `src/python_template/` contains the installable Python package itself.
-    - `src/python_template/__init__.py` defines the curated public import surface.
-    - `src/python_template/core.py` contains the small example implementation shipped with the template.
-    - `src/python_template/py.typed` marks the package as PEP 561 typed for downstream tooling.
-- `tests/` contains the pytest suite that protects the public behavior.
-  - `tests/test_core.py` tests the package's example core behavior.
-  - `tests/test_public_api.py` keeps the top-level exports explicit and stable.
-- `uv.lock` pins the reproducible dependency graph used by `make repro`.
+## Configuration
 
-## Customizing The Template
+`mcpme` reads embedded config from `pyproject.toml` under `[tool.mcpme]` and
+also supports a standalone `mcpme.toml`.
 
-Before using this as a real package, update:
+Example:
 
-- Project metadata in `pyproject.toml`
-- Package and import names under `src/`
-- The README, docs, and example script
-- CI workflow names, deploy settings, and repository URLs
+```toml
+[tool.mcpme]
+artifact_mode = "summary"
+artifact_root = ".mcpme-artifacts"
+python_discovery_mode = "source"
+
+[[tool.mcpme.subprocess]]
+name = "emit_artifacts"
+description = "Render an input file, emit a binary result, and retain reports."
+argv = ["python", "emit_artifacts.py", "input.json"]
+result_kind = "file_bytes"
+result_path = "report.bin"
+
+[tool.mcpme.subprocess.input_schema]
+type = "object"
+required = ["message"]
+
+[tool.mcpme.subprocess.input_schema.properties.message]
+type = "string"
+
+[[tool.mcpme.subprocess.files]]
+path = "input.json"
+template = "{{\"message\": \"{message}\"}}"
+
+[[tool.mcpme.subprocess.outputs]]
+path = "reports"
+kind = "directory"
+when = "success"
+```
+
+Useful config notes:
+
+- `artifact_mode = "summary"` keeps invocation records, execution records, logs,
+  structured results, and explicitly retained outputs without keeping the whole
+  workspace.
+- `artifact_mode = "full"` keeps the full workspace in addition to those
+  records.
+- `python_discovery_mode = "source"` is the default and avoids importing Python
+  targets during discovery.
+- `python_discovery_mode = "import"` is an explicit escape hatch for cases that
+  cannot be described statically.
+
+## Filesystem Semantics
+
+`mcpme` understands a few useful Python-side filesystem conventions:
+
+- `Path` maps to a string schema with `format: "path"`.
+- `Annotated[Path, "file"]` and `Annotated[Path, "directory"]` make path
+  intent explicit without needing an AI layer.
+- `bytes` maps to base64-encoded strings for deterministic transport.
+
+That makes it practical to wrap callables like:
+
+```python
+from pathlib import Path
+from typing import Annotated
+
+def solve(
+    deck: Annotated[Path, "file"],
+    workdir: Annotated[Path, "directory"],
+) -> Path:
+    ...
+```
+
+## Runtime Extensions
+
+Every executed tool result now includes deterministic `_meta` fields with local
+artifact and execution details, including the retained artifact directory and a
+machine-readable artifact listing.
+
+For long-running subprocess tools, clients can opt into background execution by
+adding:
+
+```json
+{
+  "_meta": {
+    "mcpme/runMode": "async"
+  }
+}
+```
+
+to `tools/call` params. The runtime then exposes these deterministic extension
+methods:
+
+- `mcpme/jobs/list`
+- `mcpme/jobs/get`
+- `mcpme/jobs/tail`
+- `mcpme/jobs/cancel`
+
+## Deterministic Roadmap
+
+The repository spec lives in `docs/specification.rst` and currently divides the
+roadmap into:
+
+- Stage 1: deterministic baseline
+- Stage 2: optional post-generation cleanup after deterministic outputs exist
+
+Stage 1 is the active implementation target and remains explicitly non-AI.
+
+## Development
+
+Useful local commands:
+
+```bash
+make fmt
+make lint
+make type
+make test
+make run-examples
+make docs-check
+make docs
+make ci
+```
 
 ## Docs
 
@@ -135,8 +196,3 @@ make docs
 ```
 
 The generated HTML output is written to `docs/_build/html/`.
-
-## Contributing
-
-See `CONTRIBUTING.md` for the local development workflow and contribution
-expectations.

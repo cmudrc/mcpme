@@ -14,7 +14,6 @@ The `dev` extra installs the local contributor toolchain:
 - `sphinx`
 - `sphinx-rtd-theme`
 - `twine`
-- `uv`
 
 Install it with:
 
