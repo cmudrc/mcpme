@@ -1,11 +1,17 @@
-"""Deterministic parsing for Google-style wrapper docstrings."""
+"""Deterministic parsing for wrapper docstrings.
+
+The maintained repository standard is Sphinx field-list docstrings. The parser
+focuses on harvesting that structured metadata deterministically so wrapper
+discovery, schema generation, and generated documentation stay aligned.
+"""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from inspect import cleandoc
 
-_SECTION_HEADERS = {"Args", "Arguments", "Returns", "MCP"}
+_MCP_SECTION_HEADER = "MCP:"
 _SUPPORTED_MCP_KEYS = {
     "name",
     "title",
@@ -15,17 +21,22 @@ _SUPPORTED_MCP_KEYS = {
     "open_world",
     "hidden",
 }
+_PARAM_FIELD_PATTERN = re.compile(
+    r"^:(?:param|parameter|arg|argument)\s+([A-Za-z_][A-Za-z0-9_\.]*)\s*:\s*(.*)$"
+)
+_RETURNS_FIELD_PATTERN = re.compile(r"^:(?:returns?|return)\s*:\s*(.*)$")
+_TYPE_FIELD_PATTERN = re.compile(r"^:(?:type|vartype)\s+([A-Za-z_][A-Za-z0-9_\.]*)\s*:\s*(.*)$")
+_RTYPE_FIELD_PATTERN = re.compile(r"^:rtype\s*:\s*(.*)$")
 
 
 @dataclass(frozen=True, slots=True)
 class ParsedDocstring:
-    """Represent the parsed structured pieces of a Google-style docstring.
+    """Represent the parsed structured pieces of a supported docstring.
 
-    Args:
-        summary: One-line summary text.
-        param_descriptions: Parameter descriptions keyed by parameter name.
-        returns_description: Optional return value description.
-        mcp_metadata: Optional MCP metadata parsed from the ``MCP:`` section.
+    :param summary: One-line summary text.
+    :param param_descriptions: Parameter descriptions keyed by parameter name.
+    :param returns_description: Optional return value description.
+    :param mcp_metadata: Optional MCP metadata parsed from the ``MCP:`` section.
     """
 
     summary: str = ""
@@ -34,73 +45,93 @@ class ParsedDocstring:
     mcp_metadata: dict[str, object] = field(default_factory=dict)
 
 
-def parse_google_docstring(docstring: str | None) -> ParsedDocstring:
-    """Parse a deterministic subset of Google-style docstrings.
+def parse_docstring(docstring: str | None) -> ParsedDocstring:
+    """Parse the maintained deterministic docstring subset.
 
-    Args:
-        docstring: Raw docstring text.
+    The parser prefers deterministic description harvesting over trying to
+    understand every docstring convention in the wild.
 
-    Returns:
-        The parsed docstring representation.
-
-    Raises:
-        ValueError: Raised when the ``MCP:`` section contains an unknown key.
+    :param docstring: Raw docstring text.
+    :returns: The parsed docstring representation.
+    :raises ValueError: Raised when the ``MCP:`` section contains an unknown key.
     """
     if not docstring:
         return ParsedDocstring()
     lines = cleandoc(docstring).splitlines()
-    sections = _split_sections(lines)
-    summary_lines = [line.strip() for line in sections["Summary"] if line.strip()]
+    summary_lines, param_descriptions, returns_description, mcp_lines = _split_sections(lines)
     return ParsedDocstring(
-        summary=" ".join(summary_lines),
-        param_descriptions=_parse_args_section(sections.get("Args", sections.get("Arguments", ()))),
-        returns_description=_parse_returns_section(sections.get("Returns", ())),
-        mcp_metadata=_parse_mcp_section(sections.get("MCP", ())),
+        summary=" ".join(line.strip() for line in summary_lines if line.strip()),
+        param_descriptions=param_descriptions,
+        returns_description=returns_description,
+        mcp_metadata=_parse_mcp_section(mcp_lines),
     )
 
 
-def _split_sections(lines: list[str]) -> dict[str, list[str]]:
-    """Split cleaned docstring lines into high-level sections."""
-    sections: dict[str, list[str]] = {"Summary": []}
-    current_section = "Summary"
+def _split_sections(
+    lines: list[str],
+) -> tuple[list[str], dict[str, str], str | None, list[str]]:
+    """Split a cleaned docstring into summary, field lists, and MCP metadata.
+
+    :param lines: Cleaned docstring lines.
+    :returns: Summary lines, parsed parameter descriptions, parsed return text,
+        and raw ``MCP:`` section lines.
+    """
+    summary_lines: list[str] = []
+    current_param_name: str | None = None
+    current_target: str | None = None
+    field_param_descriptions: dict[str, str] = {}
+    field_returns_description: str | None = None
+    mcp_lines: list[str] = []
+    in_mcp_section = False
+
     for line in lines:
         stripped = line.strip()
-        if stripped.endswith(":") and stripped[:-1] in _SECTION_HEADERS:
-            current_section = stripped[:-1]
-            sections.setdefault(current_section, [])
+        if in_mcp_section:
+            if stripped.startswith(":"):
+                in_mcp_section = False
+            else:
+                mcp_lines.append(line)
+                continue
+        param_match = _PARAM_FIELD_PATTERN.match(stripped)
+        if param_match is not None:
+            current_param_name = param_match.group(1)
+            current_target = "param"
+            field_param_descriptions[current_param_name] = param_match.group(2).strip()
             continue
-        sections.setdefault(current_section, []).append(line)
-    return sections
-
-
-def _parse_args_section(lines: list[str] | tuple[str, ...] | None) -> dict[str, str]:
-    """Parse the ``Args:`` section into parameter descriptions."""
-    if not lines:
-        return {}
-    descriptions: dict[str, str] = {}
-    current_name: str | None = None
-    for raw_line in lines:
-        line = raw_line.strip()
-        if not line:
+        returns_match = _RETURNS_FIELD_PATTERN.match(stripped)
+        if returns_match is not None:
+            current_param_name = None
+            current_target = "returns"
+            field_returns_description = returns_match.group(1).strip() or None
             continue
-        if ":" in line and not raw_line.startswith(" " * 8):
-            name_part, description = line.split(":", 1)
-            current_name = name_part.split("(", 1)[0].strip()
-            descriptions[current_name] = description.strip()
+        if _TYPE_FIELD_PATTERN.match(stripped) or _RTYPE_FIELD_PATTERN.match(stripped):
+            current_param_name = None
+            current_target = None
             continue
-        if current_name is not None:
-            descriptions[current_name] = f"{descriptions[current_name]} {line}".strip()
-    return descriptions
-
-
-def _parse_returns_section(lines: list[str] | tuple[str, ...] | None) -> str | None:
-    """Parse the ``Returns:`` section into one compact description."""
-    if not lines:
-        return None
-    normalized = [line.strip() for line in lines if line.strip()]
-    if not normalized:
-        return None
-    return " ".join(normalized)
+        if stripped == _MCP_SECTION_HEADER:
+            current_param_name = None
+            current_target = None
+            in_mcp_section = True
+            mcp_lines.append(line)
+            continue
+        if stripped.startswith(":"):
+            current_param_name = None
+            current_target = None
+            continue
+        if current_target == "param" and current_param_name is not None:
+            if stripped:
+                existing = field_param_descriptions.get(current_param_name, "").strip()
+                field_param_descriptions[current_param_name] = f"{existing} {stripped}".strip()
+            continue
+        if current_target == "returns":
+            if stripped:
+                if field_returns_description is not None:
+                    field_returns_description = f"{field_returns_description} {stripped}".strip()
+                else:
+                    field_returns_description = stripped
+            continue
+        summary_lines.append(line)
+    return summary_lines, field_param_descriptions, field_returns_description, mcp_lines
 
 
 def _parse_mcp_section(lines: list[str] | tuple[str, ...] | None) -> dict[str, object]:
@@ -110,7 +141,7 @@ def _parse_mcp_section(lines: list[str] | tuple[str, ...] | None) -> dict[str, o
     metadata: dict[str, object] = {}
     for raw_line in lines:
         line = raw_line.strip()
-        if not line:
+        if not line or line == _MCP_SECTION_HEADER:
             continue
         if ":" not in line:
             continue

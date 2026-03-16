@@ -38,8 +38,7 @@ from .schema import SchemaValidationError, coerce_value, to_json_compatible, val
 class PythonCallableBinding:
     """Bind a manifest entry to an in-process Python callable.
 
-    Args:
-        callable_obj: Callable object invoked directly at runtime.
+    :param callable_obj: Callable object invoked directly at runtime.
     """
 
     callable_obj: Callable[..., Any]
@@ -49,9 +48,8 @@ class PythonCallableBinding:
 class PythonModuleBinding:
     """Bind a manifest entry to a lazily imported module callable.
 
-    Args:
-        module_name: Importable module path containing the callable.
-        qualname: Object qualname resolved within the imported module.
+    :param module_name: Importable module path containing the callable.
+    :param qualname: Object qualname resolved within the imported module.
     """
 
     module_name: str
@@ -62,9 +60,8 @@ class PythonModuleBinding:
 class PythonFileBinding:
     """Bind a manifest entry to a lazily loaded Python file callable.
 
-    Args:
-        file_path: Filesystem path containing the callable definition.
-        qualname: Object qualname resolved within the loaded file module.
+    :param file_path: Filesystem path containing the callable definition.
+    :param qualname: Object qualname resolved within the loaded file module.
     """
 
     file_path: str
@@ -75,15 +72,14 @@ class PythonFileBinding:
 class SubprocessBinding:
     """Bind a manifest entry to a deterministic subprocess invocation.
 
-    Args:
-        argv: Command-line template.
-        cwd: Optional working directory template.
-        env: Environment variable templates.
-        stdin_template: Optional standard input template.
-        files: Rendered input file templates.
-        retained_paths: Explicit output paths copied into retained artifacts.
-        result: Result extraction rule.
-        timeout_seconds: Optional subprocess timeout in seconds.
+    :param argv: Command-line template.
+    :param cwd: Optional working directory template.
+    :param env: Environment variable templates.
+    :param stdin_template: Optional standard input template.
+    :param files: Rendered input file templates.
+    :param retained_paths: Explicit output paths copied into retained artifacts.
+    :param result: Result extraction rule.
+    :param timeout_seconds: Optional subprocess timeout in seconds.
     """
 
     argv: tuple[str, ...]
@@ -100,9 +96,8 @@ class SubprocessBinding:
 class ArgparseCommandBinding:
     """Bind a manifest entry to an ``argparse``-described command.
 
-    Args:
-        command: Command prefix used to execute the CLI.
-        actions: Serializable parser action specifications.
+    :param command: Command prefix used to execute the CLI.
+    :param actions: Serializable parser action specifications.
     """
 
     command: tuple[str, ...]
@@ -113,12 +108,11 @@ class ArgparseCommandBinding:
 class PreparedSubprocessRun:
     """Represent one fully rendered subprocess invocation.
 
-    Args:
-        rendered_argv: Fully rendered command-line arguments.
-        rendered_env: Rendered environment overrides.
-        stdin_text: Optional rendered standard input payload.
-        command_cwd: Effective working directory for the subprocess.
-        rendered_files: Input file paths written before execution.
+    :param rendered_argv: Fully rendered command-line arguments.
+    :param rendered_env: Rendered environment overrides.
+    :param stdin_text: Optional rendered standard input payload.
+    :param command_cwd: Effective working directory for the subprocess.
+    :param rendered_files: Input file paths written before execution.
     """
 
     rendered_argv: tuple[str, ...]
@@ -132,12 +126,11 @@ class PreparedSubprocessRun:
 class ToolExecutionResult:
     """Represent one executed tool call.
 
-    Args:
-        content: MCP-compatible content blocks.
-        structured_content: Optional structured result payload.
-        artifact_dir: Optional artifact directory retained on disk.
-        is_error: Whether execution ended in a tool-level error.
-        meta: Optional MCP ``_meta`` extension payload.
+    :param content: MCP-compatible content blocks.
+    :param structured_content: Optional structured result payload.
+    :param artifact_dir: Optional artifact directory retained on disk.
+    :param is_error: Whether execution ended in a tool-level error.
+    :param meta: Optional MCP ``_meta`` extension payload.
     """
 
     content: tuple[dict[str, str], ...]
@@ -161,13 +154,10 @@ class ToolExecutionResult:
 def execute_tool(manifest: Manifest, name: str, arguments: dict[str, Any]) -> ToolExecutionResult:
     """Execute one manifest tool with deterministic validation and capture.
 
-    Args:
-        manifest: Loaded manifest to execute against.
-        name: Tool name or deterministic alias to invoke.
-        arguments: Raw JSON-compatible arguments.
-
-    Returns:
-        The normalized execution result.
+    :param manifest: Loaded manifest to execute against.
+    :param name: Tool name or deterministic alias to invoke.
+    :param arguments: Raw JSON-compatible arguments.
+    :returns: The normalized execution result.
     """
     tool = manifest.get_tool(name)
     validate_value(arguments, tool.input_schema)

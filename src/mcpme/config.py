@@ -23,12 +23,11 @@ _PYTHON_DISCOVERY_MODES = frozenset({"source", "import"})
 class ToolOverride:
     """Represent user-supplied metadata overrides for one tool.
 
-    Args:
-        name: Optional override for the canonical tool name.
-        title: Optional override for the MCP title.
-        description: Optional override for the tool description.
-        hidden: Whether to suppress the tool from the manifest.
-        annotations: Optional behavior annotations.
+    :param name: Optional override for the canonical tool name.
+    :param title: Optional override for the MCP title.
+    :param description: Optional override for the tool description.
+    :param hidden: Whether to suppress the tool from the manifest.
+    :param annotations: Optional behavior annotations.
     """
 
     name: str | None = None
@@ -42,21 +41,20 @@ class ToolOverride:
 class SubprocessToolConfig:
     """Describe a manifest-driven subprocess tool.
 
-    Args:
-        name: Canonical tool name.
-        description: Human-readable tool description.
-        argv: Deterministic argv template.
-        input_schema: JSON Schema for input validation.
-        title: Optional MCP title.
-        output_schema: Optional JSON Schema for structured output.
-        annotations: Optional behavior annotations.
-        cwd: Optional working directory override.
-        env: Deterministic environment variable templates.
-        stdin_template: Optional standard input template.
-        files: Rendered input file templates.
-        retained_paths: Explicit output paths copied into retained artifacts.
-        result: Result extraction rule.
-        timeout_seconds: Optional subprocess timeout in seconds.
+    :param name: Canonical tool name.
+    :param description: Human-readable tool description.
+    :param argv: Deterministic argv template.
+    :param input_schema: JSON Schema for input validation.
+    :param title: Optional MCP title.
+    :param output_schema: Optional JSON Schema for structured output.
+    :param annotations: Optional behavior annotations.
+    :param cwd: Optional working directory override.
+    :param env: Deterministic environment variable templates.
+    :param stdin_template: Optional standard input template.
+    :param files: Rendered input file templates.
+    :param retained_paths: Explicit output paths copied into retained artifacts.
+    :param result: Result extraction rule.
+    :param timeout_seconds: Optional subprocess timeout in seconds.
     """
 
     name: str
@@ -79,13 +77,12 @@ class SubprocessToolConfig:
 class ArgparseCommand:
     """Represent an explicitly registered ``argparse`` command target.
 
-    Args:
-        name: Canonical tool name.
-        parser: Parser object used for deterministic schema extraction.
-        command: Subprocess command prefix used to execute the CLI.
-        description: Optional override for the tool description.
-        title: Optional override for the MCP title.
-        annotations: Optional behavior annotations.
+    :param name: Canonical tool name.
+    :param parser: Parser object used for deterministic schema extraction.
+    :param command: Subprocess command prefix used to execute the CLI.
+    :param description: Optional override for the tool description.
+    :param title: Optional override for the MCP title.
+    :param annotations: Optional behavior annotations.
     """
 
     name: str
@@ -100,12 +97,11 @@ class ArgparseCommand:
 class ManifestConfig:
     """Represent the loaded project configuration.
 
-    Args:
-        targets: Discovery targets loaded from config.
-        overrides: Per-tool metadata overrides.
-        subprocess_tools: Explicit subprocess tools.
-        artifact_policy: Artifact retention policy.
-        python_discovery_mode: Discovery mode used for Python files/modules.
+    :param targets: Discovery targets loaded from config.
+    :param overrides: Per-tool metadata overrides.
+    :param subprocess_tools: Explicit subprocess tools.
+    :param artifact_policy: Artifact retention policy.
+    :param python_discovery_mode: Discovery mode used for Python files/modules.
     """
 
     targets: tuple[str, ...] = ()
@@ -159,11 +155,8 @@ def _load_toml_path(config_path: Path | None) -> tuple[Path | None, dict[str, An
 def load_config(config_path: str | Path | None = None) -> ManifestConfig:
     """Load deterministic wrapper configuration.
 
-    Args:
-        config_path: Optional explicit path to a TOML file.
-
-    Returns:
-        The parsed manifest configuration.
+    :param config_path: Optional explicit path to a TOML file.
+    :returns: The parsed manifest configuration.
     """
     resolved_path, data = _load_toml_path(Path(config_path) if config_path is not None else None)
     table = _resolve_config_table(data)

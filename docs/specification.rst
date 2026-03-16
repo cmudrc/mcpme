@@ -351,15 +351,15 @@ The following should be rejected unless wrapped by an explicit adapter:
 Docstring Contract
 ------------------
 
-V1 should treat Google-style docstrings as the canonical structured format,
-because they are already the repository standard and are straightforward to
-parse deterministically.
+V1 should treat Sphinx field-list docstrings as the canonical structured
+format, because they align naturally with Sphinx autodoc output and remain
+straightforward to parse deterministically.
 
 Docstrings serve three roles:
 
 * Summary paragraph becomes the default tool description.
-* ``Args:`` entries become parameter descriptions.
-* ``Returns:`` becomes output description metadata.
+* ``:param name:`` entries become parameter descriptions.
+* ``:returns:`` becomes output description metadata.
 
 An optional ``MCP:`` section should provide extra wrapper-specific metadata
 without requiring decorators or framework lock-in.
@@ -371,12 +371,9 @@ Example:
    def mesh_model(input_path: str, target_size_mm: float) -> dict[str, str]:
        """Generate a finite-element mesh for a CAD model.
 
-       Args:
-           input_path: Path to the source CAD file.
-           target_size_mm: Desired global element size.
-
-       Returns:
-           A summary containing the written mesh path and element count.
+       :param input_path: Path to the source CAD file.
+       :param target_size_mm: Desired global element size.
+       :returns: A summary containing the written mesh path and element count.
 
        MCP:
            title: Mesh CAD Model

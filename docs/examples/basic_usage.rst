@@ -19,7 +19,7 @@ Technical Implementation
 ------------------------
 
 - Import only the curated top-level public API from `mcpme`.
-- Define a typed callable with a Google-style docstring and an `MCP:` block.
+- Define a typed callable with a Sphinx-style docstring and an `MCP:` block.
 - Build a :class:`mcpme.Manifest` directly from that callable.
 - Print the manifest as JSON so the generated tool surface is easy to inspect.
 

@@ -16,8 +16,7 @@ from .manifest import Manifest
 class McpServer:
     """Serve deterministic manifest tools through a small JSON-RPC surface.
 
-    Args:
-        manifest: Loaded manifest exposed through the runtime.
+    :param manifest: Loaded manifest exposed through the runtime.
     """
 
     manifest: Manifest
@@ -30,11 +29,8 @@ class McpServer:
     def handle_request(self, request: dict[str, Any]) -> dict[str, Any] | None:
         """Handle one JSON-RPC request object.
 
-        Args:
-            request: Parsed JSON-RPC request payload.
-
-        Returns:
-            A JSON-RPC response payload, or ``None`` for notifications.
+        :param request: Parsed JSON-RPC request payload.
+        :returns: A JSON-RPC response payload, or ``None`` for notifications.
         """
         method = request.get("method")
         request_id = request.get("id")
@@ -160,7 +156,12 @@ def serve_stdio(
     stdin: TextIO | None = None,
     stdout: TextIO | None = None,
 ) -> None:
-    """Serve the minimal MCP runtime over stdio."""
+    """Serve the minimal MCP runtime over stdio.
+
+    :param manifest: Loaded manifest exposed through the stdio server.
+    :param stdin: Optional input stream override.
+    :param stdout: Optional output stream override.
+    """
     input_stream = stdin or sys.stdin
     output_stream = stdout or sys.stdout
     server = McpServer(manifest)

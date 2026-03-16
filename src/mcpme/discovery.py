@@ -26,7 +26,7 @@ from .config import (
     ToolOverride,
     load_config,
 )
-from .docstrings import parse_google_docstring
+from .docstrings import parse_docstring
 from .execution import (
     ArgparseCommandBinding,
     PythonCallableBinding,
@@ -55,13 +55,10 @@ def build_manifest(
 ) -> Manifest:
     """Build a deterministic manifest from configured and explicit targets.
 
-    Args:
-        targets: Optional explicit discovery targets.
-        config_path: Optional TOML configuration path.
-        artifact_root: Optional artifact root override.
-
-    Returns:
-        The generated manifest.
+    :param targets: Optional explicit discovery targets.
+    :param config_path: Optional TOML configuration path.
+    :param artifact_root: Optional artifact root override.
+    :returns: The generated manifest.
     """
     config = load_config(config_path)
     policy = _resolve_artifact_policy(config, artifact_root)
@@ -263,7 +260,7 @@ def _build_python_tool_manifest(
     """Build a manifest entry for one Python callable."""
     signature = inspect.signature(target)
     hints = get_type_hints(target, include_extras=True)
-    docstring = parse_google_docstring(inspect.getdoc(target))
+    docstring = parse_docstring(inspect.getdoc(target))
     properties: dict[str, Any] = {}
     required: list[str] = []
     for parameter in signature.parameters.values():

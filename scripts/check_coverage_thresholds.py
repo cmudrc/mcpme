@@ -10,8 +10,7 @@ from pathlib import Path
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments for the coverage checker.
 
-    Returns:
-        The parsed argument namespace.
+    :returns: The parsed argument namespace.
     """
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -32,14 +31,10 @@ def parse_args() -> argparse.Namespace:
 def load_total_coverage(path: Path) -> float:
     """Load the total coverage percentage from a pytest-cov JSON report.
 
-    Args:
-        path: Path to the JSON report.
-
-    Returns:
-        The total percentage covered.
-
-    Raises:
-        ValueError: Raised when the report does not include the totals block.
+    :param path: Path to the JSON report.
+    :returns: The total percentage covered.
+    :raises ValueError: Raised when the report does not include the totals
+        block.
     """
     report = json.loads(path.read_text(encoding="utf-8"))
     totals = report.get("totals")
@@ -55,8 +50,7 @@ def load_total_coverage(path: Path) -> float:
 def main() -> int:
     """Run the coverage threshold check.
 
-    Returns:
-        Process exit code: `0` on success and `1` on failure.
+    :returns: Process exit code: ``0`` on success and ``1`` on failure.
     """
     args = parse_args()
     total_coverage = load_total_coverage(args.coverage_json)

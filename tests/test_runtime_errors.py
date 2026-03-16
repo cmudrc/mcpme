@@ -14,10 +14,8 @@ def test_runtime_handles_unknown_methods_and_notifications(tmp_path: Path) -> No
     source.write_text(
         """def ping(message: str) -> str:\n"""
         '''    """Ping text.\n\n'''
-        """    Args:\n"""
-        """        message: Input text.\n\n"""
-        """    Returns:\n"""
-        """        Same text.\n"""
+        """    :param message: Input text.\n"""
+        """    :returns: Same text.\n"""
         '''    """\n'''
         """    return message\n""",
         encoding="utf-8",

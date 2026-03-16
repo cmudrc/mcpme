@@ -35,14 +35,9 @@ class SchemaValidationError(ValueError):
 def schema_from_annotation(annotation: Any) -> dict[str, Any]:
     """Build JSON Schema for a supported Python type annotation.
 
-    Args:
-        annotation: Python annotation object.
-
-    Returns:
-        JSON Schema represented as a dictionary.
-
-    Raises:
-        SchemaGenerationError: Raised when the annotation is unsupported.
+    :param annotation: Python annotation object.
+    :returns: JSON Schema represented as a dictionary.
+    :raises SchemaGenerationError: Raised when the annotation is unsupported.
     """
     if annotation in (Any, object):
         return {}
@@ -193,13 +188,10 @@ def _schema_from_dataclass(annotation: type[Any]) -> dict[str, Any]:
 def validate_value(value: Any, schema: dict[str, Any], path: str = "$") -> None:
     """Validate a value against the supported JSON Schema subset.
 
-    Args:
-        value: Candidate value to validate.
-        schema: Supported JSON Schema subset.
-        path: Human-readable location used in error messages.
-
-    Raises:
-        SchemaValidationError: Raised when validation fails.
+    :param value: Candidate value to validate.
+    :param schema: Supported JSON Schema subset.
+    :param path: Human-readable location used in error messages.
+    :raises SchemaValidationError: Raised when validation fails.
     """
     if not schema:
         return

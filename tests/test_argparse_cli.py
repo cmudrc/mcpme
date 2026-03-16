@@ -74,10 +74,8 @@ def test_cli_manifest_and_inspect_commands_emit_deterministic_output(
     source.write_text(
         """def mesh_model(input_path: str) -> str:\n"""
         '''    """Generate a mesh.\n\n'''
-        """    Args:\n"""
-        """        input_path: CAD path.\n\n"""
-        """    Returns:\n"""
-        """        Mesh path.\n"""
+        """    :param input_path: CAD path.\n"""
+        """    :returns: Mesh path.\n"""
         '''    """\n'''
         """    return input_path\n""",
         encoding="utf-8",
@@ -98,10 +96,8 @@ def test_module_invocation_runs_cli_main(tmp_path: Path) -> None:
     source.write_text(
         """def mesh_model(input_path: str) -> str:\n"""
         '''    """Generate a mesh.\n\n'''
-        """    Args:\n"""
-        """        input_path: CAD path.\n\n"""
-        """    Returns:\n"""
-        """        Mesh path.\n"""
+        """    :param input_path: CAD path.\n"""
+        """    :returns: Mesh path.\n"""
         '''    """\n'''
         """    return input_path\n""",
         encoding="utf-8",

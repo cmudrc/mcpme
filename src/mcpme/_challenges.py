@@ -52,9 +52,9 @@ class ChallengeCatalogError(ValueError):
 class ChallengeTarget:
     """Describe the raw upstream target exercised by one challenge.
 
-    Args:
-        kind: Target family. Supported values are ``"package"`` and ``"command"``.
-        value: Import path or command token sequence used for scaffolding.
+    :param kind: Target family. Supported values are ``"package"`` and
+        ``"command"``.
+    :param value: Import path or command token sequence used for scaffolding.
     """
 
     kind: str
@@ -65,9 +65,8 @@ class ChallengeTarget:
 class ChallengeProbe:
     """Describe availability probes evaluated before a live challenge runs.
 
-    Args:
-        imports: Import paths that must import successfully.
-        commands: Command token sequences whose executable must be available.
+    :param imports: Import paths that must import successfully.
+    :param commands: Command token sequences whose executable must be available.
     """
 
     imports: tuple[str, ...] = ()
@@ -78,17 +77,21 @@ class ChallengeProbe:
 class ChallengeSmokeStep:
     """Describe one live smoke step executed against a generated manifest.
 
-    Args:
-        tool: Tool name executed through the manifest runtime.
-        arguments: Raw JSON-like arguments forwarded to the tool.
-        label: Optional human-friendly label for reports.
-        expect_tool_error: Whether the step expects ``is_error`` from the runtime.
-        expect_text_contains: Text snippets that must appear in the returned content.
-        expect_json_fields: Field assertions against parsed JSON content blocks.
-        expect_structured_fields: Field assertions against ``structuredContent``.
-        expect_files_exist: Files that must exist after the step finishes.
-        expect_files_nonempty: Files that must exist and be non-empty.
-        capture_json: Values captured from parsed JSON content for later steps.
+    :param tool: Tool name executed through the manifest runtime.
+    :param arguments: Raw JSON-like arguments forwarded to the tool.
+    :param label: Optional human-friendly label for reports.
+    :param expect_tool_error: Whether the step expects ``is_error`` from the
+        runtime.
+    :param expect_text_contains: Text snippets that must appear in the returned
+        content.
+    :param expect_json_fields: Field assertions against parsed JSON content
+        blocks.
+    :param expect_structured_fields: Field assertions against
+        ``structuredContent``.
+    :param expect_files_exist: Files that must exist after the step finishes.
+    :param expect_files_nonempty: Files that must exist and be non-empty.
+    :param capture_json: Values captured from parsed JSON content for later
+        steps.
     """
 
     tool: str
@@ -107,11 +110,11 @@ class ChallengeSmokeStep:
 class ChallengeExample:
     """Capture the narrative that makes one challenge readable as an example.
 
-    Args:
-        summary: Short plain-language overview of what the case demonstrates.
-        motivation: Why this case matters for real engineering-tool wrapping.
-        proves: Concrete capabilities the challenge is expected to prove.
-        limitations: Optional caveats or known boundaries for the case.
+    :param summary: Short plain-language overview of what the case demonstrates.
+    :param motivation: Why this case matters for real engineering-tool
+        wrapping.
+    :param proves: Concrete capabilities the challenge is expected to prove.
+    :param limitations: Optional caveats or known boundaries for the case.
     """
 
     summary: str
@@ -124,21 +127,23 @@ class ChallengeExample:
 class ChallengeSpec:
     """Represent one catalogued live challenge.
 
-    Args:
-        id: Stable catalog identifier.
-        title: Human-readable title used in reports.
-        tier: Execution tier. ``"gha_subset"`` runs in CI; ``"local_full"`` is local only.
-        style: Short style label such as ``"package"`` or ``"command"``.
-        slice: Workflow slice such as ``"aerodynamics"`` or ``"systems"``.
-        target: Raw upstream target definition.
-        probe: Availability probe configuration.
-        scaffold_kind: Scaffold entry point used for the target.
-        scaffold_options: Deterministic scaffold options from the catalog.
-        smoke_steps: Smoke-step sequence executed after ingestion succeeds.
-        example: Narrative metadata rendered into challenge-local README files.
-        catalog_path: Checked-in ``challenge.toml`` path for the case.
-        case_dir: Case directory containing the catalog, README, and fixtures.
-        notes: Optional challenge note.
+    :param id: Stable catalog identifier.
+    :param title: Human-readable title used in reports.
+    :param tier: Execution tier. ``"gha_subset"`` runs in CI; ``"local_full"``
+        is local only.
+    :param style: Short style label such as ``"package"`` or ``"command"``.
+    :param slice: Workflow slice such as ``"aerodynamics"`` or ``"systems"``.
+    :param target: Raw upstream target definition.
+    :param probe: Availability probe configuration.
+    :param scaffold_kind: Scaffold entry point used for the target.
+    :param scaffold_options: Deterministic scaffold options from the catalog.
+    :param smoke_steps: Smoke-step sequence executed after ingestion succeeds.
+    :param example: Narrative metadata rendered into challenge-local README
+        files.
+    :param catalog_path: Checked-in ``challenge.toml`` path for the case.
+    :param case_dir: Case directory containing the catalog, README, and
+        fixtures.
+    :param notes: Optional challenge note.
     """
 
     id: str
@@ -167,13 +172,13 @@ class ChallengeSpec:
 class ChallengeStepResult:
     """Capture one executed smoke step result.
 
-    Args:
-        tool: Tool name executed by the step.
-        label: Human-readable label for reports.
-        status: Step status.
-        message: Summary message.
-        captured: Captured context variables produced by the step.
-        artifact_dir: Optional retained artifact directory for the tool call.
+    :param tool: Tool name executed by the step.
+    :param label: Human-readable label for reports.
+    :param status: Step status.
+    :param message: Summary message.
+    :param captured: Captured context variables produced by the step.
+    :param artifact_dir: Optional retained artifact directory for the tool
+        call.
     """
 
     tool: str
@@ -199,18 +204,17 @@ class ChallengeStepResult:
 class ChallengeResult:
     """Capture the full outcome for one live challenge.
 
-    Args:
-        id: Stable challenge identifier.
-        title: Human-readable title.
-        tier: Execution tier.
-        style: Challenge style label.
-        slice: Workflow slice label.
-        status: Overall status.
-        message: Summary message.
-        generated_tools: Generated facade tool names.
-        steps: Executed smoke-step results.
-        scaffold_path: Generated facade path, when scaffold succeeded.
-        notes: Optional challenge note.
+    :param id: Stable challenge identifier.
+    :param title: Human-readable title.
+    :param tier: Execution tier.
+    :param style: Challenge style label.
+    :param slice: Workflow slice label.
+    :param status: Overall status.
+    :param message: Summary message.
+    :param generated_tools: Generated facade tool names.
+    :param steps: Executed smoke-step results.
+    :param scaffold_path: Generated facade path, when scaffold succeeded.
+    :param notes: Optional challenge note.
     """
 
     id: str
@@ -246,10 +250,9 @@ class ChallengeResult:
 class ChallengeAggregate:
     """Represent aggregate live challenge results.
 
-    Args:
-        suite_name: Stable suite label.
-        selected_tier: Requested execution tier.
-        results: Ordered challenge results.
+    :param suite_name: Stable suite label.
+    :param selected_tier: Requested execution tier.
+    :param results: Ordered challenge results.
     """
 
     suite_name: str
@@ -294,14 +297,10 @@ class ChallengeAggregate:
 def load_challenge_catalog(catalog_dir: Path) -> tuple[ChallengeSpec, ...]:
     """Load and validate one challenge catalog root.
 
-    Args:
-        catalog_dir: Directory containing challenge case directories or ``*.toml`` files.
-
-    Returns:
-        Parsed challenge specifications sorted by ``id``.
-
-    Raises:
-        ChallengeCatalogError: Raised when catalog contents are invalid.
+    :param catalog_dir: Directory containing challenge case directories or
+        ``*.toml`` files.
+    :returns: Parsed challenge specifications sorted by ``id``.
+    :raises ChallengeCatalogError: Raised when catalog contents are invalid.
     """
     specs: list[ChallengeSpec] = []
     seen_ids: set[str] = set()
@@ -340,15 +339,12 @@ def run_challenge_suite(
 ) -> ChallengeAggregate:
     """Run one live challenge suite and return aggregate results.
 
-    Args:
-        specs: Loaded challenge specifications.
-        repo_root: Repository root used for fixture and output paths.
-        artifact_root: Directory receiving challenge artifacts.
-        selected_tier: Requested tier selector. ``"all"`` runs both tiers.
-        selected_ids: Optional explicit challenge ids to run.
-
-    Returns:
-        Aggregate challenge results.
+    :param specs: Loaded challenge specifications.
+    :param repo_root: Repository root used for fixture and output paths.
+    :param artifact_root: Directory receiving challenge artifacts.
+    :param selected_tier: Requested tier selector. ``"all"`` runs both tiers.
+    :param selected_ids: Optional explicit challenge ids to run.
+    :returns: Aggregate challenge results.
     """
     requested_ids = frozenset(selected_ids)
     available_ids = frozenset(spec.id for spec in specs)
@@ -712,11 +708,8 @@ def _pushd(path: Path) -> Iterator[None]:
     its own artifact directory so those upstream side effects stay isolated and
     inspectable instead of polluting the repository root.
 
-    Args:
-        path: Directory that should become the temporary working directory.
-
-    Yields:
-        ``None`` while the working directory is changed.
+    :param path: Directory that should become the temporary working directory.
+    :yields: ``None`` while the working directory is changed.
     """
     previous_cwd = Path.cwd()
     os.chdir(path)

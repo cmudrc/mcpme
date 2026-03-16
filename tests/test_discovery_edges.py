@@ -21,11 +21,8 @@ from mcpme.manifest import SourceReference, ToolAnnotations
 def helper_tool(job_name: str) -> str:
     """Echo a job name.
 
-    Args:
-        job_name: Job label.
-
-    Returns:
-        Same job label.
+    :param job_name: Job label.
+    :returns: Same job label.
     """
 
     return job_name
@@ -48,10 +45,8 @@ def test_discovery_handles_callable_directory_and_module_edge_cases(
         """IGNORED = 3\n\n"""
         """def run_dir(job_name: str) -> str:\n"""
         '''    """Run from a directory.\n\n'''
-        """    Args:\n"""
-        """        job_name: Job label.\n\n"""
-        """    Returns:\n"""
-        """        Same job label.\n"""
+        """    :param job_name: Job label.\n"""
+        """    :returns: Same job label.\n"""
         '''    """\n'''
         """    return job_name\n""",
         encoding="utf-8",
@@ -66,10 +61,8 @@ def test_discovery_handles_callable_directory_and_module_edge_cases(
         """VALUE = 1\n\n"""
         """def run_module(job_name: str) -> str:\n"""
         '''    """Run from a module.\n\n'''
-        """    Args:\n"""
-        """        job_name: Job label.\n\n"""
-        """    Returns:\n"""
-        """        Same job label.\n"""
+        """    :param job_name: Job label.\n"""
+        """    :returns: Same job label.\n"""
         '''    """\n'''
         """    return job_name\n""",
         encoding="utf-8",
@@ -82,7 +75,7 @@ def test_discovery_handles_callable_directory_and_module_edge_cases(
     invalid_all.write_text(
         "__all__ = [UNKNOWN]\n"
         "def alpha(value: str) -> str:\n"
-        '    """Alpha.\n\nArgs:\n    value: Input text.\n\nReturns:\n    Same text.\n    """\n'
+        '    """Alpha.\n\n:param value: Input text.\n:returns: Same text.\n    """\n'
         "    return value\n",
         encoding="utf-8",
     )
@@ -102,10 +95,8 @@ def test_source_discovery_avoids_import_side_effects_and_resolves_reexports(
         "raise RuntimeError('discovery imported user code')\n\n"
         "def safe_run(job_name: str) -> str:\n"
         '    """Safely discovered.\n\n'
-        "    Args:\n"
-        "        job_name: Job label.\n\n"
-        "    Returns:\n"
-        "        Same job label.\n"
+        "    :param job_name: Job label.\n"
+        "    :returns: Same job label.\n"
         '    """\n'
         "    return job_name\n",
         encoding="utf-8",
@@ -122,10 +113,8 @@ def test_source_discovery_avoids_import_side_effects_and_resolves_reexports(
     (package_dir / "solver.py").write_text(
         "def run_solver(job_name: str) -> str:\n"
         '    """Run through a re-export.\n\n'
-        "    Args:\n"
-        "        job_name: Job label.\n\n"
-        "    Returns:\n"
-        "        Same job label.\n"
+        "    :param job_name: Job label.\n"
+        "    :returns: Same job label.\n"
         '    """\n'
         "    return job_name.upper()\n",
         encoding="utf-8",
@@ -151,11 +140,8 @@ def test_discovery_rejects_hidden_or_unsupported_python_signatures() -> None:
     def hidden_tool(value: str) -> str:
         """Hide this tool.
 
-        Args:
-            value: Input text.
-
-        Returns:
-            Same text.
+        :param value: Input text.
+        :returns: Same text.
 
         MCP:
             hidden: true

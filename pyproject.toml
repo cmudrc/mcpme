@@ -89,7 +89,7 @@ line-ending = "auto"
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "D"]
 
 [tool.ruff.lint.pydocstyle]
-convention = "google"
+convention = "pep257"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["D"]

@@ -12,7 +12,7 @@ its public interface and preserving its execution contract.
 ## Technical Implementation
 
 - Import only the curated top-level public API from `mcpme`.
-- Define a typed callable with a Google-style docstring and an `MCP:` block.
+- Define a typed callable with a Sphinx-style docstring and an `MCP:` block.
 - Build a :class:`mcpme.Manifest` directly from that callable.
 - Print the manifest as JSON so the generated tool surface is easy to inspect.
 
@@ -40,12 +40,9 @@ from mcpme import Manifest, build_manifest
 def summarize_mesh(job_name: str, iterations: int = 3) -> dict[str, int | str]:
     """Summarize a deterministic meshing job.
 
-    Args:
-        job_name: Job label used for the mesh run.
-        iterations: Refinement iteration count.
-
-    Returns:
-        A lightweight job summary.
+    :param job_name: Job label used for the mesh run.
+    :param iterations: Refinement iteration count.
+    :returns: A lightweight job summary.
 
     MCP:
         title: Summarize Mesh

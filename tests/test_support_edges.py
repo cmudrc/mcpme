@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from mcpme.config import _optional_bool, load_config
-from mcpme.docstrings import parse_google_docstring
+from mcpme.docstrings import parse_docstring
 from mcpme.manifest import (
     ArgparseOptionSpec,
     FileTemplate,
@@ -23,28 +23,25 @@ from mcpme.schema import SchemaValidationError, coerce_value, to_json_compatible
 def test_docstring_and_config_edge_paths_are_explicit(tmp_path: Path) -> None:
     """Empty docstrings, continuations, bad metadata, and missing config should be handled."""
 
-    parsed = parse_google_docstring(
+    parsed = parse_docstring(
         """
         Summarize a run.
 
-        Args:
-            config: Initial line.
-                Continued detail.
-
-        Returns:
+        :param config: Initial line.
+            Continued detail.
 
         MCP:
             read_only: false
             note without colon
         """
     )
-    assert parse_google_docstring(None).summary == ""
+    assert parse_docstring(None).summary == ""
     assert parsed.param_descriptions["config"] == "Initial line. Continued detail."
     assert parsed.returns_description is None
     assert parsed.mcp_metadata["read_only"] is False
 
     with pytest.raises(ValueError):
-        parse_google_docstring(
+        parse_docstring(
             """
             Bad metadata.
 

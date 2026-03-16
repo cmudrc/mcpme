@@ -18,10 +18,8 @@ def test_load_config_discovers_pyproject_and_parses_overrides(
     target_file.write_text(
         """def run_job(job_name: str) -> str:\n"""
         '''    """Run a job.\n\n'''
-        """    Args:\n"""
-        """        job_name: Job label.\n\n"""
-        """    Returns:\n"""
-        """        Job label.\n"""
+        """    :param job_name: Job label.\n"""
+        """    :returns: Job label.\n"""
         '''    """\n'''
         """    return job_name\n""",
         encoding="utf-8",

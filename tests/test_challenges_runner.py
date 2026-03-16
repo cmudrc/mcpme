@@ -32,17 +32,14 @@ def test_run_challenge_suite_executes_multi_step_package_flow(
         '"""Challenge package."""\n'
         "class Counter:\n"
         '    """Simple counter.\n\n'
-        "    Args:\n"
-        "        start: Starting value.\n"
+        "    :param start: Starting value.\n"
         '    """\n'
         "    def __init__(self, start: int = 0) -> None:\n"
         "        self.value = start\n\n"
         "    def increment(self, amount: int = 1) -> int:\n"
         '        """Increment the counter.\n\n'
-        "        Args:\n"
-        "            amount: Increment amount.\n\n"
-        "        Returns:\n"
-        "            Updated value.\n"
+        "        :param amount: Increment amount.\n"
+        "        :returns: Updated value.\n"
         '        """\n'
         "        self.value += amount\n"
         "        return self.value\n",
@@ -183,10 +180,8 @@ def test_run_challenge_suite_isolates_upstream_relative_outputs(
         "from pathlib import Path\n\n"
         "def emit_relative_file(name: str) -> str:\n"
         '    """Write a relative output file.\n\n'
-        "    Args:\n"
-        "        name: Relative filename to create.\n\n"
-        "    Returns:\n"
-        "        The created filename.\n"
+        "    :param name: Relative filename to create.\n"
+        "    :returns: The created filename.\n"
         '    """\n'
         "    Path(name).write_text('ok', encoding='utf-8')\n"
         "    return name\n",

@@ -58,7 +58,7 @@ coverage: check-python
 	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json
 
 docstrings-check: check-python
-	$(PYTHON) scripts/check_google_docstrings.py
+	$(PYTHON) scripts/check_docstrings.py
 
 generate-example-docs: check-python
 	$(PYTHON) scripts/generate_example_docs.py

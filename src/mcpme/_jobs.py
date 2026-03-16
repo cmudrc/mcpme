@@ -352,16 +352,11 @@ def _read_json_file(
     write path uses atomic replacement, but a bounded retry keeps reads robust
     against pre-existing partial files from older runs or interrupted writes.
 
-    Args:
-        path: JSON file path to load.
-        attempts: Maximum read attempts before surfacing the decode failure.
-        delay_seconds: Sleep duration between attempts.
-
-    Returns:
-        Parsed JSON object.
-
-    Raises:
-        json.JSONDecodeError: If the file never contains valid JSON.
+    :param path: JSON file path to load.
+    :param attempts: Maximum read attempts before surfacing the decode failure.
+    :param delay_seconds: Sleep duration between attempts.
+    :returns: Parsed JSON object.
+    :raises json.JSONDecodeError: If the file never contains valid JSON.
     """
     last_error: json.JSONDecodeError | None = None
     for attempt in range(1, max(1, attempts) + 1):
@@ -384,9 +379,8 @@ def _read_json_file(
 def _write_json_file(path: Path, payload: dict[str, Any]) -> None:
     """Write one JSON mapping to disk atomically.
 
-    Args:
-        path: Destination JSON path.
-        payload: Mapping to serialize.
+    :param path: Destination JSON path.
+    :param payload: Mapping to serialize.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_name(f"{path.name}.{uuid4().hex}.tmp")

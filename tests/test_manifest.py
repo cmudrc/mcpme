@@ -15,11 +15,9 @@ def test_build_manifest_from_python_file_generates_schema(tmp_path: Path) -> Non
         '''"""Mesh utilities."""\n\n'''
         "def mesh_model(input_path: str, iterations: int = 3) -> dict[str, int]:\n"
         '    """Generate a mesh.\n\n'
-        "    Args:\n"
-        "        input_path: Path to the CAD file.\n"
-        "        iterations: Number of refinement iterations.\n\n"
-        "    Returns:\n"
-        "        A summary containing the element count.\n\n"
+        "    :param input_path: Path to the CAD file.\n"
+        "    :param iterations: Number of refinement iterations.\n"
+        "    :returns: A summary containing the element count.\n\n"
         "    MCP:\n"
         "        title: Mesh CAD Model\n"
         "        read_only: false\n"
@@ -56,18 +54,14 @@ def test_build_manifest_respects_module_all_order(
         """__all__ = ["beta_tool", "alpha_tool"]\n"""
         """def alpha_tool(value: str) -> str:\n"""
         '''    """Alpha tool.\n\n'''
-        """    Args:\n"""
-        """        value: Input text.\n\n"""
-        """    Returns:\n"""
-        """        Echoed text.\n"""
+        """    :param value: Input text.\n"""
+        """    :returns: Echoed text.\n"""
         '''    """\n'''
         """    return value\n\n"""
         """def beta_tool(count: int) -> int:\n"""
         '''    """Beta tool.\n\n'''
-        """    Args:\n"""
-        """        count: Count value.\n\n"""
-        """    Returns:\n"""
-        """        The same count.\n"""
+        """    :param count: Count value.\n"""
+        """    :returns: The same count.\n"""
         '''    """\n'''
         """    return count\n""",
         encoding="utf-8",

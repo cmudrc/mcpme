@@ -53,4 +53,4 @@ pre-commit run --all-files
 - Ruff for linting and formatting
 - Mypy for type checking
 - Pytest for tests
-- Google-style docstrings in `src/`, `examples/`, and `scripts/`
+- Sphinx-style field-list docstrings in `src/`, `examples/`, and `scripts/`

@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
-from mcpme.docstrings import parse_google_docstring
+from mcpme.docstrings import parse_docstring
 
 
-def test_parse_google_docstring_extracts_sections() -> None:
-    """Google-style sections should map to deterministic metadata."""
+def test_parse_docstring_extracts_sphinx_sections() -> None:
+    """Sphinx field lists should map to deterministic metadata."""
 
-    parsed = parse_google_docstring(
+    parsed = parse_docstring(
         """
         Generate a finite-element mesh.
 
-        Args:
-            input_path: Path to the CAD file.
-            target_size_mm: Desired global element size.
-
-        Returns:
-            A summary containing the mesh path.
+        :param input_path: Path to the CAD file.
+        :param target_size_mm: Desired global element size.
+        :returns: A summary containing the mesh path.
 
         MCP:
             title: Mesh CAD Model
@@ -37,3 +34,23 @@ def test_parse_google_docstring_extracts_sections() -> None:
         "read_only": False,
         "idempotent": True,
     }
+
+
+def test_parse_docstring_does_not_parse_legacy_section_blocks() -> None:
+    """Legacy section headers should no longer be treated as structured fields."""
+
+    parsed = parse_docstring(
+        """
+        Legacy shape.
+
+        Args:
+            deck: Input deck.
+
+        Returns:
+            Output deck.
+        """
+    )
+
+    assert parsed.summary == "Legacy shape. Args: deck: Input deck. Returns: Output deck."
+    assert parsed.param_descriptions == {}
+    assert parsed.returns_description is None

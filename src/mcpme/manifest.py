@@ -15,10 +15,9 @@ _RETAINED_PATH_WHEN = frozenset({"always", "success", "error"})
 class ArtifactPolicy:
     """Control how execution artifacts are retained.
 
-    Args:
-        mode: Retention mode. Supported values are ``"none"``, ``"summary"``,
-            and ``"full"``.
-        root_dir: Directory where retained artifacts are written.
+    :param mode: Retention mode. Supported values are ``"none"``,
+        ``"summary"``, and ``"full"``.
+    :param root_dir: Directory where retained artifacts are written.
     """
 
     mode: str = "full"
@@ -41,11 +40,10 @@ class ArtifactPolicy:
 class ToolAnnotations:
     """Represent MCP tool annotations.
 
-    Args:
-        read_only: Whether the tool is read-only.
-        destructive: Whether the tool may mutate or delete state.
-        idempotent: Whether repeated calls with the same input are stable.
-        open_world: Whether the tool may interact with external state.
+    :param read_only: Whether the tool is read-only.
+    :param destructive: Whether the tool may mutate or delete state.
+    :param idempotent: Whether repeated calls with the same input are stable.
+    :param open_world: Whether the tool may interact with external state.
     """
 
     read_only: bool | None = None
@@ -68,10 +66,10 @@ class ToolAnnotations:
 class SourceReference:
     """Describe where a manifest entry came from.
 
-    Args:
-        kind: Source type, such as ``"module"``, ``"file"``, or ``"subprocess"``.
-        target: The original target identifier.
-        location: Optional more specific source location.
+    :param kind: Source type, such as ``"module"``, ``"file"``, or
+        ``"subprocess"``.
+    :param target: The original target identifier.
+    :param location: Optional more specific source location.
     """
 
     kind: str
@@ -90,16 +88,16 @@ class SourceReference:
 class ToolManifest:
     """Describe one deterministic MCP tool.
 
-    Args:
-        name: Canonical MCP tool name.
-        description: Human-readable tool description.
-        input_schema: JSON Schema for tool inputs.
-        source: Source reference for the tool.
-        binding_kind: Runtime binding type used by the executor.
-        title: Optional MCP title.
-        output_schema: Optional JSON Schema for structured output.
-        annotations: Optional behavioral annotations.
-        aliases: Optional deterministic alternate names accepted by the runtime.
+    :param name: Canonical MCP tool name.
+    :param description: Human-readable tool description.
+    :param input_schema: JSON Schema for tool inputs.
+    :param source: Source reference for the tool.
+    :param binding_kind: Runtime binding type used by the executor.
+    :param title: Optional MCP title.
+    :param output_schema: Optional JSON Schema for structured output.
+    :param annotations: Optional behavioral annotations.
+    :param aliases: Optional deterministic alternate names accepted by the
+        runtime.
     """
 
     name: str
@@ -153,11 +151,11 @@ class ToolManifest:
 class RetainedPathSpec:
     """Describe a subprocess output path retained as a first-class artifact.
 
-    Args:
-        path: Relative path rooted at the executed working directory.
-        kind: Expected output kind. ``"auto"`` accepts either file or directory.
-        optional: Whether missing outputs should be tolerated.
-        when: When the path should be copied into retained artifacts.
+    :param path: Relative path rooted at the executed working directory.
+    :param kind: Expected output kind. ``"auto"`` accepts either file or
+        directory.
+    :param optional: Whether missing outputs should be tolerated.
+    :param when: When the path should be copied into retained artifacts.
     """
 
     path: str
@@ -187,9 +185,8 @@ class RetainedPathSpec:
 class FileTemplate:
     """Describe a rendered file used by a subprocess tool.
 
-    Args:
-        path: Relative output path in the working directory.
-        template: Deterministic text template rendered with tool arguments.
+    :param path: Relative output path in the working directory.
+    :param template: Deterministic text template rendered with tool arguments.
     """
 
     path: str
@@ -204,10 +201,9 @@ class FileTemplate:
 class SubprocessResultSpec:
     """Describe how to extract a subprocess result.
 
-    Args:
-        kind: Extraction mode, such as ``"stdout_text"``, ``"file_json"``,
-            ``"file_bytes"``, or ``"directory_manifest"``.
-        path: Optional relative path for file-based extraction modes.
+    :param kind: Extraction mode, such as ``"stdout_text"``, ``"file_json"``,
+        ``"file_bytes"``, or ``"directory_manifest"``.
+    :param path: Optional relative path for file-based extraction modes.
     """
 
     kind: str = "stdout_text"
@@ -225,13 +221,12 @@ class SubprocessResultSpec:
 class ArgparseOptionSpec:
     """Describe one argparse action in a serializable form.
 
-    Args:
-        dest: Destination name.
-        option_strings: Flag spellings for optional arguments.
-        positional: Whether the argument is positional.
-        required: Whether the argument is required.
-        nargs: ``argparse`` cardinality metadata.
-        action: Normalized action type.
+    :param dest: Destination name.
+    :param option_strings: Flag spellings for optional arguments.
+    :param positional: Whether the argument is positional.
+    :param required: Whether the argument is required.
+    :param nargs: ``argparse`` cardinality metadata.
+    :param action: Normalized action type.
     """
 
     dest: str
@@ -246,10 +241,9 @@ class ArgparseOptionSpec:
 class Manifest:
     """Bundle the generated tool manifests and runtime bindings.
 
-    Args:
-        tools: Ordered collection of generated tool manifests.
-        artifact_policy: Artifact retention policy for execution.
-        runtime_bindings: Runtime-only binding objects keyed by tool name.
+    :param tools: Ordered collection of generated tool manifests.
+    :param artifact_policy: Artifact retention policy for execution.
+    :param runtime_bindings: Runtime-only binding objects keyed by tool name.
     """
 
     tools: tuple[ToolManifest, ...]
@@ -268,14 +262,9 @@ class Manifest:
     def get_tool(self, name: str) -> ToolManifest:
         """Return one tool manifest by name.
 
-        Args:
-            name: Tool name to look up.
-
-        Returns:
-            The matching tool manifest.
-
-        Raises:
-            KeyError: Raised when the tool does not exist.
+        :param name: Tool name to look up.
+        :returns: The matching tool manifest.
+        :raises KeyError: Raised when the tool does not exist.
         """
         for tool in self.tools:
             if tool.name == name or name in tool.aliases:
@@ -285,14 +274,9 @@ class Manifest:
     def get_binding(self, name: str) -> object:
         """Return the runtime binding for one tool.
 
-        Args:
-            name: Tool name to look up.
-
-        Returns:
-            The matching runtime binding object.
-
-        Raises:
-            KeyError: Raised when the binding does not exist.
+        :param name: Tool name to look up.
+        :returns: The matching runtime binding object.
+        :raises KeyError: Raised when the binding does not exist.
         """
         return self.runtime_bindings[self.get_tool(name).name]
 

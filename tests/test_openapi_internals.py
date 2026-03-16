@@ -189,7 +189,7 @@ def test_openapi_render_helpers_cover_cookie_body_and_docstring_paths() -> None:
     assert "    headers: dict[str, str] | None = None," in signature_lines
 
     docstring_lines = _operation_docstring_lines(operation)
-    assert "        body: Body payload." in docstring_lines
+    assert "    :param body: Body payload." in docstring_lines
 
     url_lines = _operation_url_lines(operation)
     assert "    query = _encode_query({" in url_lines

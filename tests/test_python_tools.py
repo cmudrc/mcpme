@@ -45,12 +45,10 @@ def test_static_python_resolver_supports_source_types_and_module_reexports(
         "    label: Literal['mesh', 'solve'] = 'mesh',\n"
         ") -> Path:\n"
         '    """Run a static solver.\n\n'
-        "    Args:\n"
-        "        config: Structured config.\n"
-        "        payload: Binary payload.\n"
-        "        label: Operation label.\n\n"
-        "    Returns:\n"
-        "        Output deck path.\n"
+        "    :param config: Structured config.\n"
+        "    :param payload: Binary payload.\n"
+        "    :param label: Operation label.\n"
+        "    :returns: Output deck path.\n"
         '    """\n'
         "    return config.deck\n",
         encoding="utf-8",
@@ -181,14 +179,12 @@ def test_static_python_resolver_supports_reexported_class_annotations_and_new_co
         "    values: NDArray,\n"
         ") -> Config:\n"
         '    """Run a typed case.\n\n'
-        "    Args:\n"
-        "        config: Case config.\n"
-        "        deck: Input deck path.\n"
-        "        samples: Sample identifiers.\n"
-        "        weights: Weight mapping.\n"
-        "        values: Numeric values.\n\n"
-        "    Returns:\n"
-        "        Echoed config.\n"
+        "    :param config: Case config.\n"
+        "    :param deck: Input deck path.\n"
+        "    :param samples: Sample identifiers.\n"
+        "    :param weights: Weight mapping.\n"
+        "    :param values: Numeric values.\n"
+        "    :returns: Echoed config.\n"
         '    """\n'
         "    return config\n",
         encoding="utf-8",

@@ -34,34 +34,27 @@ def test_scaffold_package_generates_executable_facade(
         '"""Core package tools."""\n\n'
         "def solve(mesh_size: int = 2) -> int:\n"
         '    """Solve a tiny deterministic case.\n\n'
-        "    Args:\n"
-        "        mesh_size: Mesh size.\n\n"
-        "    Returns:\n"
-        "        Scaled case score.\n"
+        "    :param mesh_size: Mesh size.\n"
+        "    :returns: Scaled case score.\n"
         '    """\n'
         "    return mesh_size * 3\n\n\n"
         "def positional_solver(scale, /, offset=1):\n"
         '    """Exercise args/kwargs fallback wrapping.\n\n'
-        "    Args:\n"
-        "        scale: Scale input.\n"
-        "        offset: Offset value.\n\n"
-        "    Returns:\n"
-        "        Combined result.\n"
+        "    :param scale: Scale input.\n"
+        "    :param offset: Offset value.\n"
+        "    :returns: Combined result.\n"
         '    """\n'
         "    return scale + offset\n\n\n"
         "class CounterSession:\n"
         '    """Maintain a mutable counter.\n\n'
-        "    Args:\n"
-        "        start: Starting count.\n"
+        "    :param start: Starting count.\n"
         '    """\n\n'
         "    def __init__(self, start: int = 0) -> None:\n"
         "        self.value = start\n\n"
         "    def increment(self, amount: int = 1) -> int:\n"
         '        """Increment the counter.\n\n'
-        "        Args:\n"
-        "            amount: Increment amount.\n\n"
-        "        Returns:\n"
-        "            Updated count.\n"
+        "        :param amount: Increment amount.\n"
+        "        :returns: Updated count.\n"
         '        """\n'
         "        self.value += amount\n"
         "        return self.value\n\n"
@@ -73,10 +66,8 @@ def test_scaffold_package_generates_executable_facade(
         '"""Analysis helpers."""\n\n'
         "def refine(level: int) -> int:\n"
         '    """Refine a deterministic level.\n\n'
-        "    Args:\n"
-        "        level: Refinement level.\n\n"
-        "    Returns:\n"
-        "        Refined level.\n"
+        "    :param level: Refinement level.\n"
+        "    :returns: Refined level.\n"
         '    """\n'
         "    return level + 1\n",
         encoding="utf-8",
@@ -153,10 +144,8 @@ def test_scaffold_package_handles_docstring_escapes_enum_defaults_and_filters(
         "    FINE = 'fine'\n\n"
         "def solve(mode: Mode = Mode.FINE) -> str:\n"
         '    """Solve a case with a Windows-style path like C:\\\\temp\\\\deck.inp.\n\n'
-        "    Args:\n"
-        "        mode: Solver mode.\n\n"
-        "    Returns:\n"
-        "        Selected mode.\n"
+        "    :param mode: Solver mode.\n"
+        "    :returns: Selected mode.\n"
         '    """\n'
         "    return mode.value\n",
         encoding="utf-8",
@@ -385,10 +374,8 @@ def test_cli_scaffold_package_and_openapi_emit_reports(
     (package_dir / "__init__.py").write_text(
         "def solve(case_name: str) -> str:\n"
         '    """Solve a tiny case.\n\n'
-        "    Args:\n"
-        "        case_name: Case name.\n\n"
-        "    Returns:\n"
-        "        Case name.\n"
+        "    :param case_name: Case name.\n"
+        "    :returns: Case name.\n"
         '    """\n'
         "    return case_name\n",
         encoding="utf-8",

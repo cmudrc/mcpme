@@ -31,7 +31,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Union, get_args, get_origin
 
-from .docstrings import parse_google_docstring
+from .docstrings import parse_docstring
 
 _DEFAULT_MISSING = object()
 
@@ -496,7 +496,7 @@ def _function_spec_for(
     package_name: str,
 ) -> _FunctionSpec:
     """Build one generated function wrapper specification."""
-    docstring = parse_google_docstring(inspect.getdoc(obj))
+    docstring = parse_docstring(inspect.getdoc(obj))
     return _FunctionSpec(
         name=_function_wrapper_name(context_module_name, export_name, package_name),
         module_name=getattr(obj, "__module__", context_module_name),
@@ -524,11 +524,11 @@ def _class_spec_for(
     create_name = f"{prefix}create_{class_snake}"
     close_name = f"{prefix}close_{class_snake}"
     init_signature = inspect.signature(cls)
-    init_docstring = parse_google_docstring(inspect.getdoc(cls.__init__))
+    init_docstring = parse_docstring(inspect.getdoc(cls.__init__))
     method_specs: list[_FunctionSpec] = []
     for method_name, raw_member in _iter_public_instance_methods(cls, namespace_root):
         method_signature = inspect.signature(raw_member)
-        method_docstring = parse_google_docstring(inspect.getdoc(raw_member))
+        method_docstring = parse_docstring(inspect.getdoc(raw_member))
         stripped_signature = _drop_first_parameter(method_signature)
         method_specs.append(
             _FunctionSpec(
@@ -542,7 +542,7 @@ def _class_spec_for(
                 parameters=tuple(stripped_signature.parameters.values()),
             )
         )
-    class_docstring = parse_google_docstring(inspect.getdoc(cls))
+    class_docstring = parse_docstring(inspect.getdoc(cls))
     return _ClassSpec(
         create_name=create_name,
         close_name=close_name,
@@ -1168,6 +1168,11 @@ def _docstring_lines(text: str, *, indent: str) -> list[str]:
     return [f"{indent}{json.dumps(text)}"]
 
 
+def _param_field(name: str, description: str) -> str:
+    """Render one Sphinx-style parameter field line."""
+    return f":param {name}: {description}"
+
+
 def _function_docstring(spec: _FunctionSpec, *, payload_style: bool) -> str:
     """Build the generated docstring for one function wrapper."""
     lines = [
@@ -1175,14 +1180,18 @@ def _function_docstring(spec: _FunctionSpec, *, payload_style: bool) -> str:
         "",
         f"Generated wrapper for ``{spec.source}``.",
         f"Original signature: ``{spec.signature_text}``.",
-        "",
-        "Args:",
     ]
     if payload_style:
         lines.extend(
             [
-                "    args: Optional positional arguments forwarded to the original callable.",
-                "    kwargs: Optional keyword arguments forwarded to the original callable.",
+                _param_field(
+                    "args",
+                    "Optional positional arguments forwarded to the original callable.",
+                ),
+                _param_field(
+                    "kwargs",
+                    "Optional keyword arguments forwarded to the original callable.",
+                ),
             ]
         )
     else:
@@ -1191,12 +1200,11 @@ def _function_docstring(spec: _FunctionSpec, *, payload_style: bool) -> str:
                 parameter.name,
                 f"Forwarded to ``{spec.source}``.",
             )
-            lines.append(f"    {parameter.name}: {description}")
+            lines.append(_param_field(parameter.name, description))
     lines.extend(
         [
             "",
-            "Returns:",
-            f"    Original return value from ``{spec.source}``.",
+            f":returns: Original return value from ``{spec.source}``.",
         ]
     )
     return "\n".join(lines)
@@ -1209,14 +1217,12 @@ def _class_create_docstring(spec: _ClassSpec, *, payload_style: bool) -> str:
         "",
         f"Generated session creator for ``{spec.source}``.",
         f"Original constructor signature: ``{spec.constructor_signature_text}``.",
-        "",
-        "Args:",
     ]
     if payload_style:
         lines.extend(
             [
-                "    args: Optional positional constructor arguments.",
-                "    kwargs: Optional keyword constructor arguments.",
+                _param_field("args", "Optional positional constructor arguments."),
+                _param_field("kwargs", "Optional keyword constructor arguments."),
             ]
         )
     else:
@@ -1225,12 +1231,11 @@ def _class_create_docstring(spec: _ClassSpec, *, payload_style: bool) -> str:
                 parameter.name,
                 f"Forwarded to ``{spec.source}``.",
             )
-            lines.append(f"    {parameter.name}: {description}")
+            lines.append(_param_field(parameter.name, description))
     lines.extend(
         [
             "",
-            "Returns:",
-            "    Session metadata including the generated ``session_id``.",
+            ":returns: Session metadata including the generated ``session_id``.",
         ]
     )
     return "\n".join(lines)
@@ -1248,15 +1253,16 @@ def _class_method_docstring(
         "",
         f"Generated session method wrapper for ``{method_spec.source}``.",
         f"Original signature: ``{method_spec.signature_text}``.",
-        "",
-        "Args:",
-        "    session_id: Session identifier returned by the class session creator.",
+        _param_field(
+            "session_id",
+            "Session identifier returned by the class session creator.",
+        ),
     ]
     if payload_style:
         lines.extend(
             [
-                "    args: Optional positional method arguments.",
-                "    kwargs: Optional keyword method arguments.",
+                _param_field("args", "Optional positional method arguments."),
+                _param_field("kwargs", "Optional keyword method arguments."),
             ]
         )
     else:
@@ -1265,12 +1271,11 @@ def _class_method_docstring(
                 parameter.name,
                 f"Forwarded to ``{method_spec.source}``.",
             )
-            lines.append(f"    {parameter.name}: {description}")
+            lines.append(_param_field(parameter.name, description))
     lines.extend(
         [
             "",
-            "Returns:",
-            f"    Original return value from ``{method_spec.source}``.",
+            f":returns: Original return value from ``{method_spec.source}``.",
         ]
     )
     return "\n".join(lines)
@@ -1282,11 +1287,12 @@ def _class_close_docstring(spec: _ClassSpec) -> str:
         [
             f"Close a managed session for ``{spec.source}``.",
             "",
-            "Args:",
-            "    session_id: Session identifier returned by the class session creator.",
+            _param_field(
+                "session_id",
+                "Session identifier returned by the class session creator.",
+            ),
             "",
-            "Returns:",
-            "    Session-close metadata.",
+            ":returns: Session-close metadata.",
         ]
     )
 
@@ -1346,17 +1352,18 @@ def _render_command_facade(
                             "",
                             f"Generated wrapper for ``{' '.join(command)}``.{help_section}",
                             "",
-                            "Args:",
-                            (
-                                "    argv: Additional command-line arguments appended after "
-                                "the base command."
+                            _param_field(
+                                "argv",
+                                (
+                                    "Additional command-line arguments appended after the base "
+                                    "command."
+                                ),
                             ),
-                            "    stdin_text: Optional standard input text.",
-                            "    cwd: Optional working directory.",
-                            "    env: Optional environment variable overrides.",
+                            _param_field("stdin_text", "Optional standard input text."),
+                            _param_field("cwd", "Optional working directory."),
+                            _param_field("env", "Optional environment variable overrides."),
                             "",
-                            "Returns:",
-                            "    Structured subprocess execution details.",
+                            ":returns: Structured subprocess execution details.",
                         ]
                     ),
                     indent="    ",
@@ -1509,21 +1516,23 @@ def _named_command_docstring(
         "Run the scaffolded CLI command.",
         "",
         f"Generated wrapper for ``{' '.join(command)}``.{help_section}",
-        "",
-        "Args:",
     ]
     for parameter in parameters:
         description = parameter.description or "Forwarded to the underlying CLI."
-        lines.append(f"    {parameter.name}: {description} Mapped from ``{parameter.syntax}``.")
+        lines.append(
+            _param_field(
+                parameter.name,
+                f"{description} Mapped from ``{parameter.syntax}``.",
+            )
+        )
     lines.extend(
         [
-            "    extra_argv: Extra arguments appended after the named interface.",
-            "    stdin_text: Optional standard input text.",
-            "    cwd: Optional working directory.",
-            "    env: Optional environment variable overrides.",
+            _param_field("extra_argv", "Extra arguments appended after the named interface."),
+            _param_field("stdin_text", "Optional standard input text."),
+            _param_field("cwd", "Optional working directory."),
+            _param_field("env", "Optional environment variable overrides."),
             "",
-            "Returns:",
-            "    Structured subprocess execution details.",
+            ":returns: Structured subprocess execution details.",
         ]
     )
     return "\n".join(lines)

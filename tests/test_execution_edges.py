@@ -16,11 +16,8 @@ from mcpme.manifest import ArtifactPolicy, Manifest, SourceReference, ToolManife
 async def async_tool(job_name: str) -> str:
     """Run asynchronously.
 
-    Args:
-        job_name: Job label.
-
-    Returns:
-        Upper-cased job label.
+    :param job_name: Job label.
+    :returns: Upper-cased job label.
     """
 
     return job_name.upper()
@@ -241,10 +238,8 @@ def test_runtime_stdio_and_result_extractors_cover_edge_paths(tmp_path: Path) ->
     source.write_text(
         """def ping(message: str) -> str:\n"""
         '''    """Ping text.\n\n'''
-        """    Args:\n"""
-        """        message: Input text.\n\n"""
-        """    Returns:\n"""
-        """        Same text.\n"""
+        """    :param message: Input text.\n"""
+        """    :returns: Same text.\n"""
         '''    """\n'''
         """    return message\n""",
         encoding="utf-8",

@@ -55,25 +55,20 @@ def _write_package(package_root: Path) -> None:
         '"""Core package tools."""\n\n'
         "def solve(mesh_size: int = 2) -> int:\n"
         '    """Solve a deterministic case.\n\n'
-        "    Args:\n"
-        "        mesh_size: Mesh size.\n\n"
-        "    Returns:\n"
-        "        Scaled score.\n"
+        "    :param mesh_size: Mesh size.\n"
+        "    :returns: Scaled score.\n"
         '    """\n'
         "    return mesh_size * 3\n\n\n"
         "class CounterSession:\n"
         '    """Maintain a tiny mutable counter.\n\n'
-        "    Args:\n"
-        "        start: Starting count.\n"
+        "    :param start: Starting count.\n"
         '    """\n\n'
         "    def __init__(self, start: int = 0) -> None:\n"
         "        self.value = start\n\n"
         "    def increment(self, amount: int = 1) -> int:\n"
         '        """Increment the counter.\n\n'
-        "        Args:\n"
-        "            amount: Increment amount.\n\n"
-        "        Returns:\n"
-        "            Updated count.\n"
+        "        :param amount: Increment amount.\n"
+        "        :returns: Updated count.\n"
         '        """\n'
         "        self.value += amount\n"
         "        return self.value\n\n"

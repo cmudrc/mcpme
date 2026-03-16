@@ -22,10 +22,8 @@ def test_execute_python_tool_captures_artifacts(tmp_path: Path) -> None:
         "    iterations: int\n\n"
         "def run_solver(config: SolverInput) -> dict[str, int | str]:\n"
         '    """Run the deterministic solver.\n\n'
-        "    Args:\n"
-        "        config: Structured solver configuration.\n\n"
-        "    Returns:\n"
-        "        A run summary.\n"
+        "    :param config: Structured solver configuration.\n"
+        "    :returns: A run summary.\n"
         '    """\n'
         '    return {"job_name": config.job_name, "iterations": config.iterations}\n',
         encoding="utf-8",

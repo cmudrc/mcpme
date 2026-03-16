@@ -16,10 +16,8 @@ def test_runtime_lists_and_calls_tools(tmp_path: Path) -> None:
     source.write_text(
         """def shout(message: str) -> str:\n"""
         '''    """Upper-case a message.\n\n'''
-        """    Args:\n"""
-        """        message: Input text.\n\n"""
-        """    Returns:\n"""
-        """        Upper-cased text.\n"""
+        """    :param message: Input text.\n"""
+        """    :returns: Upper-cased text.\n"""
         '''    """\n'''
         """    return message.upper()\n""",
         encoding="utf-8",

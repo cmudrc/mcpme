@@ -38,11 +38,8 @@ from mcpme import Manifest, McpServer, build_manifest, serve_stdio
 def inspect_case(case_name: str) -> dict[str, str]:
     """Return a deterministic engineering case summary.
 
-    Args:
-        case_name: Case identifier to inspect.
-
-    Returns:
-        A small status payload.
+    :param case_name: Case identifier to inspect.
+    :returns: A small status payload.
 
     MCP:
         title: Inspect Case

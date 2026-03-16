@@ -572,22 +572,19 @@ def _operation_docstring_lines(operation: _OpenApiOperation) -> list[str]:
         f"    {operation.summary}",
         "",
         f"    Generated wrapper for ``{operation.method.upper()} {operation.path}``.",
-        "",
-        "    Args:",
     ]
     for parameter in operation.parameters:
-        lines.append(f"        {parameter.name}: {parameter.description}")
+        lines.append(f"    :param {parameter.name}: {parameter.description}")
     if operation.body_required or operation.body_content_type is not None:
         description = operation.body_description or "Request body payload."
-        lines.append(f"        body: {description}")
+        lines.append(f"    :param body: {description}")
     lines.extend(
         [
-            "        base_url: Optional override for the OpenAPI server URL.",
-            "        headers: Optional additional request headers.",
-            "        timeout_seconds: Optional request timeout in seconds.",
+            "    :param base_url: Optional override for the OpenAPI server URL.",
+            "    :param headers: Optional additional request headers.",
+            "    :param timeout_seconds: Optional request timeout in seconds.",
             "",
-            "    Returns:",
-            "        Structured HTTP response details.",
+            "    :returns: Structured HTTP response details.",
             '    """',
         ]
     )

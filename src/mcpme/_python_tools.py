@@ -20,7 +20,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from .docstrings import parse_google_docstring
+from .docstrings import parse_docstring
 from .manifest import SourceReference, ToolAnnotations, ToolManifest
 from .schema import SchemaGenerationError, to_json_compatible
 
@@ -67,10 +67,10 @@ _DATACLASS_DECORATORS = {"dataclass", "dataclasses.dataclass"}
 class ImportedSymbol:
     """Describe one statically imported symbol available in a source module.
 
-    Args:
-        module_name: Fully qualified imported module name, when known.
-        object_name: Imported symbol name within that module.
-        path: Resolved Python source path for the imported module, when available.
+    :param module_name: Fully qualified imported module name, when known.
+    :param object_name: Imported symbol name within that module.
+    :param path: Resolved Python source path for the imported module, when
+        available.
     """
 
     module_name: str | None
@@ -82,15 +82,14 @@ class ImportedSymbol:
 class SourceModule:
     """Represent one parsed Python source module.
 
-    Args:
-        path: Filesystem path containing the module source.
-        module_name: Importable module name, when known.
-        tree: Parsed module AST.
-        public_names: Deterministic export names for the module.
-        functions: Top-level function definitions keyed by local name.
-        classes: Top-level class definitions keyed by local name.
-        imported_symbols: Imported symbols keyed by the local alias.
-        module_aliases: Imported module aliases keyed by the local alias.
+    :param path: Filesystem path containing the module source.
+    :param module_name: Importable module name, when known.
+    :param tree: Parsed module AST.
+    :param public_names: Deterministic export names for the module.
+    :param functions: Top-level function definitions keyed by local name.
+    :param classes: Top-level class definitions keyed by local name.
+    :param imported_symbols: Imported symbols keyed by the local alias.
+    :param module_aliases: Imported module aliases keyed by the local alias.
     """
 
     path: Path
@@ -107,11 +106,11 @@ class SourceModule:
 class DiscoveredPythonTool:
     """Describe one statically discovered Python tool candidate.
 
-    Args:
-        tool: Generated manifest entry.
-        binding_module_name: Importable module used for lazy runtime resolution.
-        binding_file_path: Source file used for lazy runtime resolution.
-        binding_qualname: Fully qualified object name within the module.
+    :param tool: Generated manifest entry.
+    :param binding_module_name: Importable module used for lazy runtime
+        resolution.
+    :param binding_file_path: Source file used for lazy runtime resolution.
+    :param binding_qualname: Fully qualified object name within the module.
     """
 
     tool: ToolManifest
@@ -124,10 +123,9 @@ class DiscoveredPythonTool:
 class ResolvedFunction:
     """Represent one exported function resolved from a parsed source tree.
 
-    Args:
-        export_name: Public name exposed by the target module.
-        module: Parsed source module that defines the callable.
-        function_node: AST node for the underlying function definition.
+    :param export_name: Public name exposed by the target module.
+    :param module: Parsed source module that defines the callable.
+    :param function_node: AST node for the underlying function definition.
     """
 
     export_name: str
@@ -281,7 +279,7 @@ class StaticPythonResolver:
     def _build_tool_manifest(self, resolved: ResolvedFunction) -> DiscoveredPythonTool:
         """Translate one resolved source function into a manifest entry."""
         node = resolved.function_node
-        docstring = parse_google_docstring(ast.get_docstring(node))
+        docstring = parse_docstring(ast.get_docstring(node))
         input_schema = self._build_input_schema(resolved.module, node, docstring)
         output_schema = (
             self._schema_from_annotation_node(resolved.module, node.returns)
