@@ -11,8 +11,8 @@ The `dev` extra installs the local contributor toolchain:
 - `pytest`
 - `pytest-cov`
 - `ruff`
+- `pydata-sphinx-theme`
 - `sphinx`
-- `sphinx-rtd-theme`
 - `twine`
 
 Install it with:

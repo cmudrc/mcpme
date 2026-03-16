@@ -1,16 +1,22 @@
-.wy-side-nav-search > a.icon.icon-home {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+:root {
+  --pst-color-primary: #005f73;
+  --pst-color-secondary: #0a9396;
+  --pst-color-accent: #ee9b00;
+}
+
+.navbar-brand {
+  gap: 0.75rem;
+}
+
+.navbar-brand img {
+  max-height: 2.5rem;
+  width: auto;
+}
+
+.bd-header .navbar-header-items__center {
+  font-weight: 600;
+}
+
+.bd-sidebar-primary .sidebar-primary-items__start {
   gap: 0.5rem;
-  text-align: center;
-}
-
-.wy-side-nav-search > a.icon.icon-home::before {
-  display: none;
-}
-
-.wy-side-nav-search > a.icon.icon-home img.logo {
-  order: -1;
-  margin: 0;
 }

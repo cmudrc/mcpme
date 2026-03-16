@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 from pathlib import Path
@@ -37,21 +36,30 @@ nitpicky = True
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-if os.environ.get("READTHEDOCS") == "True":
-    html_theme = "sphinx_rtd_theme"
-else:
-    try:
-        import sphinx_rtd_theme  # noqa: F401
-
-        html_theme = "sphinx_rtd_theme"
-    except ImportError:
-        html_theme = "alabaster"
+# The docs site now has one supported presentation layer. Keeping the theme
+# deterministic avoids branchy config and makes local builds match CI.
+html_theme = "pydata_sphinx_theme"
 
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 html_logo = "drc.png"
 html_title = project
-html_theme_options = {"logo_only": False} if html_theme == "sphinx_rtd_theme" else {}
+html_theme_options = {
+    "logo": {
+        "text": project,
+    },
+    "show_nav_level": 2,
+    "navigation_depth": 2,
+    "header_links_before_dropdown": 8,
+    "secondary_sidebar_items": ["page-toc"],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/cmudrc/mcpme",
+            "icon": "fa-brands fa-github",
+        }
+    ],
+}
 
 _VIEWPORT_META_RE = re.compile(r'<meta name="viewport"[^>]*>', re.IGNORECASE)
 
