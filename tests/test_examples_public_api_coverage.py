@@ -35,7 +35,9 @@ def _python_examples() -> tuple[Path, ...]:
     return tuple(
         path
         for path in sorted(EXAMPLES_ROOT.rglob("*.py"))
-        if "__pycache__" not in path.parts and not path.name.startswith("_")
+        if "__pycache__" not in path.parts
+        and "artifacts" not in path.parts
+        and not path.name.startswith("_")
     )
 
 

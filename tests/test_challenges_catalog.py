@@ -14,7 +14,9 @@ def test_load_challenge_catalog_rejects_duplicate_ids(tmp_path: Path) -> None:
     catalog_dir = tmp_path / "catalog"
     catalog_dir.mkdir()
     for name in ("alpha", "beta"):
-        (catalog_dir / f"{name}.toml").write_text(
+        case_dir = catalog_dir / name
+        case_dir.mkdir()
+        (case_dir / "challenge.toml").write_text(
             "\n".join(
                 [
                     'id = "duplicate"',
@@ -22,6 +24,11 @@ def test_load_challenge_catalog_rejects_duplicate_ids(tmp_path: Path) -> None:
                     'tier = "gha_subset"',
                     'style = "package"',
                     'slice = "systems"',
+                    "",
+                    "[example]",
+                    'summary = "Summary"',
+                    'motivation = "Motivation"',
+                    'proves = ["Proof"]',
                     "",
                     "[target]",
                     'kind = "package"',
@@ -48,7 +55,9 @@ def test_load_challenge_catalog_rejects_invalid_metadata(tmp_path: Path) -> None
     """Invalid tiers and scaffold-target mismatches should be explicit."""
     catalog_dir = tmp_path / "catalog"
     catalog_dir.mkdir()
-    (catalog_dir / "bad.toml").write_text(
+    case_dir = catalog_dir / "bad"
+    case_dir.mkdir()
+    (case_dir / "challenge.toml").write_text(
         "\n".join(
             [
                 'id = "bad"',
@@ -56,6 +65,11 @@ def test_load_challenge_catalog_rejects_invalid_metadata(tmp_path: Path) -> None
                 'tier = "not_real"',
                 'style = "package"',
                 'slice = "systems"',
+                "",
+                "[example]",
+                'summary = "Summary"',
+                'motivation = "Motivation"',
+                'proves = ["Proof"]',
                 "",
                 "[target]",
                 'kind = "package"',

@@ -104,6 +104,23 @@ class ChallengeSmokeStep:
 
 
 @dataclass(frozen=True, slots=True)
+class ChallengeExample:
+    """Capture the narrative that makes one challenge readable as an example.
+
+    Args:
+        summary: Short plain-language overview of what the case demonstrates.
+        motivation: Why this case matters for real engineering-tool wrapping.
+        proves: Concrete capabilities the challenge is expected to prove.
+        limitations: Optional caveats or known boundaries for the case.
+    """
+
+    summary: str
+    motivation: str
+    proves: tuple[str, ...]
+    limitations: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ChallengeSpec:
     """Represent one catalogued live challenge.
 
@@ -118,6 +135,9 @@ class ChallengeSpec:
         scaffold_kind: Scaffold entry point used for the target.
         scaffold_options: Deterministic scaffold options from the catalog.
         smoke_steps: Smoke-step sequence executed after ingestion succeeds.
+        example: Narrative metadata rendered into challenge-local README files.
+        catalog_path: Checked-in ``challenge.toml`` path for the case.
+        case_dir: Case directory containing the catalog, README, and fixtures.
         notes: Optional challenge note.
     """
 
@@ -131,6 +151,15 @@ class ChallengeSpec:
     scaffold_kind: str
     scaffold_options: dict[str, Any]
     smoke_steps: tuple[ChallengeSmokeStep, ...]
+    example: ChallengeExample = field(
+        default_factory=lambda: ChallengeExample(
+            summary="Ad hoc challenge.",
+            motivation="Exercise one challenge scenario.",
+            proves=("Challenge harness execution.",),
+        )
+    )
+    catalog_path: Path = Path("challenge.toml")
+    case_dir: Path = Path(".")
     notes: str | None = None
 
 
@@ -263,10 +292,10 @@ class ChallengeAggregate:
 
 
 def load_challenge_catalog(catalog_dir: Path) -> tuple[ChallengeSpec, ...]:
-    """Load and validate one challenge catalog directory.
+    """Load and validate one challenge catalog root.
 
     Args:
-        catalog_dir: Directory containing ``*.toml`` challenge specifications.
+        catalog_dir: Directory containing challenge case directories or ``*.toml`` files.
 
     Returns:
         Parsed challenge specifications sorted by ``id``.
@@ -276,7 +305,7 @@ def load_challenge_catalog(catalog_dir: Path) -> tuple[ChallengeSpec, ...]:
     """
     specs: list[ChallengeSpec] = []
     seen_ids: set[str] = set()
-    for path in sorted(catalog_dir.glob("*.toml")):
+    for path in _discover_catalog_paths(catalog_dir):
         spec = _load_challenge_spec(path)
         if spec.id in seen_ids:
             raise ChallengeCatalogError(f"Duplicate challenge id {spec.id!r} in {path}.")
@@ -285,12 +314,29 @@ def load_challenge_catalog(catalog_dir: Path) -> tuple[ChallengeSpec, ...]:
     return tuple(sorted(specs, key=lambda spec: spec.id))
 
 
+def _discover_catalog_paths(catalog_dir: Path) -> tuple[Path, ...]:
+    """Discover checked-in challenge specification files from one root.
+
+    The challenge track now prefers one directory per case so each raw-upstream
+    scenario can carry its own fixtures and README. This helper still accepts
+    flat ``*.toml`` directories to keep tests and local ad hoc cases simple.
+    """
+    if not catalog_dir.exists():
+        raise ChallengeCatalogError(f"Challenge catalog directory does not exist: {catalog_dir}")
+    case_paths = sorted(path for path in catalog_dir.rglob("challenge.toml") if path.is_file())
+    if case_paths:
+        return tuple(case_paths)
+    flat_paths = sorted(path for path in catalog_dir.glob("*.toml") if path.is_file())
+    return tuple(flat_paths)
+
+
 def run_challenge_suite(
     specs: tuple[ChallengeSpec, ...],
     *,
     repo_root: Path,
     artifact_root: Path,
     selected_tier: str,
+    selected_ids: tuple[str, ...] = (),
 ) -> ChallengeAggregate:
     """Run one live challenge suite and return aggregate results.
 
@@ -299,13 +345,26 @@ def run_challenge_suite(
         repo_root: Repository root used for fixture and output paths.
         artifact_root: Directory receiving challenge artifacts.
         selected_tier: Requested tier selector. ``"all"`` runs both tiers.
+        selected_ids: Optional explicit challenge ids to run.
 
     Returns:
         Aggregate challenge results.
     """
+    requested_ids = frozenset(selected_ids)
+    available_ids = frozenset(spec.id for spec in specs)
+    missing_ids = sorted(requested_ids - available_ids)
+    if missing_ids:
+        raise ChallengeCatalogError(f"Unknown challenge id(s): {missing_ids!r}.")
     filtered_specs = tuple(
-        spec for spec in specs if selected_tier == "all" or spec.tier == selected_tier
+        spec
+        for spec in specs
+        if (selected_tier == "all" or spec.tier == selected_tier)
+        and (not requested_ids or spec.id in requested_ids)
     )
+    if requested_ids and not filtered_specs:
+        raise ChallengeCatalogError(
+            "Requested challenge ids do not match the selected tier filter."
+        )
     results = tuple(
         _run_single_challenge(
             spec,
@@ -350,7 +409,7 @@ def write_junit_xml(aggregate: ChallengeAggregate, output_path: Path) -> None:
             {
                 "classname": f"challenge.{result.tier}",
                 "name": result.id,
-                "file": f"challenges/catalog/{result.id}.toml",
+                "file": f"challenges/cases/{result.id}/challenge.toml",
             },
         )
         system_out = ET.SubElement(testcase, "system-out")
@@ -443,6 +502,7 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
     if not isinstance(raw_steps, list) or not raw_steps:
         raise ChallengeCatalogError(f"{path}: smoke.steps must be a non-empty array of tables.")
     smoke_steps = tuple(_parse_smoke_step(step_data, path) for step_data in raw_steps)
+    example = _parse_example(_require_table(data, "example", path), path)
     notes = data.get("notes")
     if notes is not None and not isinstance(notes, str):
         raise ChallengeCatalogError(f"{path}: notes must be a string when provided.")
@@ -457,7 +517,26 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
         scaffold_kind=scaffold_kind,
         scaffold_options=scaffold_options,
         smoke_steps=smoke_steps,
+        example=example,
+        catalog_path=path,
+        case_dir=path.parent,
         notes=notes,
+    )
+
+
+def _parse_example(example_data: dict[str, Any], path: Path) -> ChallengeExample:
+    """Parse one required example table from a challenge catalog file."""
+    summary = _require_string(example_data, "summary", path)
+    motivation = _require_string(example_data, "motivation", path)
+    proves = _parse_string_tuple(example_data.get("proves", ()), path)
+    if not proves:
+        raise ChallengeCatalogError(f"{path}: example.proves must contain at least one item.")
+    limitations = _parse_string_tuple(example_data.get("limitations", ()), path)
+    return ChallengeExample(
+        summary=summary,
+        motivation=motivation,
+        proves=proves,
+        limitations=limitations,
     )
 
 
@@ -506,7 +585,9 @@ def _run_single_challenge(
     """Execute one challenge and capture it as a result object."""
     challenge_dir = suite_artifact_root / spec.id
     challenge_dir.mkdir(parents=True, exist_ok=True)
-    fixture_dir = repo_root / "challenges" / "fixtures" / spec.id
+    # Each case owns its own fixtures so the challenge directory reads like a
+    # compact example rather than a detached catalog entry plus shared assets.
+    fixture_dir = spec.case_dir / "fixtures"
     context = _base_context(
         repo_root=repo_root,
         challenge_dir=challenge_dir,

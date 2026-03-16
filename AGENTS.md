@@ -32,6 +32,9 @@ merging.
   - `make run-examples`
   - `python scripts/generate_example_docs.py`
 - If the live challenge track changed:
+  - `python scripts/generate_challenge_docs.py`
+  - `make challenge-docs-check`
+  - `make challenge CASE=openmdao_file_utils`
   - `make challenges-subset`
   - `make challenges-metrics`
 - If you are working on broader raw-upstream ingestion:
@@ -63,6 +66,9 @@ merging.
   refreshed whenever examples change.
 - Keep `challenges/` out of the public API and example-doc contract unless
   there is an explicit product decision to promote something out of it.
+- Keep each checked-in challenge self-contained: the case directory should be
+  readable on its own, with its canonical `challenge.toml`, local fixtures when
+  needed, and an up-to-date generated `README.md`.
 - Avoid broad dependency growth in the base install.
 - Keep stage 1 fully non-AI. Do not add LLM-based discovery or generation to
   the baseline path.

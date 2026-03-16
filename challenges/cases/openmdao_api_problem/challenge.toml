@@ -1,0 +1,48 @@
+# Self-contained case: wrap a stateful object from the main OpenMDAO API surface.
+# This is a higher-value object-lifecycle example than a pure utility function.
+id = "openmdao_api_problem"
+title = "OpenMDAO Problem root oneshot"
+tier = "local_full"
+style = "package"
+slice = "systems"
+
+[example]
+summary = "Wrap `openmdao.api.Problem` from the package root and drive a basic setup lifecycle."
+motivation = "Large engineering platforms usually revolve around stateful top-level objects, so this case checks whether one-shot ingestion can reach that shape without a custom adapter."
+proves = [
+  "One-shot package-root ingestion can discover a high-value stateful class.",
+  "Session wrappers can create, operate on, and close an OpenMDAO `Problem` object.",
+  "The deterministic path is viable beyond utility functions and small helpers.",
+]
+limitations = [
+  "This case focuses on lifecycle mechanics, not a full OpenMDAO model build or solve.",
+]
+
+[target]
+kind = "package"
+value = "openmdao.api"
+
+[probe]
+imports = ["openmdao.api"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^Problem$"]
+max_generated_tools = 40
+
+[smoke]
+[[smoke.steps]]
+label = "Create a Problem session"
+tool = "create_problem"
+arguments = { args = [], kwargs = {} }
+capture_json = { problem_session_id = "session_id" }
+
+[[smoke.steps]]
+label = "Run a basic Problem setup"
+tool = "problem_setup"
+arguments = { session_id = "{problem_session_id}", check = false }
+
+[[smoke.steps]]
+label = "Close the Problem session"
+tool = "close_problem"
+arguments = { session_id = "{problem_session_id}" }

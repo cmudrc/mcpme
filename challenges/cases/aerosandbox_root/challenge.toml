@@ -1,0 +1,51 @@
+# Self-contained case: pull a small physics object out of a larger aerospace package.
+# This case shows class/session wrapping on a real upstream engineering library.
+id = "aerosandbox_root"
+title = "AeroSandbox root oneshot"
+tier = "local_full"
+style = "package"
+slice = "mission"
+
+[example]
+summary = "Wrap AeroSandbox's `Atmosphere` class in one shot and call a real instance method."
+motivation = "Many engineering libraries are object-oriented, so a realistic wrapper system has to create, use, and close sessions without hand-written package adapters."
+proves = [
+  "One-shot package ingestion can discover a useful class from a broad upstream namespace.",
+  "Session-style wrapping works for a real aerospace object lifecycle.",
+  "The generated facade can execute a meaningful physics method deterministically.",
+]
+limitations = [
+  "This case exercises a lightweight object interaction, not a full multi-component workflow.",
+]
+
+[target]
+kind = "package"
+value = "aerosandbox"
+
+[probe]
+imports = ["aerosandbox"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^Atmosphere$"]
+max_generated_tools = 16
+
+[smoke]
+[[smoke.steps]]
+label = "Create an Atmosphere session"
+tool = "create_atmosphere"
+arguments = { altitude = 1000.0 }
+capture_json = { atmosphere_session_id = "session_id" }
+
+[[smoke.steps]]
+label = "Compute density from the live session"
+tool = "atmosphere_density"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[smoke.steps.expect]
+text_contains = ["1."]
+
+[[smoke.steps]]
+label = "Close the Atmosphere session"
+tool = "close_atmosphere"
+arguments = { session_id = "{atmosphere_session_id}" }

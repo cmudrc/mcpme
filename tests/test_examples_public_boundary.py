@@ -22,7 +22,7 @@ def _collect_violations(*, pattern: re.Pattern[str], root: Path) -> list[str]:
     """Collect text matches for one forbidden pattern under a root."""
     violations: list[str] = []
     for path in sorted(root.rglob("*.py")):
-        if "__pycache__" in path.parts:
+        if "__pycache__" in path.parts or "artifacts" in path.parts:
             continue
         text = path.read_text(encoding="utf-8")
         for line_number, line in enumerate(text.splitlines(), start=1):
@@ -35,7 +35,7 @@ def _iter_example_doc_lines() -> list[tuple[Path, list[str]]]:
     """Yield example paths and their module docstring lines."""
     docs: list[tuple[Path, list[str]]] = []
     for path in sorted(EXAMPLES_ROOT.rglob("*.py")):
-        if "__pycache__" in path.parts or path.name.startswith("_"):
+        if "__pycache__" in path.parts or "artifacts" in path.parts or path.name.startswith("_"):
             continue
         module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         docstring = ast.get_docstring(module, clean=False)

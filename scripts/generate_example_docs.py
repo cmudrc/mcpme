@@ -46,7 +46,9 @@ def _discover_examples(repo_root: Path) -> list[Path]:
     return [
         path
         for path in sorted(examples_root.rglob("*.py"))
-        if "__pycache__" not in path.parts and not path.name.startswith("_")
+        if "__pycache__" not in path.parts
+        and "artifacts" not in path.parts
+        and not path.name.startswith("_")
     ]
 
 

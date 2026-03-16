@@ -132,6 +132,45 @@ def test_run_challenge_suite_marks_unavailable_targets_as_skipped(tmp_path: Path
     assert "unavailable" in aggregate.results[0].message
 
 
+def test_run_challenge_suite_can_select_specific_ids(tmp_path: Path) -> None:
+    """The runner should allow one case to be exercised in isolation."""
+    alpha = ChallengeSpec(
+        id="alpha",
+        title="Alpha",
+        tier="gha_subset",
+        style="command",
+        slice="systems",
+        target=ChallengeTarget(kind="command", value=("missing_alpha",)),
+        probe=ChallengeProbe(commands=(("missing_alpha",),)),
+        scaffold_kind="command",
+        scaffold_options={},
+        smoke_steps=(ChallengeSmokeStep(tool="alpha"),),
+    )
+    beta = ChallengeSpec(
+        id="beta",
+        title="Beta",
+        tier="gha_subset",
+        style="command",
+        slice="systems",
+        target=ChallengeTarget(kind="command", value=("missing_beta",)),
+        probe=ChallengeProbe(commands=(("missing_beta",),)),
+        scaffold_kind="command",
+        scaffold_options={},
+        smoke_steps=(ChallengeSmokeStep(tool="beta"),),
+    )
+
+    aggregate = run_challenge_suite(
+        (alpha, beta),
+        repo_root=tmp_path,
+        artifact_root=tmp_path / "artifacts",
+        selected_tier="gha_subset",
+        selected_ids=("beta",),
+    )
+
+    assert aggregate.total == 1
+    assert aggregate.results[0].id == "beta"
+
+
 def test_run_challenge_suite_isolates_upstream_relative_outputs(
     tmp_path: Path,
     monkeypatch: object,

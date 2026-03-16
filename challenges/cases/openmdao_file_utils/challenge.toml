@@ -1,0 +1,36 @@
+# Self-contained case: start with a stable utility function from a large engineering package.
+# This is the cleanest "hello world" for one-shot package ingestion against OpenMDAO.
+id = "openmdao_file_utils"
+title = "OpenMDAO file_utils oneshot"
+tier = "gha_subset"
+style = "package"
+slice = "systems"
+
+[example]
+summary = "Wrap `openmdao.utils.file_utils.get_module_path` and resolve a real module path in this repo."
+motivation = "Utility modules are often the safest first foothold when wrapping a large engineering package, so this case acts like a minimal real-world starting example."
+proves = [
+  "Installed engineering utility modules can be scaffolded deterministically in one shot.",
+  "Simple path-like parameters survive the generated wrapper path cleanly.",
+  "The generated facade can execute a real upstream function without hand-written glue code.",
+]
+
+[target]
+kind = "package"
+value = "openmdao.utils.file_utils"
+
+[probe]
+imports = ["openmdao.utils.file_utils"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^get_module_path$"]
+
+[smoke]
+[[smoke.steps]]
+label = "Resolve the installed path for the local mcpme package"
+tool = "get_module_path"
+arguments = { fpath = "{repo_root}/src/mcpme/__init__.py" }
+
+[smoke.steps.expect]
+text_contains = ["mcpme"]

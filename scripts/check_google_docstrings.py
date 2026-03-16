@@ -14,6 +14,10 @@ SKIP_DIRS = {
     ".ruff_cache",
     ".venv",
     "__pycache__",
+    # Example and challenge scripts intentionally materialize runnable support
+    # files under artifact directories. They are useful outputs, but they are
+    # not part of the maintained checked-in source surface.
+    "artifacts",
 }
 
 

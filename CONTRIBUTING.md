@@ -26,6 +26,9 @@ make docs
 Optional but useful:
 
 ```bash
+python scripts/generate_challenge_docs.py
+make challenge-docs-check
+make challenge CASE=openmdao_file_utils
 make challenges-subset
 make challenges-full
 pre-commit install
@@ -39,6 +42,7 @@ pre-commit run --all-files
 - Update docs and examples when interfaces change.
 - Update `challenges/` fixtures, catalog entries, and reports when the live
   raw-upstream suite changes.
+- Regenerate checked-in challenge READMEs when challenge catalog files change.
 - Regenerate checked-in example docs when example docstrings change.
 - Keep the top-level `mcpme` public API small and deliberate.
 - Describe what changed and how you validated it.

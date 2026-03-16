@@ -1,0 +1,45 @@
+# Self-contained case: wrap an HPC-oriented executor object from a scheduler helper library.
+# This keeps the challenge close to real orchestration work without requiring a cluster.
+id = "submitit_root"
+title = "submitit root oneshot"
+tier = "local_full"
+style = "package"
+slice = "hpc"
+
+[example]
+summary = "Wrap `submitit.LocalExecutor`, create a session, and update its parameters."
+motivation = "Engineering workflows often end at job submission or orchestration, so the challenge suite needs at least one scheduler-oriented object case."
+proves = [
+  "One-shot package ingestion can wrap an HPC-adjacent executor class.",
+  "The generated session facade can call parameter-update methods with keyword arguments.",
+  "The deterministic wrapper path can reach beyond solvers into orchestration tooling.",
+]
+
+[target]
+kind = "package"
+value = "submitit"
+
+[probe]
+imports = ["submitit"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^LocalExecutor$"]
+max_generated_tools = 10
+
+[smoke]
+[[smoke.steps]]
+label = "Create a LocalExecutor session"
+tool = "create_local_executor"
+arguments = { folder = "{challenge_artifact_dir}/submitit" }
+capture_json = { local_executor_session_id = "session_id" }
+
+[[smoke.steps]]
+label = "Update executor parameters"
+tool = "local_executor_update_parameters"
+arguments = { session_id = "{local_executor_session_id}", args = [], kwargs = { timeout_min = 1 } }
+
+[[smoke.steps]]
+label = "Close the LocalExecutor session"
+tool = "close_local_executor"
+arguments = { session_id = "{local_executor_session_id}" }

@@ -23,8 +23,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--catalog-dir",
         type=Path,
-        default=Path("challenges/catalog"),
-        help="Directory containing challenge TOML files.",
+        default=Path("challenges/cases"),
+        help="Directory containing challenge case folders or challenge TOML files.",
     )
     parser.add_argument(
         "--artifact-root",
@@ -56,16 +56,26 @@ def main(argv: list[str] | None = None) -> int:
         default="gha_subset",
         help="Challenge tier selector.",
     )
+    parser.add_argument(
+        "--only",
+        action="append",
+        default=[],
+        help="Optional challenge id to run. Repeat for multiple ids.",
+    )
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[1]
     try:
+        # The runner treats the checked-in challenge tree as the source of
+        # truth, then writes all generated material under the artifact root so
+        # upstream side effects stay inspectable and out of version control.
         specs = load_challenge_catalog((repo_root / args.catalog_dir).resolve())
         aggregate = run_challenge_suite(
             specs,
             repo_root=repo_root,
             artifact_root=(repo_root / args.artifact_root).resolve(),
             selected_tier=args.tier,
+            selected_ids=tuple(args.only),
         )
         write_metrics_json(aggregate, (repo_root / args.metrics_json).resolve())
         write_junit_xml(aggregate, (repo_root / args.junit_xml).resolve())
