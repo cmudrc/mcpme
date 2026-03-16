@@ -31,6 +31,11 @@ merging.
 - If the example changed:
   - `make run-examples`
   - `python scripts/generate_example_docs.py`
+- If the live challenge track changed:
+  - `make challenges-subset`
+  - `make challenges-metrics`
+- If you are working on broader raw-upstream ingestion:
+  - `make challenges-full`
 - Pre-merge baseline:
   - `make ci`
 - Pre-publish baseline:
@@ -50,9 +55,14 @@ merging.
 ## Behavioral Guardrails
 
 - Keep tests deterministic and offline by default.
+- The live raw-upstream challenge suite is the explicit exception. It is
+  intentionally live, separate from the main gate, and should remain
+  non-gating.
 - Update tests, docs, and examples alongside behavior changes.
 - Keep example module docstrings authoritative. Generated example docs should be
   refreshed whenever examples change.
+- Keep `challenges/` out of the public API and example-doc contract unless
+  there is an explicit product decision to promote something out of it.
 - Avoid broad dependency growth in the base install.
 - Keep stage 1 fully non-AI. Do not add LLM-based discovery or generation to
   the baseline path.

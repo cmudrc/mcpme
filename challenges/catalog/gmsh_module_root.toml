@@ -1,0 +1,26 @@
+id = "gmsh_module_root"
+title = "Gmsh module root oneshot"
+tier = "local_full"
+style = "package"
+slice = "aerodynamics"
+
+[target]
+kind = "package"
+value = "gmsh"
+
+[probe]
+imports = ["gmsh"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^(initialize|finalize)$"]
+max_generated_tools = 4
+
+[smoke]
+[[smoke.steps]]
+tool = "initialize"
+arguments = {}
+
+[[smoke.steps]]
+tool = "finalize"
+arguments = {}

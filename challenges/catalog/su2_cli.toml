@@ -1,0 +1,22 @@
+id = "su2_cli"
+title = "SU2 CLI availability oneshot"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+
+[target]
+kind = "command"
+value = ["SU2_CFD"]
+
+[probe]
+commands = [["SU2_CFD"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_su2_cfd"
+help_probe_args = ["-h"]
+
+[smoke]
+[[smoke.steps]]
+tool = "run_su2_cfd"
+arguments = { extra_argv = ["-h"] }

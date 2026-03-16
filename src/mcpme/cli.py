@@ -47,6 +47,40 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=int,
         help="Optional cap on the number of imported modules to inspect.",
     )
+    scaffold_package_parser.add_argument(
+        "--max-generated-tools",
+        type=int,
+        help="Optional cap on the number of generated wrapper tools.",
+    )
+    scaffold_package_parser.add_argument(
+        "--module-include",
+        action="append",
+        default=[],
+        help="Regex for module names that should be included.",
+    )
+    scaffold_package_parser.add_argument(
+        "--module-exclude",
+        action="append",
+        default=[],
+        help="Regex for module names that should be excluded.",
+    )
+    scaffold_package_parser.add_argument(
+        "--symbol-include",
+        action="append",
+        default=[],
+        help="Regex for symbol names that should be included.",
+    )
+    scaffold_package_parser.add_argument(
+        "--symbol-exclude",
+        action="append",
+        default=[],
+        help="Regex for symbol names that should be excluded.",
+    )
+    scaffold_package_parser.add_argument(
+        "--allow-reexports",
+        action="store_true",
+        help="Keep symbols re-exported from outside the target namespace.",
+    )
 
     scaffold_command_parser = subparsers.add_parser(
         "scaffold-command",
@@ -62,6 +96,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=float,
         default=5.0,
         help="Timeout for capturing command help text.",
+    )
+    scaffold_command_parser.add_argument(
+        "--help-probe-arg",
+        action="append",
+        default=[],
+        help="Argument appended when probing command help. Repeat to provide multiple tokens.",
     )
     scaffold_command_parser.add_argument(
         "command_tokens",
@@ -87,6 +127,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output,
             include_submodules=args.include_submodules,
             max_modules=args.max_modules,
+            max_generated_tools=args.max_generated_tools,
+            module_include_patterns=tuple(args.module_include),
+            module_exclude_patterns=tuple(args.module_exclude),
+            symbol_include_patterns=tuple(args.symbol_include),
+            symbol_exclude_patterns=tuple(args.symbol_exclude),
+            allow_reexports=args.allow_reexports,
         )
         print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         return 0
@@ -96,6 +142,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output,
             function_name=args.name,
             help_timeout_seconds=args.help_timeout_seconds,
+            help_probe_args=tuple(args.help_probe_arg or ["--help"]),
         )
         print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         return 0

@@ -1,0 +1,22 @@
+id = "xfoil_cli"
+title = "XFOIL CLI availability oneshot"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+
+[target]
+kind = "command"
+value = ["xfoil"]
+
+[probe]
+commands = [["xfoil"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_xfoil"
+help_probe_args = ["-h"]
+
+[smoke]
+[[smoke.steps]]
+tool = "run_xfoil"
+arguments = { extra_argv = ["-h"] }

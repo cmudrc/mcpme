@@ -1,0 +1,24 @@
+id = "build123d_importers"
+title = "build123d importers oneshot"
+tier = "gha_subset"
+style = "package"
+slice = "manufacturing"
+
+[target]
+kind = "package"
+value = "build123d.importers"
+
+[probe]
+imports = ["build123d.importers"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^import_stl$"]
+
+[smoke]
+[[smoke.steps]]
+tool = "import_stl"
+arguments = { file_name = "{challenge_fixture_dir}/tri.stl" }
+
+[smoke.steps.expect]
+text_contains = ["Face"]

@@ -1,0 +1,96 @@
+name: Challenges
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  challenges:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install challenge subset dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,challenge-subset]"
+
+      - name: Run reduced live challenge subset
+        run: make challenges-subset
+
+      - name: Upload challenge artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: challenges-gha-subset
+          path: artifacts/challenges/gha_subset
+          if-no-files-found: error
+
+      - name: Publish challenge summary
+        if: always()
+        run: |
+          if [ -f artifacts/challenges/gha_subset/summary.md ]; then
+            cat artifacts/challenges/gha_subset/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  challenge-badge:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [challenges]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    concurrency:
+      group: challenges-badge-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install challenge subset dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,challenge-subset]"
+
+      - name: Re-run reduced live challenge subset
+        run: make challenges-subset
+
+      - name: Generate challenge badge
+        run: make challenges-metrics
+
+      - name: Commit and push badge if changed
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          if ! git status --porcelain -- .github/badges/challenges-live-subset.svg | grep -q .; then
+            echo "Challenge badge unchanged."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/badges/challenges-live-subset.svg
+          git commit -m "chore: update live challenge badge [skip ci]"
+          git push origin "HEAD:${BRANCH_NAME}"

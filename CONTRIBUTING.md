@@ -26,6 +26,8 @@ make docs
 Optional but useful:
 
 ```bash
+make challenges-subset
+make challenges-full
 pre-commit install
 pre-commit run --all-files
 ```
@@ -35,6 +37,8 @@ pre-commit run --all-files
 - Keep changes small enough to review quickly.
 - Add or update tests for behavior changes.
 - Update docs and examples when interfaces change.
+- Update `challenges/` fixtures, catalog entries, and reports when the live
+  raw-upstream suite changes.
 - Regenerate checked-in example docs when example docstrings change.
 - Keep the top-level `mcpme` public API small and deliberate.
 - Describe what changed and how you validated it.

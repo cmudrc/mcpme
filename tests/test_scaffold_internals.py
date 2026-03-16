@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import inspect
 from pathlib import Path
 from typing import Annotated, Any
@@ -94,7 +95,9 @@ def test_scaffold_package_skips_classes_without_signatures(
 
     package_report = scaffold_package("builtin_pkg", tmp_path / "builtin_facade.py")
     assert package_report.generated_tools == ()
-    assert package_report.skipped[0].reason.startswith("class signature inspection failed:")
+    assert (
+        package_report.skipped[0].reason == "class is re-exported from outside the target namespace"
+    )
 
 
 def test_scaffold_helper_functions_cover_cli_parser_edges() -> None:
@@ -153,7 +156,7 @@ def test_scaffold_annotation_and_render_helpers_cover_branches() -> None:
     assert _annotation_source(list[int]) == "list[int]"
     assert _annotation_source(dict[int, str]) == "dict[str, Any]"
     assert _annotation_source(dict[str, int]) == "dict[str, int]"
-    assert _annotation_source(int | None) == "int | Any"
+    assert _annotation_source(int | None) == "int | None"
 
     assert _default_source(b"abc") == "b'abc'"
     assert _default_source(object()) is None
@@ -281,7 +284,8 @@ def test_scaffold_render_helpers_cover_args_kwargs_and_named_branches() -> None:
         payload_style=True,
     )
     assert "Session-close metadata." in _class_close_docstring(class_spec)
-    assert _docstring_lines("Line 1\nLine 2", indent="    ")[0] == '    """'
+    rendered_docstring = _docstring_lines("Line 1\nLine 2", indent="    ")
+    assert ast.literal_eval(rendered_docstring[0].strip()) == "Line 1\nLine 2"
 
     named_command = _render_command_facade(
         command=("tool",),

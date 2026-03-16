@@ -19,10 +19,15 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+import os
 import pkgutil
 import re
+import sys
 import types
+from collections import abc
+from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Union, get_args, get_origin
 
@@ -148,19 +153,41 @@ def scaffold_package(
     *,
     include_submodules: bool = False,
     max_modules: int | None = None,
+    max_generated_tools: int | None = None,
+    module_include_patterns: tuple[str, ...] = (),
+    module_exclude_patterns: tuple[str, ...] = (),
+    symbol_include_patterns: tuple[str, ...] = (),
+    symbol_exclude_patterns: tuple[str, ...] = (),
+    allow_reexports: bool = False,
 ) -> ScaffoldReport:
     """Generate a deterministic facade module for an importable package or module."""
+    namespace_root = package_name.split(".", 1)[0]
+    module_includes = _compile_patterns(module_include_patterns)
+    module_excludes = _compile_patterns(module_exclude_patterns)
+    symbol_includes = _compile_patterns(symbol_include_patterns)
+    symbol_excludes = _compile_patterns(symbol_exclude_patterns)
     module_names, skipped = _discover_module_names(
         package_name,
         include_submodules=include_submodules,
         max_modules=max_modules,
+        include_patterns=module_includes,
+        exclude_patterns=module_excludes,
     )
     function_specs: list[_FunctionSpec] = []
     class_specs: list[_ClassSpec] = []
     seen_sources: set[str] = set()
+    generated_tool_count = 0
     for module_name in module_names:
         module = importlib.import_module(module_name)
         for export_name in _public_member_names(module):
+            if not _matches_patterns(export_name, symbol_includes, symbol_excludes):
+                skipped.append(
+                    SkippedScaffoldEntry(
+                        source=f"{module_name}.{export_name}",
+                        reason="symbol name excluded by scaffold filters",
+                    )
+                )
+                continue
             try:
                 obj = getattr(module, export_name)
             except Exception as error:
@@ -172,6 +199,15 @@ def scaffold_package(
                 )
                 continue
             if inspect.isclass(obj):
+                class_source = f"{obj.__module__}.{obj.__qualname__}"
+                if not allow_reexports and not _within_namespace(obj.__module__, namespace_root):
+                    skipped.append(
+                        SkippedScaffoldEntry(
+                            source=f"{module_name}.{export_name}",
+                            reason="class is re-exported from outside the target namespace",
+                        )
+                    )
+                    continue
                 if _skip_class(obj):
                     skipped.append(
                         SkippedScaffoldEntry(
@@ -180,19 +216,35 @@ def scaffold_package(
                         )
                     )
                     continue
-                class_source = f"{obj.__module__}.{obj.__qualname__}"
                 if class_source in seen_sources:
+                    continue
+                estimated_tools = 2 + sum(
+                    1
+                    for _, raw_member in _iter_public_instance_methods(obj, namespace_root)
+                    if inspect.isfunction(raw_member)
+                )
+                if (
+                    max_generated_tools is not None
+                    and generated_tool_count + estimated_tools > max_generated_tools
+                ):
+                    skipped.append(
+                        SkippedScaffoldEntry(
+                            source=f"{module_name}.{export_name}",
+                            reason="class wrappers would exceed max_generated_tools",
+                        )
+                    )
                     continue
                 seen_sources.add(class_source)
                 try:
-                    class_specs.append(
-                        _class_spec_for(
-                            context_module_name=module_name,
-                            export_name=export_name,
-                            cls=obj,
-                            package_name=package_name,
-                        )
+                    class_spec = _class_spec_for(
+                        context_module_name=module_name,
+                        export_name=export_name,
+                        cls=obj,
+                        package_name=package_name,
+                        namespace_root=namespace_root,
                     )
+                    class_specs.append(class_spec)
+                    generated_tool_count += 2 + len(class_spec.method_specs)
                 except (TypeError, ValueError) as error:
                     skipped.append(
                         SkippedScaffoldEntry(
@@ -206,6 +258,22 @@ def scaffold_package(
             object_module = getattr(obj, "__module__", module_name)
             object_qualname = getattr(obj, "__qualname__", export_name)
             function_source = f"{object_module}.{object_qualname}"
+            if not allow_reexports and not _within_namespace(object_module, namespace_root):
+                skipped.append(
+                    SkippedScaffoldEntry(
+                        source=f"{module_name}.{export_name}",
+                        reason="function is re-exported from outside the target namespace",
+                    )
+                )
+                continue
+            if max_generated_tools is not None and generated_tool_count >= max_generated_tools:
+                skipped.append(
+                    SkippedScaffoldEntry(
+                        source=f"{module_name}.{export_name}",
+                        reason="function wrappers would exceed max_generated_tools",
+                    )
+                )
+                continue
             if function_source in seen_sources:
                 continue
             try:
@@ -228,6 +296,7 @@ def scaffold_package(
                     package_name=package_name,
                 )
             )
+            generated_tool_count += 1
     content = _render_package_facade(
         package_name,
         function_specs=tuple(function_specs),
@@ -289,12 +358,17 @@ def scaffold_command(
     *,
     function_name: str | None = None,
     help_timeout_seconds: float = 5.0,
+    help_probe_args: tuple[str, ...] = ("--help",),
 ) -> ScaffoldReport:
     """Generate a deterministic facade module for one CLI command."""
     if not command:
         raise ValueError("scaffold_command requires at least one command token.")
     resolved_name = function_name or f"run_{_sanitize_name(Path(command[0]).name)}"
-    help_text = _capture_help_text(command, timeout_seconds=help_timeout_seconds)
+    help_text = _capture_help_text(
+        command,
+        timeout_seconds=help_timeout_seconds,
+        help_probe_args=help_probe_args,
+    )
     parameters = _parse_command_parameters(help_text or "")
     content = _render_command_facade(
         command=command,
@@ -345,20 +419,42 @@ def _discover_module_names(
     *,
     include_submodules: bool,
     max_modules: int | None,
+    include_patterns: tuple[re.Pattern[str], ...] = (),
+    exclude_patterns: tuple[re.Pattern[str], ...] = (),
 ) -> tuple[list[str], list[SkippedScaffoldEntry]]:
     """Return importable module names inspected for package scaffolding."""
     root_module = importlib.import_module(package_name)
-    module_names = [package_name]
+    module_names = []
     skipped: list[SkippedScaffoldEntry] = []
+    if _matches_patterns(package_name, include_patterns, exclude_patterns):
+        module_names.append(package_name)
+    else:
+        skipped.append(
+            SkippedScaffoldEntry(
+                source=package_name,
+                reason="module name excluded by scaffold filters",
+            )
+        )
     if not include_submodules or not hasattr(root_module, "__path__"):
         return module_names, skipped
-    walked = sorted(pkgutil.walk_packages(root_module.__path__, prefix=f"{package_name}."))
+    walked = sorted(
+        pkgutil.walk_packages(root_module.__path__, prefix=f"{package_name}."),
+        key=lambda module_info: module_info.name,
+    )
     for module_info in walked:
         if any(part.startswith("_") for part in module_info.name.split(".")[1:]):
             skipped.append(
                 SkippedScaffoldEntry(
                     source=module_info.name,
                     reason="submodule path is internal",
+                )
+            )
+            continue
+        if not _matches_patterns(module_info.name, include_patterns, exclude_patterns):
+            skipped.append(
+                SkippedScaffoldEntry(
+                    source=module_info.name,
+                    reason="module name excluded by scaffold filters",
                 )
             )
             continue
@@ -418,6 +514,7 @@ def _class_spec_for(
     export_name: str,
     cls: type[object],
     package_name: str,
+    namespace_root: str,
 ) -> _ClassSpec:
     """Build one generated class session wrapper specification."""
     class_name = export_name
@@ -429,21 +526,15 @@ def _class_spec_for(
     init_signature = inspect.signature(cls)
     init_docstring = parse_google_docstring(inspect.getdoc(cls.__init__))
     method_specs: list[_FunctionSpec] = []
-    for method_name, raw_member in sorted(cls.__dict__.items()):
-        if method_name.startswith("_") or method_name == "close":
-            continue
-        if isinstance(raw_member, (staticmethod, classmethod)):
-            continue
-        if not inspect.isfunction(raw_member):
-            continue
+    for method_name, raw_member in _iter_public_instance_methods(cls, namespace_root):
         method_signature = inspect.signature(raw_member)
         method_docstring = parse_google_docstring(inspect.getdoc(raw_member))
         stripped_signature = _drop_first_parameter(method_signature)
         method_specs.append(
             _FunctionSpec(
                 name=f"{prefix}{class_snake}_{method_name}",
-                module_name=cls.__module__,
-                qualname=f"{cls.__qualname__}.{method_name}",
+                module_name=getattr(raw_member, "__module__", cls.__module__),
+                qualname=getattr(raw_member, "__qualname__", f"{cls.__qualname__}.{method_name}"),
                 summary=method_docstring.summary or f"Call {class_name}.{method_name}.",
                 signature_text=f"{method_name}{method_signature}",
                 param_descriptions=dict(method_docstring.param_descriptions),
@@ -491,11 +582,33 @@ def _supports_named_wrapper(signature: inspect.Signature) -> bool:
     return True
 
 
+def _iter_public_instance_methods(
+    cls: type[object],
+    package_name: str,
+) -> tuple[tuple[str, Callable[..., Any]], ...]:
+    """Return deterministic public instance methods across a class MRO."""
+    seen_names: set[str] = set()
+    methods: list[tuple[str, Callable[..., Any]]] = []
+    for candidate_class in cls.mro():
+        if candidate_class is object:
+            continue
+        if not _within_namespace(getattr(candidate_class, "__module__", ""), package_name):
+            continue
+        for method_name, raw_member in sorted(candidate_class.__dict__.items()):
+            if method_name in seen_names or method_name.startswith("_") or method_name == "close":
+                continue
+            if isinstance(raw_member, (staticmethod, classmethod)):
+                continue
+            if not inspect.isfunction(raw_member):
+                continue
+            seen_names.add(method_name)
+            methods.append((method_name, raw_member))
+    return tuple(methods)
+
+
 def _default_source(value: object) -> str | None:
     """Return a stable source representation for simple default values."""
-    if value is None or isinstance(value, (str, int, float, bool, bytes)):
-        return repr(value)
-    return None
+    return _value_source(value)
 
 
 def _function_wrapper_name(
@@ -1005,11 +1118,15 @@ def _annotation_source(annotation: object) -> str:
     """Render a stable Python annotation source for generated wrappers."""
     if annotation in (inspect.Signature.empty, Any, object):
         return "Any"
+    if annotation is type(None):
+        return "None"
     if isinstance(annotation, str) and annotation.strip():
-        return annotation.replace("typing.", "")
+        return _annotation_source_from_string(annotation)
     if annotation in (str, int, float, bool, bytes) and isinstance(annotation, type):
         return str(annotation.__name__)
     if annotation is Path:
+        return "Path"
+    if _is_pathlike_annotation(annotation):
         return "Path"
     origin = get_origin(annotation)
     if origin is Annotated:
@@ -1017,11 +1134,13 @@ def _annotation_source(annotation: object) -> str:
         if not arguments:
             return "Any"
         return _annotation_source(arguments[0])
-    if origin in (list, tuple):
+    if origin in (list, tuple, set, frozenset, os.PathLike):
+        if origin is os.PathLike:
+            return "Path"
         arguments = get_args(annotation)
         item_source = _annotation_source(arguments[0]) if arguments else "Any"
         return f"list[{item_source}]"
-    if origin is dict:
+    if origin is dict or _is_mapping_origin(origin):
         arguments = get_args(annotation)
         if len(arguments) != 2:
             return "dict[str, Any]"
@@ -1030,20 +1149,23 @@ def _annotation_source(annotation: object) -> str:
         if key_source != "str":
             return "dict[str, Any]"
         return f"dict[str, {value_source}]"
+    if _is_sequence_origin(origin):
+        arguments = get_args(annotation)
+        item_source = _annotation_source(arguments[0]) if arguments else "Any"
+        return f"list[{item_source}]"
     if origin in (types.UnionType, Union):
         arguments = get_args(annotation)
         if arguments:
-            return " | ".join(_annotation_source(argument) for argument in arguments)
+            normalized = [_annotation_source(argument) for argument in arguments]
+            return " | ".join(normalized)
+    if _is_numpy_array_annotation(annotation):
+        return "list[float]"
     return "Any"
 
 
 def _docstring_lines(text: str, *, indent: str) -> list[str]:
-    """Render one triple-quoted docstring block at a specific indentation level."""
-    lines = [f'{indent}"""']
-    for line in text.splitlines():
-        lines.append(f"{indent}{line}")
-    lines.append(f'{indent}"""')
-    return lines
+    """Render one valid docstring literal at a specific indentation level."""
+    return [f"{indent}{json.dumps(text)}"]
 
 
 def _function_docstring(spec: _FunctionSpec, *, payload_style: bool) -> str:
@@ -1203,9 +1325,11 @@ def _render_command_facade(
             "",
             "import os",
             "import subprocess",
+            "import sys",
             "from typing import Any",
             "",
             f"_BASE_COMMAND = tuple({command_json})",
+            "_PYTHON_BIN_DIR = os.path.dirname(sys.executable)",
             "",
             "",
             f"def {function_name}(",
@@ -1214,20 +1338,30 @@ def _render_command_facade(
             "    cwd: str | None = None,",
             "    env: dict[str, str] | None = None,",
             ") -> dict[str, Any]:",
-            '    """',
-            "    Run the scaffolded CLI command.",
-            "",
-            f"    Generated wrapper for ``{' '.join(command)}``.{help_section}",
-            "",
-            "    Args:",
-            "        argv: Additional command-line arguments appended after the base command.",
-            "        stdin_text: Optional standard input text.",
-            "        cwd: Optional working directory.",
-            "        env: Optional environment variable overrides.",
-            "",
-            "    Returns:",
-            "        Structured subprocess execution details.",
-            '    """',
+            *(
+                _docstring_lines(
+                    "\n".join(
+                        [
+                            "Run the scaffolded CLI command.",
+                            "",
+                            f"Generated wrapper for ``{' '.join(command)}``.{help_section}",
+                            "",
+                            "Args:",
+                            (
+                                "    argv: Additional command-line arguments appended after "
+                                "the base command."
+                            ),
+                            "    stdin_text: Optional standard input text.",
+                            "    cwd: Optional working directory.",
+                            "    env: Optional environment variable overrides.",
+                            "",
+                            "Returns:",
+                            "    Structured subprocess execution details.",
+                        ]
+                    ),
+                    indent="    ",
+                )
+            ),
             "    final_argv = [*_BASE_COMMAND, *(argv or [])]",
             "    completed = subprocess.run(",
             "        final_argv,",
@@ -1235,7 +1369,7 @@ def _render_command_facade(
             "        capture_output=True,",
             "        text=True,",
             "        cwd=cwd,",
-            "        env={**os.environ, **(env or {})},",
+            "        env=_command_env(env),",
             "        check=False,",
             "    )",
             "    return {",
@@ -1245,6 +1379,20 @@ def _render_command_facade(
             '        "stderr": completed.stderr,',
             '        "exit_code": completed.returncode,',
             "    }",
+            "",
+            "",
+            "def _command_env(env: dict[str, str] | None) -> dict[str, str]:",
+            (
+                '    """Return subprocess environment overrides with the current '
+                'interpreter bin first."""'
+            ),
+            "    merged = {**os.environ, **(env or {})}",
+            "    merged_path = merged.get('PATH', '')",
+            "    if merged_path:",
+            "        merged['PATH'] = os.pathsep.join([_PYTHON_BIN_DIR, merged_path])",
+            "    else:",
+            "        merged['PATH'] = _PYTHON_BIN_DIR",
+            "    return merged",
             "",
         ]
     )
@@ -1280,9 +1428,25 @@ def _render_named_command_facade(
             "",
             "import os",
             "import subprocess",
+            "import sys",
             "from typing import Any",
             "",
             f"_BASE_COMMAND = tuple({command_json})",
+            "_PYTHON_BIN_DIR = os.path.dirname(sys.executable)",
+            "",
+            "",
+            "def _command_env(env: dict[str, str] | None) -> dict[str, str]:",
+            (
+                '    """Return subprocess environment overrides with the current '
+                'interpreter bin first."""'
+            ),
+            "    merged = {**os.environ, **(env or {})}",
+            "    merged_path = merged.get('PATH', '')",
+            "    if merged_path:",
+            "        merged['PATH'] = os.pathsep.join([_PYTHON_BIN_DIR, merged_path])",
+            "    else:",
+            "        merged['PATH'] = _PYTHON_BIN_DIR",
+            "    return merged",
             "",
             "",
             f"def {function_name}(",
@@ -1297,7 +1461,7 @@ def _render_named_command_facade(
             "        capture_output=True,",
             "        text=True,",
             "        cwd=cwd,",
-            "        env={**os.environ, **(env or {})},",
+            "        env=_command_env(env),",
             "        check=False,",
             "    )",
             "    return {",
@@ -1387,19 +1551,227 @@ def _command_invocation_lines(parameters: tuple[_CliParameter, ...]) -> list[str
     return lines
 
 
-def _capture_help_text(command: tuple[str, ...], *, timeout_seconds: float) -> str | None:
+def _capture_help_text(
+    command: tuple[str, ...],
+    *,
+    timeout_seconds: float,
+    help_probe_args: tuple[str, ...] = ("--help",),
+) -> str | None:
     """Capture ``--help`` output for one CLI command when available."""
     import subprocess
 
     try:
+        command_env = dict(os.environ)
+        python_bin_dir = os.path.dirname(sys.executable)
+        existing_path = command_env.get("PATH", "")
+        command_env["PATH"] = (
+            os.pathsep.join([python_bin_dir, existing_path]) if existing_path else python_bin_dir
+        )
         completed = subprocess.run(
-            [*command, "--help"],
+            [*command, *help_probe_args],
             capture_output=True,
             text=True,
             check=False,
             timeout=timeout_seconds,
+            env=command_env,
         )
     except Exception:
         return None
     output = completed.stdout.strip() or completed.stderr.strip()
     return output or None
+
+
+def _compile_patterns(patterns: tuple[str, ...]) -> tuple[re.Pattern[str], ...]:
+    """Compile regex filters for scaffold include and exclude lists."""
+    return tuple(re.compile(pattern) for pattern in patterns)
+
+
+def _matches_patterns(
+    value: str,
+    includes: tuple[re.Pattern[str], ...],
+    excludes: tuple[re.Pattern[str], ...],
+) -> bool:
+    """Return whether one value survives include and exclude regex filters."""
+    if includes and not any(pattern.search(value) for pattern in includes):
+        return False
+    return not any(pattern.search(value) for pattern in excludes)
+
+
+def _within_namespace(module_name: str, namespace: str) -> bool:
+    """Return whether one module path stays inside the target namespace."""
+    return module_name == namespace or module_name.startswith(f"{namespace}.")
+
+
+def _value_source(value: object) -> str | None:
+    """Render one default value into valid Python source when feasible."""
+    if value is None or isinstance(value, (str, int, float, bool, bytes)):
+        return repr(value)
+    if isinstance(value, Path):
+        return f"Path({value.as_posix()!r})"
+    if isinstance(value, Enum):
+        return (
+            "_resolve_symbol("
+            f"{value.__class__.__module__!r}, "
+            f"{value.__class__.__qualname__ + '.' + value.name!r}"
+            ")"
+        )
+    if isinstance(value, list):
+        rendered = [_value_source(item) for item in value]
+        if any(item is None for item in rendered):
+            return None
+        return f"[{', '.join(item for item in rendered if item is not None)}]"
+    if isinstance(value, tuple):
+        rendered = [_value_source(item) for item in value]
+        if any(item is None for item in rendered):
+            return None
+        suffix = "," if len(rendered) == 1 else ""
+        return f"({', '.join(item for item in rendered if item is not None)}{suffix})"
+    if isinstance(value, dict):
+        rendered_items: list[str] = []
+        for key, item in value.items():
+            key_source = _value_source(key)
+            item_source = _value_source(item)
+            if key_source is None or item_source is None:
+                return None
+            rendered_items.append(f"{key_source}: {item_source}")
+        return "{" + ", ".join(rendered_items) + "}"
+    if inspect.isclass(value) or inspect.isfunction(value):
+        module_name = getattr(value, "__module__", None)
+        qualname = getattr(value, "__qualname__", None)
+        if isinstance(module_name, str) and isinstance(qualname, str):
+            return f"_resolve_symbol({module_name!r}, {qualname!r})"
+    return None
+
+
+def _annotation_source_from_string(annotation: str) -> str:
+    """Normalize a string annotation into a safe generated-source annotation."""
+    normalized = (
+        annotation.strip()
+        .replace("typing.", "")
+        .replace("collections.abc.", "")
+        .replace("NoneType", "None")
+    )
+    safe_annotations = {
+        "str",
+        "int",
+        "float",
+        "bool",
+        "bytes",
+        "Path",
+        "list",
+        "tuple",
+        "dict",
+        "Sequence",
+        "Mapping",
+        "Optional",
+        "Union",
+        "Literal",
+        "Annotated",
+        "Any",
+        "None",
+    }
+    if "[" in normalized or "|" in normalized or normalized in safe_annotations:
+        candidate = normalized
+    elif normalized.endswith(".PathLike") or normalized == "PathLike":
+        candidate = "Path"
+    elif (
+        normalized.endswith(".ndarray")
+        or normalized.endswith(".NDArray")
+        or normalized
+        in {
+            "ndarray",
+            "NDArray",
+        }
+    ):
+        candidate = "list[float]"
+    else:
+        return "Any"
+    candidate = candidate.replace("List[", "list[")
+    candidate = candidate.replace("Dict[", "dict[")
+    candidate = candidate.replace("Tuple[", "tuple[")
+    candidate = candidate.replace("Set[", "list[")
+    candidate = candidate.replace("FrozenSet[", "list[")
+    candidate = candidate.replace("Sequence[", "list[").replace("Mapping[", "dict[")
+    candidate = candidate.replace("PathLike", "Path")
+    if candidate.startswith("Optional[") and candidate.endswith("]"):
+        inner = candidate[len("Optional[") : -1]
+        return f"{_annotation_source_from_string(inner)} | None"
+    if candidate.startswith("Union[") and candidate.endswith("]"):
+        inner = candidate[len("Union[") : -1]
+        members = [_annotation_source_from_string(part) for part in _split_top_level_commas(inner)]
+        return " | ".join(members) if members else "Any"
+    if candidate.startswith("Annotated[") and candidate.endswith("]"):
+        inner = candidate[len("Annotated[") : -1]
+        parts = _split_top_level_commas(inner)
+        return _annotation_source_from_string(parts[0]) if parts else "Any"
+    if candidate.startswith("list[") and candidate.endswith("]"):
+        inner = candidate[len("list[") : -1]
+        return f"list[{_annotation_source_from_string(inner)}]"
+    if candidate.startswith("tuple[") and candidate.endswith("]"):
+        inner = candidate[len("tuple[") : -1]
+        parts = _split_top_level_commas(inner)
+        if not parts:
+            return "list[Any]"
+        return f"list[{_annotation_source_from_string(parts[0])}]"
+    if candidate.startswith("dict[") and candidate.endswith("]"):
+        inner = candidate[len("dict[") : -1]
+        parts = _split_top_level_commas(inner)
+        if len(parts) != 2:
+            return "dict[str, Any]"
+        key_source = _annotation_source_from_string(parts[0])
+        value_source = _annotation_source_from_string(parts[1])
+        if key_source != "str":
+            return "dict[str, Any]"
+        return f"dict[str, {value_source}]"
+    return candidate
+
+
+def _is_pathlike_annotation(annotation: object) -> bool:
+    """Return whether one runtime annotation represents a path-like value."""
+    if annotation is os.PathLike:
+        return True
+    return inspect.isclass(annotation) and issubclass(annotation, os.PathLike)
+
+
+def _is_sequence_origin(origin: object) -> bool:
+    """Return whether one typing origin should map to a JSON array."""
+    return origin in {list, tuple, abc.Sequence, abc.MutableSequence}
+
+
+def _is_mapping_origin(origin: object) -> bool:
+    """Return whether one typing origin should map to a JSON object mapping."""
+    return origin in {abc.Mapping, abc.MutableMapping}
+
+
+def _is_numpy_array_annotation(annotation: object) -> bool:
+    """Return whether one runtime annotation represents a NumPy-style array."""
+    module_name = getattr(annotation, "__module__", "")
+    qualname = getattr(annotation, "__qualname__", getattr(annotation, "__name__", ""))
+    origin = get_origin(annotation)
+    if origin is not None:
+        module_name = getattr(origin, "__module__", module_name)
+        qualname = getattr(origin, "__qualname__", getattr(origin, "__name__", qualname))
+    return module_name.startswith("numpy") and qualname in {"ndarray", "NDArray"}
+
+
+def _split_top_level_commas(value: str) -> list[str]:
+    """Split a generic type argument list on commas outside nested brackets."""
+    parts: list[str] = []
+    current: list[str] = []
+    depth = 0
+    for character in value:
+        if character == "," and depth == 0:
+            part = "".join(current).strip()
+            if part:
+                parts.append(part)
+            current = []
+            continue
+        if character == "[":
+            depth += 1
+        elif character == "]" and depth > 0:
+            depth -= 1
+        current.append(character)
+    trailing = "".join(current).strip()
+    if trailing:
+        parts.append(trailing)
+    return parts

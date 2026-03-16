@@ -133,6 +133,54 @@ def test_scaffold_package_generates_executable_facade(
     assert json.loads(close_result.content[0]["text"])["success"] is True
 
 
+def test_scaffold_package_handles_docstring_escapes_enum_defaults_and_filters(
+    tmp_path: Path,
+    monkeypatch: object,
+) -> None:
+    """Package scaffolding should stay valid around raw docstrings and enum defaults."""
+
+    package_dir = tmp_path / "filter_pkg"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text(
+        "from math import sqrt\n"
+        "from .core import Mode, solve\n\n"
+        '__all__ = ["Mode", "solve", "sqrt"]\n',
+        encoding="utf-8",
+    )
+    (package_dir / "core.py").write_text(
+        "from enum import Enum\n\n"
+        "class Mode(Enum):\n"
+        "    FINE = 'fine'\n\n"
+        "def solve(mode: Mode = Mode.FINE) -> str:\n"
+        '    """Solve a case with a Windows-style path like C:\\\\temp\\\\deck.inp.\n\n'
+        "    Args:\n"
+        "        mode: Solver mode.\n\n"
+        "    Returns:\n"
+        "        Selected mode.\n"
+        '    """\n'
+        "    return mode.value\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    output_path = tmp_path / "filtered_facade.py"
+    report = scaffold_package(
+        "filter_pkg",
+        output_path,
+        symbol_include_patterns=("^solve$", "^sqrt$"),
+    )
+
+    assert [tool.name for tool in report.generated_tools] == ["solve"]
+    assert any(
+        entry.reason == "function is re-exported from outside the target namespace"
+        for entry in report.skipped
+    )
+
+    manifest = build_manifest(targets=[output_path], artifact_root=tmp_path / "artifacts")
+    result = execute_tool(manifest, "solve", {})
+    assert result.content[0]["text"] == "fine"
+
+
 def test_cli_scaffold_command_generates_named_wrapper(
     tmp_path: Path,
     capsys: object,
@@ -190,6 +238,51 @@ def test_cli_scaffold_command_generates_named_wrapper(
     assert json.loads(result.content[0]["text"])["stdout"].strip() == json.dumps(
         {"job_name": "cantilever", "scale": 2.5, "verbose": True}
     )
+
+
+def test_cli_scaffold_command_accepts_custom_help_probe_args(
+    tmp_path: Path,
+    capsys: object,
+) -> None:
+    """CLI scaffolding should allow non-``--help`` probes for raw upstream tools."""
+
+    script_path = tmp_path / "odd_help_cli.py"
+    script_path.write_text(
+        "import json\n"
+        "import sys\n\n"
+        "if '-h' in sys.argv[1:]:\n"
+        "    print('usage: odd_help_cli.py --value VALUE')\n"
+        "    print('\\noptions:')\n"
+        "    print('  --value VALUE  Integer value.')\n"
+        "    raise SystemExit(0)\n"
+        "value = sys.argv[sys.argv.index('--value') + 1]\n"
+        "print(json.dumps({'value': int(value)}))\n",
+        encoding="utf-8",
+    )
+
+    output_path = tmp_path / "odd_help_facade.py"
+    assert (
+        main(
+            [
+                "scaffold-command",
+                str(output_path),
+                "--name",
+                "run_odd_help_cli",
+                "--help-probe-arg=-h",
+                "--",
+                sys.executable,
+                str(script_path),
+            ]
+        )
+        == 0
+    )
+    report = json.loads(capsys.readouterr().out)
+    assert report["generatedTools"][0]["style"] == "named"
+
+    manifest = build_manifest(targets=[output_path], artifact_root=tmp_path / "artifacts")
+    result = execute_tool(manifest, "run_odd_help_cli", {"value": "7"})
+    payload = json.loads(result.content[0]["text"])
+    assert json.loads(payload["stdout"]) == {"value": 7}
 
 
 def test_scaffold_openapi_generates_http_wrapper(tmp_path: Path) -> None:

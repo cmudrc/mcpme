@@ -156,18 +156,22 @@ class JobManager:
     def get(self, job_id: str) -> dict[str, Any]:
         """Return one persisted job record."""
         record = self._read_job_record(job_id)
-        pid = record.get("pid")
         with self._lock:
             managed = self._active_jobs.get(job_id)
         if (
             managed is None
             and record.get("status") == "running"
-            and isinstance(pid, int)
-            and not _pid_exists(pid)
+            and isinstance(record.get("pid"), int)
         ):
-            record["status"] = "lost"
-            record["updatedAt"] = _utc_timestamp()
-            self._write_job_record(job_id, record)
+            refreshed_record = self._read_job_record(job_id)
+            refreshed_pid = refreshed_record.get("pid")
+            if refreshed_record.get("status") != "running":
+                return refreshed_record
+            if isinstance(refreshed_pid, int) and not _pid_exists(refreshed_pid):
+                refreshed_record["status"] = "lost"
+                refreshed_record["updatedAt"] = _utc_timestamp()
+                self._write_job_record(job_id, refreshed_record)
+                return refreshed_record
         return record
 
     def cancel(self, job_id: str) -> dict[str, Any]:

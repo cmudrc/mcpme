@@ -9,7 +9,8 @@ TWINE ?= $(PYTHON) -m twine
 
 .PHONY: help check-python dev install-dev generate-example-docs \
 	lint fmt fmt-check type test qa coverage docstrings-check \
-	run-example run-examples docs docs-build docs-check docs-linkcheck \
+	run-example run-examples challenges-subset challenges-full \
+	challenges-metrics docs docs-build docs-check docs-linkcheck \
 	release-check ci clean
 
 help:
@@ -18,6 +19,8 @@ help:
 	@echo "  test             Run the pytest suite."
 	@echo "  qa               Run lint, fmt-check, type, and test."
 	@echo "  run-examples     Execute the runnable example scripts."
+	@echo "  challenges-subset Run the reduced live raw-upstream challenge suite."
+	@echo "  challenges-full  Run the broader local live raw-upstream challenge suite."
 	@echo "  docs             Build the HTML docs."
 	@echo "  ci               Run the main local CI checks."
 
@@ -68,6 +71,27 @@ run-examples: check-python
 	PYTHONPATH=src $(PYTHON) examples/package_scaffold.py
 	PYTHONPATH=src $(PYTHON) examples/subprocess_wrapper.py
 	PYTHONPATH=src $(PYTHON) examples/runtime_server.py
+
+challenges-subset: check-python
+	mkdir -p artifacts/challenges/gha_subset
+	PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
+		--tier gha_subset \
+		--artifact-root artifacts/challenges/gha_subset \
+		--metrics-json artifacts/challenges/gha_subset/challenges_metrics.json \
+		--junit-xml artifacts/challenges/gha_subset/challenges.junit.xml \
+		--summary-md artifacts/challenges/gha_subset/summary.md
+
+challenges-full: check-python
+	mkdir -p artifacts/challenges/full
+	PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
+		--tier all \
+		--artifact-root artifacts/challenges/full \
+		--metrics-json artifacts/challenges/full/challenges_metrics.json \
+		--junit-xml artifacts/challenges/full/challenges.junit.xml \
+		--summary-md artifacts/challenges/full/summary.md
+
+challenges-metrics: check-python
+	PYTHONPATH=src $(PYTHON) scripts/generate_challenges_badge.py
 
 docs-build: generate-example-docs
 	PYTHONPATH=src $(SPHINX) -b html docs docs/_build/html -n -W --keep-going -E

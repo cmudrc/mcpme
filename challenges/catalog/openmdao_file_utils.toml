@@ -1,0 +1,24 @@
+id = "openmdao_file_utils"
+title = "OpenMDAO file_utils oneshot"
+tier = "gha_subset"
+style = "package"
+slice = "systems"
+
+[target]
+kind = "package"
+value = "openmdao.utils.file_utils"
+
+[probe]
+imports = ["openmdao.utils.file_utils"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^get_module_path$"]
+
+[smoke]
+[[smoke.steps]]
+tool = "get_module_path"
+arguments = { fpath = "{repo_root}/src/mcpme/__init__.py" }
+
+[smoke.steps.expect]
+text_contains = ["mcpme"]

@@ -1,0 +1,31 @@
+id = "submitit_root"
+title = "submitit root oneshot"
+tier = "local_full"
+style = "package"
+slice = "hpc"
+
+[target]
+kind = "package"
+value = "submitit"
+
+[probe]
+imports = ["submitit"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^LocalExecutor$"]
+max_generated_tools = 10
+
+[smoke]
+[[smoke.steps]]
+tool = "create_local_executor"
+arguments = { folder = "{challenge_artifact_dir}/submitit" }
+capture_json = { local_executor_session_id = "session_id" }
+
+[[smoke.steps]]
+tool = "local_executor_update_parameters"
+arguments = { session_id = "{local_executor_session_id}", args = [], kwargs = { timeout_min = 1 } }
+
+[[smoke.steps]]
+tool = "close_local_executor"
+arguments = { session_id = "{local_executor_session_id}" }

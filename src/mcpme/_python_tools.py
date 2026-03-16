@@ -33,14 +33,31 @@ _PRIMITIVE_SCHEMAS = {
 }
 _ANY_NAMES = {"Any", "typing.Any", "object", "builtins.object"}
 _PATH_NAMES = {"Path", "pathlib.Path"}
+_PATHLIKE_NAMES = {"PathLike", "os.PathLike"}
 _BYTES_NAMES = {"bytes"}
 _LIST_NAMES = {"list", "typing.List"}
 _TUPLE_NAMES = {"tuple", "typing.Tuple"}
+_SET_NAMES = {"set", "typing.Set", "frozenset", "typing.FrozenSet"}
+_SEQUENCE_NAMES = {
+    "Sequence",
+    "typing.Sequence",
+    "collections.abc.Sequence",
+    "MutableSequence",
+    "collections.abc.MutableSequence",
+}
 _DICT_NAMES = {"dict", "typing.Dict"}
+_MAPPING_NAMES = {
+    "Mapping",
+    "typing.Mapping",
+    "collections.abc.Mapping",
+    "MutableMapping",
+    "collections.abc.MutableMapping",
+}
 _UNION_NAMES = {"typing.Union", "Union"}
 _OPTIONAL_NAMES = {"typing.Optional", "Optional"}
 _LITERAL_NAMES = {"typing.Literal", "Literal"}
 _ANNOTATED_NAMES = {"typing.Annotated", "Annotated"}
+_NDARRAY_NAMES = {"ndarray", "numpy.ndarray", "NDArray", "numpy.typing.NDArray"}
 _ENUM_NAMES = {"Enum", "enum.Enum"}
 _TYPED_DICT_NAMES = {"TypedDict", "typing.TypedDict"}
 _DATACLASS_DECORATORS = {"dataclass", "dataclasses.dataclass"}
@@ -328,7 +345,10 @@ class StaticPythonResolver:
             if default_node is None:
                 required.append(argument.arg)
             else:
-                schema["default"] = to_json_compatible(self._literal_value(module, default_node))
+                with contextlib.suppress(SchemaGenerationError, TypeError):
+                    schema["default"] = to_json_compatible(
+                        self._literal_value(module, default_node)
+                    )
             properties[argument.arg] = schema
         input_schema: dict[str, Any] = {"type": "object", "properties": properties}
         if required:
@@ -369,24 +389,25 @@ class StaticPythonResolver:
                 "x-mcpme-kind": "path",
                 "x-mcpme-path-kind": "auto",
             }
+        if canonical_name in _PATHLIKE_NAMES:
+            return {
+                "type": "string",
+                "format": "path",
+                "x-mcpme-kind": "path",
+                "x-mcpme-path-kind": "auto",
+            }
         if canonical_name in _BYTES_NAMES:
             return {
                 "type": "string",
                 "contentEncoding": "base64",
                 "x-mcpme-kind": "bytes",
             }
-        if canonical_name in module.classes:
-            return self._schema_from_class(module, module.classes[canonical_name], canonical_name)
-        imported = module.imported_symbols.get(canonical_name)
-        if imported is not None and imported.path is not None:
-            imported_module = self._load_source_module(imported.path, imported.module_name)
-            imported_class = imported_module.classes.get(imported.object_name)
-            if imported_class is not None:
-                return self._schema_from_class(
-                    imported_module,
-                    imported_class,
-                    imported.object_name,
-                )
+        if canonical_name in _NDARRAY_NAMES:
+            return {"type": "array", "items": {"type": "number"}}
+        resolved_class = self._resolve_class_node(module, canonical_name, seen=set())
+        if resolved_class is not None:
+            resolved_module, resolved_name, class_node = resolved_class
+            return self._schema_from_class(resolved_module, class_node, resolved_name)
         raise SchemaGenerationError(f"Unsupported annotation: {canonical_name!r}")
 
     def _schema_from_subscript(
@@ -397,13 +418,16 @@ class StaticPythonResolver:
         """Build JSON Schema for generic-like source annotations."""
         container_name = _annotation_name(module, annotation.value)
         arguments = _subscript_arguments(annotation)
-        if container_name in _LIST_NAMES | _TUPLE_NAMES:
+        if container_name in _LIST_NAMES | _TUPLE_NAMES | _SET_NAMES | _SEQUENCE_NAMES:
             item_annotation = arguments[0] if arguments else None
-            return {
+            schema: dict[str, Any] = {
                 "type": "array",
                 "items": self._schema_from_annotation_node(module, item_annotation),
             }
-        if container_name in _DICT_NAMES:
+            if container_name in _SET_NAMES:
+                schema["uniqueItems"] = True
+            return schema
+        if container_name in _DICT_NAMES | _MAPPING_NAMES:
             if len(arguments) != 2:
                 raise SchemaGenerationError("dict annotations must include key and value types.")
             key_name = _annotation_name(module, arguments[0])
@@ -412,6 +436,13 @@ class StaticPythonResolver:
             return {
                 "type": "object",
                 "additionalProperties": self._schema_from_annotation_node(module, arguments[1]),
+            }
+        if container_name in _PATHLIKE_NAMES:
+            return {
+                "type": "string",
+                "format": "path",
+                "x-mcpme-kind": "path",
+                "x-mcpme-path-kind": "auto",
             }
         if container_name in _UNION_NAMES:
             return {
@@ -439,7 +470,32 @@ class StaticPythonResolver:
                 base_schema,
                 [self._literal_value(module, item) for item in arguments[1:]],
             )
+        if container_name in _NDARRAY_NAMES:
+            return {"type": "array", "items": {"type": "number"}}
         raise SchemaGenerationError(f"Unsupported annotation: {ast.unparse(annotation)!r}")
+
+    def _resolve_class_node(
+        self,
+        module: SourceModule,
+        class_name: str,
+        *,
+        seen: set[tuple[Path, str]],
+    ) -> tuple[SourceModule, str, ast.ClassDef] | None:
+        """Resolve one class annotation across same-package re-exports."""
+        if class_name in module.classes:
+            return module, class_name, module.classes[class_name]
+        imported = module.imported_symbols.get(class_name)
+        if imported is None or imported.path is None:
+            return None
+        cycle_key = (imported.path, imported.object_name)
+        if cycle_key in seen:
+            return None
+        imported_module = self._load_source_module(imported.path, imported.module_name)
+        return self._resolve_class_node(
+            imported_module,
+            imported.object_name,
+            seen={*seen, cycle_key},
+        )
 
     def _schema_from_class(
         self,
@@ -557,8 +613,49 @@ class StaticPythonResolver:
             call_name = _annotation_name(module, node.func)
             if call_name in _PATH_NAMES and len(node.args) == 1 and not node.keywords:
                 return str(self._literal_value(module, node.args[0]))
+            if call_name == "_resolve_symbol" and len(node.args) == 2 and not node.keywords:
+                module_argument = node.args[0]
+                qualname_argument = node.args[1]
+                if not isinstance(module_argument, ast.Constant) or not isinstance(
+                    qualname_argument, ast.Constant
+                ):
+                    raise SchemaGenerationError(
+                        "Generated _resolve_symbol defaults must use constant string arguments."
+                    )
+                module_name = module_argument.value
+                qualname = qualname_argument.value
+                if isinstance(module_name, str) and isinstance(qualname, str):
+                    return self._resolved_symbol_literal(module, module_name, qualname)
         raise SchemaGenerationError(
             "Source-backed discovery supports only literal defaults and enum/path literals."
+        )
+
+    def _resolved_symbol_literal(
+        self,
+        module: SourceModule,
+        module_name: str,
+        qualname: str,
+    ) -> Any:
+        """Resolve supported generated ``_resolve_symbol`` literals without imports."""
+        del module
+        source_path = find_module_source_path(module_name)
+        if source_path is None:
+            raise SchemaGenerationError(f"Could not locate source for {module_name!r}.")
+        source_module = self._load_source_module(source_path, module_name)
+        parts = qualname.split(".")
+        if len(parts) == 2 and parts[0] in source_module.classes:
+            class_node = source_module.classes[parts[0]]
+            if _is_enum_class(source_module, class_node):
+                for assign in class_node.body:
+                    if (
+                        isinstance(assign, ast.Assign)
+                        and len(assign.targets) == 1
+                        and isinstance(assign.targets[0], ast.Name)
+                        and assign.targets[0].id == parts[1]
+                    ):
+                        return self._literal_value(source_module, assign.value)
+        raise SchemaGenerationError(
+            "Generated symbol defaults are only supported for enum member literals."
         )
 
 

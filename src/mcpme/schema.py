@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import base64
+import collections.abc
 import dataclasses
 import inspect
+import json
+import os
 import types
 from enum import Enum
 from pathlib import Path
@@ -66,18 +69,38 @@ def schema_from_annotation(annotation: Any) -> dict[str, Any]:
             "x-mcpme-kind": "path",
             "x-mcpme-path-kind": "auto",
         }
+    if _is_pathlike_annotation(annotation):
+        return {
+            "type": "string",
+            "format": "path",
+            "x-mcpme-kind": "path",
+            "x-mcpme-path-kind": "auto",
+        }
     if annotation is type(None):
         return {"type": "null"}
+    if _is_numpy_array_annotation(annotation):
+        return {"type": "array", "items": {"type": "number"}}
     origin = get_origin(annotation)
+    if origin is os.PathLike:
+        return {
+            "type": "string",
+            "format": "path",
+            "x-mcpme-kind": "path",
+            "x-mcpme-path-kind": "auto",
+        }
     if origin is Annotated:
         args = get_args(annotation)
         return _apply_annotated_metadata(schema_from_annotation(args[0]), args[1:])
-    if origin in (list, tuple):
+    if origin in (list, tuple, set, frozenset) or _is_sequence_origin(origin):
         args = get_args(annotation)
         item_annotation = args[0] if args else Any
-        return {"type": "array", "items": schema_from_annotation(item_annotation)}
-    if origin is dict:
-        key_type, value_type = get_args(annotation)
+        schema: dict[str, Any] = {"type": "array", "items": schema_from_annotation(item_annotation)}
+        if origin in (set, frozenset):
+            schema["uniqueItems"] = True
+        return schema
+    if origin is dict or _is_mapping_origin(origin):
+        args = get_args(annotation)
+        key_type, value_type = (args[0], args[1]) if len(args) == 2 else (str, Any)
         if key_type is not str:
             raise SchemaGenerationError("Only dict[str, T] is supported.")
         return {
@@ -257,7 +280,13 @@ def coerce_value(value: Any, annotation: Any) -> Any:
         return base64.b64decode(value.encode("ascii"))
     if annotation is Path:
         return Path(value)
+    if _is_pathlike_annotation(annotation):
+        return Path(value)
+    if _is_numpy_array_annotation(annotation):
+        return [float(item) for item in value]
     origin = get_origin(annotation)
+    if origin is os.PathLike:
+        return Path(value)
     if origin is Annotated:
         return coerce_value(value, get_args(annotation)[0])
     if origin in (Union, types.UnionType):
@@ -269,14 +298,21 @@ def coerce_value(value: Any, annotation: Any) -> Any:
             except Exception:
                 continue
         return value
-    if origin is list:
-        item_type = get_args(annotation)[0]
-        return [coerce_value(item, item_type) for item in value]
+    if origin in (list, set, frozenset) or _is_sequence_origin(origin):
+        args = get_args(annotation)
+        item_type = args[0] if args else Any
+        items = [coerce_value(item, item_type) for item in value]
+        if origin is set:
+            return set(items)
+        if origin is frozenset:
+            return frozenset(items)
+        return items
     if origin is tuple:
         item_type = get_args(annotation)[0]
         return tuple(coerce_value(item, item_type) for item in value)
-    if origin is dict:
-        _, value_type = get_args(annotation)
+    if origin is dict or _is_mapping_origin(origin):
+        args = get_args(annotation)
+        value_type = args[1] if len(args) == 2 else Any
         return {key: coerce_value(item, value_type) for key, item in value.items()}
     if inspect.isclass(annotation) and issubclass(annotation, Enum):
         return annotation(value)
@@ -299,6 +335,11 @@ def to_json_compatible(value: Any) -> Any:
         return base64.b64encode(value).decode("ascii")
     if isinstance(value, Path):
         return str(value)
+    if isinstance(value, os.PathLike):
+        return os.fspath(value)
+    if isinstance(value, (set, frozenset)):
+        serialized = [to_json_compatible(item) for item in value]
+        return sorted(serialized, key=lambda item: json.dumps(item, sort_keys=True))
     if isinstance(value, Enum):
         return value.value
     if dataclasses.is_dataclass(value):
@@ -311,3 +352,37 @@ def to_json_compatible(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [to_json_compatible(item) for item in value]
     raise TypeError(f"Value is not JSON-compatible: {value!r}")
+
+
+def _is_pathlike_annotation(annotation: Any) -> bool:
+    """Return whether one annotation represents a path-like value."""
+    if annotation is os.PathLike:
+        return True
+    return inspect.isclass(annotation) and issubclass(annotation, os.PathLike)
+
+
+def _is_sequence_origin(origin: Any) -> bool:
+    """Return whether one typing origin should behave like a JSON array."""
+    return origin in {
+        collections.abc.Sequence,
+        collections.abc.MutableSequence,
+    }
+
+
+def _is_mapping_origin(origin: Any) -> bool:
+    """Return whether one typing origin should behave like a JSON object mapping."""
+    return origin in {
+        collections.abc.Mapping,
+        collections.abc.MutableMapping,
+    }
+
+
+def _is_numpy_array_annotation(annotation: Any) -> bool:
+    """Return whether one annotation represents a NumPy-style numeric array."""
+    module_name = getattr(annotation, "__module__", "")
+    qualname = getattr(annotation, "__qualname__", getattr(annotation, "__name__", ""))
+    origin = get_origin(annotation)
+    if origin is not None:
+        module_name = getattr(origin, "__module__", module_name)
+        qualname = getattr(origin, "__qualname__", getattr(origin, "__name__", qualname))
+    return module_name.startswith("numpy") and qualname in {"ndarray", "NDArray"}

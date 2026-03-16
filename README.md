@@ -1,5 +1,7 @@
 # mcpme
 
+[![Challenges Live](https://raw.githubusercontent.com/cmudrc/mcpme/main/.github/badges/challenges-live-subset.svg)](https://github.com/cmudrc/mcpme/actions/workflows/challenges.yml)
+
 `mcpme` is a deterministic Python library for exposing engineering tools as MCP
 servers.
 
@@ -34,6 +36,11 @@ submodules until they prove they should be part of the long-term contract.
 The runnable examples are treated as part of that contract. They use only the
 top-level public API, their module docstrings generate checked-in Sphinx pages,
 and automated tests verify that examples and docs stay aligned.
+
+Separately, the repository keeps a live raw-upstream challenge track under
+`challenges/`. That suite is intentionally non-gating and separate from the
+public docs/examples contract, but it is where we pressure-test one-shot
+ingestion against real upstream engineering packages and CLI tools.
 
 ## Quickstart
 
@@ -208,10 +215,17 @@ make lint
 make type
 make test
 make run-examples
+make challenges-subset
+make challenges-full
 make docs-check
 make docs
 make ci
 ```
+
+The live challenge suite lives in `challenges/README.md`. `make challenges-subset`
+runs the reduced GitHub-hosted subset, while `make challenges-full` runs the
+broader local-only suite. `make challenges-metrics` regenerates the reduced
+subset badge from `artifacts/challenges/gha_subset/challenges_metrics.json`.
 
 ## Docs
 

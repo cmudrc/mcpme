@@ -203,6 +203,59 @@ def test_job_record_json_helpers_handle_transient_partial_writes(tmp_path: Path)
         thread.join(timeout=1)
 
 
+def test_job_manager_get_avoids_false_lost_on_stale_running_reads(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A stale running read should not overwrite a concurrently completed job as lost."""
+    manifest = Manifest(
+        tools=(
+            ToolManifest(
+                name="ghost_tool",
+                description="Ghost job.",
+                input_schema={"type": "object", "properties": {}},
+                source=SourceReference(kind="callable", target="ghost_tool"),
+                binding_kind="python",
+            ),
+        ),
+        artifact_policy=ArtifactPolicy(root_dir=tmp_path / "artifacts"),
+        runtime_bindings={"ghost_tool": PythonCallableBinding(lambda: None)},
+    )
+    manager = JobManager(manifest)
+    records = iter(
+        (
+            {
+                "jobId": "race",
+                "tool": "ghost_tool",
+                "status": "running",
+                "pid": 999999,
+                "startedAt": "2026-01-01T00:00:00Z",
+                "updatedAt": "2026-01-01T00:00:00Z",
+            },
+            {
+                "jobId": "race",
+                "tool": "ghost_tool",
+                "status": "completed",
+                "pid": 999999,
+                "startedAt": "2026-01-01T00:00:00Z",
+                "updatedAt": "2026-01-01T00:00:01Z",
+            },
+        )
+    )
+    persisted: list[dict[str, object]] = []
+
+    monkeypatch.setattr(manager, "_read_job_record", lambda job_id: next(records))
+    monkeypatch.setattr(
+        manager,
+        "_write_job_record",
+        lambda job_id, record: persisted.append(record),
+    )
+    monkeypatch.setattr("mcpme._jobs._pid_exists", lambda pid: False)
+
+    assert manager.get("race")["status"] == "completed"
+    assert persisted == []
+
+
 def test_job_manager_records_timeouts_and_result_errors(tmp_path: Path) -> None:
     """Timeouts and result extraction failures should persist as explicit statuses."""
 

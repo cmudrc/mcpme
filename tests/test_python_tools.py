@@ -146,3 +146,68 @@ def test_static_python_resolver_helper_edges_are_explicit(tmp_path: Path) -> Non
     assert callable(resolved)
     with pytest.raises(ValueError):
         resolve_qualname(loaded_module, "<locals>.helper")
+
+
+def test_static_python_resolver_supports_reexported_class_annotations_and_new_container_names(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolver should follow same-package class re-exports and newer container aliases."""
+
+    package_dir = tmp_path / "source_types_pkg"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text(
+        '__all__ = ["run_case"]\nfrom .api import run_case\n',
+        encoding="utf-8",
+    )
+    (package_dir / "models.py").write_text(
+        "from dataclasses import dataclass\n\n@dataclass\nclass Config:\n    deck: str\n",
+        encoding="utf-8",
+    )
+    (package_dir / "shared.py").write_text(
+        "from .models import Config\n",
+        encoding="utf-8",
+    )
+    (package_dir / "api.py").write_text(
+        "from collections.abc import Mapping, Sequence\n"
+        "from os import PathLike\n"
+        "from numpy.typing import NDArray\n"
+        "from .shared import Config\n\n"
+        "def run_case(\n"
+        "    config: Config,\n"
+        "    deck: PathLike[str],\n"
+        "    samples: Sequence[int],\n"
+        "    weights: Mapping[str, float],\n"
+        "    values: NDArray,\n"
+        ") -> Config:\n"
+        '    """Run a typed case.\n\n'
+        "    Args:\n"
+        "        config: Case config.\n"
+        "        deck: Input deck path.\n"
+        "        samples: Sample identifiers.\n"
+        "        weights: Weight mapping.\n"
+        "        values: Numeric values.\n\n"
+        "    Returns:\n"
+        "        Echoed config.\n"
+        '    """\n'
+        "    return config\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.syspath_prepend(str(tmp_path))
+    resolver = StaticPythonResolver()
+    discovered = resolver.discover_module("source_types_pkg")
+
+    input_schema = discovered[0].tool.input_schema["properties"]
+    assert input_schema["config"]["type"] == "object"
+    assert input_schema["deck"]["format"] == "path"
+    assert input_schema["samples"]["type"] == "array"
+    assert input_schema["samples"]["items"] == {"type": "integer"}
+    assert input_schema["weights"]["additionalProperties"]["type"] == "number"
+    assert input_schema["values"]["type"] == "array"
+    assert input_schema["values"]["items"] == {"type": "number"}
+    assert discovered[0].tool.output_schema == {
+        "type": "object",
+        "properties": {"deck": {"type": "string"}},
+        "required": ["deck"],
+    }
