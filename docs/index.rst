@@ -5,13 +5,28 @@ mcpme
 MCP servers. It focuses on manifest-driven wrappers, predictable discovery, and
 inspectable execution artifacts rather than AI-based interface inference.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Guide
+It is built for teams that want wrappers they can inspect and trust:
 
-   specification
-   quickstart
-   development_notes
-   examples/index
-   dependencies_and_extras
-   api
+- discover public interfaces without guessing
+- preserve the underlying tool, files, and execution evidence
+- generate plain Python facades for packages, CLIs, OpenAPI specs, and
+  batch-style subprocess tools
+
+Start Here
+----------
+
+- :doc:`Quickstart <quickstart>` for the fastest end-to-end path
+- :doc:`Examples <examples/index>` for runnable patterns
+- :doc:`API <api>` for the supported public surface
+- :doc:`Specification <specification>` for the deterministic contract
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   Quickstart <quickstart>
+   Examples <examples/index>
+   API <api>
+   Spec <specification>
+   Notes <development_notes>
+   Dependencies <dependencies_and_extras>

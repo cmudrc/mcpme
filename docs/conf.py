@@ -46,11 +46,13 @@ html_logo = "drc.png"
 html_title = project
 html_theme_options = {
     "logo": {
+        "image_light": "drc.png",
+        "image_dark": "drc.png",
         "text": project,
     },
-    "show_nav_level": 2,
-    "navigation_depth": 2,
-    "header_links_before_dropdown": 8,
+    "show_nav_level": 1,
+    "navigation_depth": 1,
+    "header_links_before_dropdown": 6,
     "secondary_sidebar_items": ["page-toc"],
     "icon_links": [
         {

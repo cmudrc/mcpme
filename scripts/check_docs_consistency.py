@@ -24,6 +24,7 @@ API_AUTODOC_DIRECTIVE_PATTERN = re.compile(
 )
 INTERNAL_MODULE_PATTERN = re.compile(r"\bmcpme\._[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*\b")
 STALE_NAME_PATTERN = re.compile(r"\bpython_template\b|\bsrc/python_template\b")
+TOCTREE_ALIAS_PATTERN = re.compile(r"^(?P<label>.+?)\s*<(?P<target>[^>]+)>\s*$")
 
 
 @dataclass(slots=True, frozen=True)
@@ -68,7 +69,8 @@ def _extract_toctree_entries(index_path: Path) -> tuple[str, ...]:
         if not stripped or stripped.startswith(":"):
             continue
         if line.startswith("   "):
-            entries.append(stripped)
+            alias_match = TOCTREE_ALIAS_PATTERN.match(stripped)
+            entries.append(alias_match.group("target") if alias_match is not None else stripped)
             continue
         break
     return tuple(entries)

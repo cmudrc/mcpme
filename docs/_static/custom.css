@@ -2,21 +2,55 @@
   --pst-color-primary: #005f73;
   --pst-color-secondary: #0a9396;
   --pst-color-accent: #ee9b00;
+  --pst-color-link: #005f73;
+  --pst-color-link-hover: #0a9396;
+}
+
+/* Stay close to PyData's default rhythm, but give the header a cleaner
+   engineering-brand treatment and make the mark readable in both color modes. */
+.bd-header {
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--pst-color-border);
 }
 
 .navbar-brand {
   gap: 0.75rem;
 }
 
-.navbar-brand img {
-  max-height: 2.5rem;
+.logo__image {
+  max-height: 2.75rem;
   width: auto;
+  border-radius: 1rem;
+  padding: 0.4rem;
+}
+
+html[data-theme="light"] .logo__image.only-light {
+  background: rgba(0, 95, 115, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(0, 95, 115, 0.12);
+}
+
+html[data-theme="dark"] .logo__image.only-dark {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .bd-header .navbar-header-items__center {
   font-weight: 600;
 }
 
+.bd-header .navbar-nav > .nav-item > .nav-link {
+  font-size: 0.95rem;
+}
+
+.bd-header .navbar-nav > .nav-item > .nav-link:hover,
+.bd-header .navbar-nav > .current > .nav-link {
+  color: var(--pst-color-primary);
+}
+
 .bd-sidebar-primary .sidebar-primary-items__start {
   gap: 0.5rem;
+}
+
+.bd-sidebar-primary .nav-link {
+  font-size: 0.95rem;
 }
