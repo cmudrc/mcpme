@@ -37,11 +37,15 @@ Or call the runner directly:
 PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challenges/cases --tier all --only openmdao_api_problem
 ```
 
+## Prepared Inputs
+
+This case does not need rendered setup inputs.
+
 ## Fixtures
 
 This case does not need checked-in fixtures.
 
-## Smoke Flow
+## Workflow
 
 ### 1. Create a Problem session
 
@@ -167,35 +171,35 @@ required_tools = [
   "close_problem",
 ]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Create a Problem session"
 tool = "create_problem"
 arguments = { args = [], kwargs = {} }
 capture_json = { problem_session_id = "session_id" }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Configure solver-print verbosity on the live Problem session"
 tool = "problem_set_solver_print"
 arguments = { session_id = "{problem_session_id}", level = 0 }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Run a basic Problem setup"
 tool = "problem_setup"
 arguments = { session_id = "{problem_session_id}", check = false }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["Problem object"]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Inspect the Problem outputs directory"
 tool = "problem_get_outputs_dir"
 arguments = { session_id = "{problem_session_id}" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["_out"]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Close the Problem session"
 tool = "close_problem"
 arguments = { session_id = "{problem_session_id}" }

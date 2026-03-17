@@ -7,12 +7,12 @@ style = "package"
 slice = "systems"
 
 [example]
-summary = "Wrap several `openmdao.utils.file_utils` helpers and exercise real path and iterator routes in this repo."
-motivation = "Utility modules are often the safest first foothold when wrapping a large engineering package, but a realistic one-shot pass should still ingest a useful cluster of helpers instead of stopping at a single function."
+summary = "Wrap concrete `openmdao.utils.file_utils` helpers and inspect a checked-in demo package like a real utility workflow."
+motivation = "Utility modules are often the safest first foothold when wrapping a large engineering package, but the challenge should still do recognizable work on real files instead of stopping at a generator repr or a single toy call."
 proves = [
   "Installed engineering utility modules can be scaffolded deterministically in one shot without narrowing to a single function.",
-  "Simple path-like parameters and iterator-heavy helpers survive the generated wrapper path cleanly.",
-  "The generated facade can execute multiple real upstream functions without hand-written glue code.",
+  "Simple path- and module-oriented helpers survive the generated wrapper path cleanly.",
+  "The generated facade can inspect real checked-in files without hand-written glue code.",
 ]
 
 [target]
@@ -24,33 +24,41 @@ imports = ["openmdao.utils.file_utils"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^files_iter$", "^get_module_path$", "^package_iter$"]
+symbol_include_patterns = ["^fname2mod_name$", "^get_module_path$", "^get_tempdir$", "^is_python_file$"]
 
 [ingestion]
-min_generated_tools = 3
-required_tools = ["files_iter", "get_module_path", "package_iter"]
+min_generated_tools = 4
+required_tools = ["fname2mod_name", "get_module_path", "get_tempdir", "is_python_file"]
 
-[smoke]
-[[smoke.steps]]
-label = "Resolve the installed path for the local mcpme package"
+[workflow]
+[[workflow.steps]]
+label = "Confirm the checked-in demo module is a Python file"
+tool = "is_python_file"
+arguments = { file_path = "{challenge_fixture_dir}/demo_pkg/core.py" }
+
+[workflow.steps.expect]
+text_contains = ["true"]
+
+[[workflow.steps]]
+label = "Derive the module basename from the checked-in demo module"
+tool = "fname2mod_name"
+arguments = { fname = "{challenge_fixture_dir}/demo_pkg/core.py" }
+
+[workflow.steps.expect]
+text_contains = ["core"]
+
+[[workflow.steps]]
+label = "Resolve the import path for the checked-in demo module"
 tool = "get_module_path"
-arguments = { fpath = "{repo_root}/src/mcpme/__init__.py" }
+arguments = { fpath = "{challenge_fixture_dir}/demo_pkg/core.py" }
 
-[smoke.steps.expect]
-text_contains = ["mcpme"]
+[workflow.steps.expect]
+text_contains = ["demo_pkg.core"]
 
-[[smoke.steps]]
-label = "Create a file iterator rooted at the local mcpme package"
-tool = "files_iter"
-arguments = { start_dir = "{repo_root}/src/mcpme", file_includes = ["*.py"] }
+[[workflow.steps]]
+label = "Return the active temporary directory used by OpenMDAO file utilities"
+tool = "get_tempdir"
+arguments = {}
 
-[smoke.steps.expect]
-text_contains = ["generator object files_iter"]
-
-[[smoke.steps]]
-label = "Create a package iterator rooted at the local src tree"
-tool = "package_iter"
-arguments = { start_dir = "{repo_root}/src" }
-
-[smoke.steps.expect]
-text_contains = ["generator object package_iter"]
+[workflow.steps.expect]
+text_contains = ["tmp"]

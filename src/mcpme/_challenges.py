@@ -9,7 +9,7 @@ The harness follows the same path a real user would:
 1. Read one challenge specification from deterministic TOML.
 2. Generate a facade with ``scaffold_package`` or ``scaffold_command``.
 3. Build a manifest from that generated facade.
-4. Execute one or more live smoke steps through the normal runtime.
+4. Execute one or more live workflow steps through the normal runtime.
 5. Write stable JSON, JUnit, and markdown reports.
 
 Challenge failures are reported as challenge results rather than harness
@@ -74,8 +74,8 @@ class ChallengeProbe:
 
 
 @dataclass(frozen=True, slots=True)
-class ChallengeSmokeStep:
-    """Describe one live smoke step executed against a generated manifest.
+class ChallengeWorkflowStep:
+    """Describe one live workflow step executed against a generated manifest.
 
     :param tool: Tool name executed through the manifest runtime.
     :param arguments: Raw JSON-like arguments forwarded to the tool.
@@ -104,6 +104,20 @@ class ChallengeSmokeStep:
     expect_files_exist: tuple[str, ...] = ()
     expect_files_nonempty: tuple[str, ...] = ()
     capture_json: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class ChallengeRenderedFile:
+    """Describe one checked-in template rendered into the challenge workspace.
+
+    :param source: Source template path. Relative paths are resolved from the
+        challenge case directory.
+    :param destination: Rendered output path. Relative paths are resolved from
+        the per-run challenge artifact directory.
+    """
+
+    source: str
+    destination: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,9 +165,12 @@ class ChallengeSpec:
     :param probe: Availability probe configuration.
     :param scaffold_kind: Scaffold entry point used for the target.
     :param scaffold_options: Deterministic scaffold options from the catalog.
-    :param ingestion: Expected breadth of the generated facade before smoke
+    :param rendered_files: Optional rendered setup inputs materialized before
+        workflow execution.
+    :param ingestion: Expected breadth of the generated facade before workflow
         execution begins.
-    :param smoke_steps: Smoke-step sequence executed after ingestion succeeds.
+    :param workflow_steps: Workflow-step sequence executed after ingestion
+        succeeds.
     :param example: Narrative metadata rendered into challenge-local README
         files.
     :param catalog_path: Checked-in ``challenge.toml`` path for the case.
@@ -171,7 +188,8 @@ class ChallengeSpec:
     probe: ChallengeProbe
     scaffold_kind: str
     scaffold_options: dict[str, Any]
-    smoke_steps: tuple[ChallengeSmokeStep, ...]
+    rendered_files: tuple[ChallengeRenderedFile, ...] = ()
+    workflow_steps: tuple[ChallengeWorkflowStep, ...] = ()
     ingestion: ChallengeIngestion = field(default_factory=ChallengeIngestion)
     example: ChallengeExample = field(
         default_factory=lambda: ChallengeExample(
@@ -184,10 +202,15 @@ class ChallengeSpec:
     case_dir: Path = Path(".")
     notes: str | None = None
 
+    @property
+    def smoke_steps(self) -> tuple[ChallengeWorkflowStep, ...]:
+        """Return the legacy ``smoke_steps`` view of ``workflow_steps``."""
+        return self.workflow_steps
+
 
 @dataclass(frozen=True, slots=True)
 class ChallengeStepResult:
-    """Capture one executed smoke step result.
+    """Capture one executed workflow step result.
 
     :param tool: Tool name executed by the step.
     :param label: Human-readable label for reports.
@@ -229,7 +252,7 @@ class ChallengeResult:
     :param status: Overall status.
     :param message: Summary message.
     :param generated_tools: Generated facade tool names.
-    :param steps: Executed smoke-step results.
+    :param steps: Executed workflow-step results.
     :param scaffold_path: Generated facade path, when scaffold succeeded.
     :param notes: Optional challenge note.
     """
@@ -261,6 +284,10 @@ class ChallengeResult:
             "scaffoldPath": self.scaffold_path,
             "notes": self.notes,
         }
+
+
+# Backward-compatible alias for the previous internal terminology.
+ChallengeSmokeStep = ChallengeWorkflowStep
 
 
 @dataclass(frozen=True, slots=True)
@@ -511,15 +538,23 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
         )
     scaffold_options = {key: value for key, value in scaffold_data.items() if key != "kind"}
     ingestion = _parse_ingestion(_optional_table(data, "ingestion"), path)
-    smoke_data = _require_table(data, "smoke", path)
-    raw_steps = smoke_data.get("steps")
+    if "workflow" in data and "smoke" in data:
+        raise ChallengeCatalogError(f"{path}: use either [workflow] or legacy [smoke], not both.")
+    workflow_data = _optional_table(data, "workflow")
+    if not workflow_data and "smoke" in data:
+        workflow_data = _optional_table(data, "smoke")
+    if not workflow_data:
+        raise ChallengeCatalogError(f"{path}: field 'workflow' must be a table.")
+    raw_steps = workflow_data.get("steps")
     if not isinstance(raw_steps, list) or not raw_steps:
-        raise ChallengeCatalogError(f"{path}: smoke.steps must be a non-empty array of tables.")
-    smoke_steps = tuple(_parse_smoke_step(step_data, path) for step_data in raw_steps)
+        raise ChallengeCatalogError(f"{path}: workflow.steps must be a non-empty array of tables.")
+    workflow_steps = tuple(_parse_workflow_step(step_data, path) for step_data in raw_steps)
     example = _parse_example(_require_table(data, "example", path), path)
     notes = data.get("notes")
     if notes is not None and not isinstance(notes, str):
         raise ChallengeCatalogError(f"{path}: notes must be a string when provided.")
+    setup_data = _optional_table(data, "setup")
+    rendered_files = _parse_rendered_files(setup_data.get("rendered_files", ()), path)
     return ChallengeSpec(
         id=challenge_id,
         title=title,
@@ -530,8 +565,9 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
         probe=probe,
         scaffold_kind=scaffold_kind,
         scaffold_options=scaffold_options,
+        rendered_files=rendered_files,
+        workflow_steps=workflow_steps,
         ingestion=ingestion,
-        smoke_steps=smoke_steps,
         example=example,
         catalog_path=path,
         case_dir=path.parent,
@@ -555,6 +591,25 @@ def _parse_example(example_data: dict[str, Any], path: Path) -> ChallengeExample
     )
 
 
+def _parse_rendered_files(value: Any, path: Path) -> tuple[ChallengeRenderedFile, ...]:
+    """Parse optional rendered setup files from one challenge catalog."""
+    if value is None or value == ():
+        return ()
+    if not isinstance(value, list):
+        raise ChallengeCatalogError(f"{path}: setup.rendered_files must be an array of tables.")
+    rendered_files: list[ChallengeRenderedFile] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise ChallengeCatalogError(f"{path}: setup.rendered_files entries must be tables.")
+        rendered_files.append(
+            ChallengeRenderedFile(
+                source=_require_string(item, "source", path),
+                destination=_require_string(item, "destination", path),
+            )
+        )
+    return tuple(rendered_files)
+
+
 def _parse_ingestion(ingestion_data: dict[str, Any], path: Path) -> ChallengeIngestion:
     """Parse optional scaffold breadth expectations from one challenge catalog."""
     min_generated_tools = ingestion_data.get("min_generated_tools", 0)
@@ -573,26 +628,26 @@ def _parse_ingestion(ingestion_data: dict[str, Any], path: Path) -> ChallengeIng
     )
 
 
-def _parse_smoke_step(step_data: Any, path: Path) -> ChallengeSmokeStep:
-    """Normalize one TOML smoke-step table into a dataclass."""
+def _parse_workflow_step(step_data: Any, path: Path) -> ChallengeWorkflowStep:
+    """Normalize one TOML workflow-step table into a dataclass."""
     if not isinstance(step_data, dict):
-        raise ChallengeCatalogError(f"{path}: smoke.steps entries must be tables.")
+        raise ChallengeCatalogError(f"{path}: workflow.steps entries must be tables.")
     tool = _require_string(step_data, "tool", path)
     label = step_data.get("label")
     if label is not None and not isinstance(label, str):
-        raise ChallengeCatalogError(f"{path}: smoke step label must be a string.")
+        raise ChallengeCatalogError(f"{path}: workflow step label must be a string.")
     arguments = step_data.get("arguments", {})
     if not isinstance(arguments, dict):
-        raise ChallengeCatalogError(f"{path}: smoke step arguments must be a table.")
+        raise ChallengeCatalogError(f"{path}: workflow step arguments must be a table.")
     expect_data = _optional_table(step_data, "expect")
     capture_json = step_data.get("capture_json", {})
     if not isinstance(capture_json, dict):
-        raise ChallengeCatalogError(f"{path}: smoke step capture_json must be a table.")
+        raise ChallengeCatalogError(f"{path}: workflow step capture_json must be a table.")
     normalized_capture = {
         _coerce_capture_name(key, path): _coerce_json_path(value, path)
         for key, value in capture_json.items()
     }
-    return ChallengeSmokeStep(
+    return ChallengeWorkflowStep(
         tool=tool,
         arguments=dict(arguments),
         label=label,
@@ -643,6 +698,12 @@ def _run_single_challenge(
 
     try:
         with _pushd(challenge_dir):
+            _materialize_rendered_files(
+                spec.rendered_files,
+                case_dir=spec.case_dir,
+                challenge_dir=challenge_dir,
+                context=context,
+            )
             scaffold_path = challenge_dir / "generated_facade.py"
             scaffold_report = _run_scaffold(
                 spec,
@@ -671,8 +732,8 @@ def _run_single_challenge(
                 artifact_root=challenge_dir / "tool_artifacts",
             )
             step_results: list[ChallengeStepResult] = []
-            for step in spec.smoke_steps:
-                step_result = _execute_smoke_step(
+            for step in spec.workflow_steps:
+                step_result = _execute_workflow_step(
                     manifest=manifest,
                     step=step,
                     context=context,
@@ -702,7 +763,7 @@ def _run_single_challenge(
             style=spec.style,
             slice=spec.slice,
             status="passed",
-            message="All scaffold and smoke steps passed.",
+            message="All scaffold and workflow steps passed.",
             generated_tools=generated_tools,
             steps=tuple(step_results),
             scaffold_path=str(scaffold_path),
@@ -751,6 +812,26 @@ def _run_scaffold(
     )
 
 
+def _materialize_rendered_files(
+    rendered_files: tuple[ChallengeRenderedFile, ...],
+    *,
+    case_dir: Path,
+    challenge_dir: Path,
+    context: dict[str, Any],
+) -> None:
+    """Render checked-in template files into one challenge artifact directory."""
+    for rendered_file in rendered_files:
+        source_value = _render_string(rendered_file.source, context)
+        destination_value = _render_string(rendered_file.destination, context)
+        source_path = Path(source_value)
+        if not source_path.is_absolute():
+            source_path = case_dir / source_path
+        destination_path = _resolve_expected_path(destination_value, challenge_dir)
+        rendered_text = _render_string(source_path.read_text(encoding="utf-8"), context)
+        destination_path.parent.mkdir(parents=True, exist_ok=True)
+        destination_path.write_text(rendered_text, encoding="utf-8")
+
+
 @contextmanager
 def _pushd(path: Path) -> Iterator[None]:
     """Temporarily switch the process working directory.
@@ -771,14 +852,14 @@ def _pushd(path: Path) -> Iterator[None]:
         os.chdir(previous_cwd)
 
 
-def _execute_smoke_step(
+def _execute_workflow_step(
     *,
     manifest: Any,
-    step: ChallengeSmokeStep,
+    step: ChallengeWorkflowStep,
     context: dict[str, Any],
     challenge_dir: Path,
 ) -> ChallengeStepResult:
-    """Execute and validate one smoke step."""
+    """Execute and validate one workflow step."""
     rendered_arguments = _render_value(step.arguments, context)
     if not isinstance(rendered_arguments, dict):
         raise ChallengeCatalogError("Rendered step arguments must be a mapping.")
@@ -799,11 +880,11 @@ def _execute_smoke_step(
 def _validate_step_result(
     *,
     result: ToolExecutionResult,
-    step: ChallengeSmokeStep,
+    step: ChallengeWorkflowStep,
     context: dict[str, Any],
     challenge_dir: Path,
 ) -> ChallengeStepResult:
-    """Validate one executed smoke step and capture follow-on context."""
+    """Validate one executed workflow step and capture follow-on context."""
     content_text = "\n".join(
         block.get("text", "") for block in result.content if block.get("type") == "text"
     )
@@ -925,7 +1006,7 @@ def _validate_step_result(
         tool=step.tool,
         label=label,
         status="passed",
-        message="Smoke step passed.",
+        message="Workflow step passed.",
         captured=captured,
         artifact_dir=_artifact_dir_string(result),
     )

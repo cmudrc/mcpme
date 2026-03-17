@@ -8,11 +8,12 @@ from pathlib import Path
 from mcpme._challenges import (
     ChallengeAggregate,
     ChallengeProbe,
+    ChallengeRenderedFile,
     ChallengeResult,
-    ChallengeSmokeStep,
     ChallengeSpec,
     ChallengeStepResult,
     ChallengeTarget,
+    ChallengeWorkflowStep,
     render_badge_svg,
     render_summary_markdown,
     run_challenge_suite,
@@ -57,18 +58,18 @@ def test_run_challenge_suite_executes_multi_step_package_flow(
         probe=ChallengeProbe(imports=("challenge_pkg",)),
         scaffold_kind="package",
         scaffold_options={"symbol_include_patterns": ["^Counter$"]},
-        smoke_steps=(
-            ChallengeSmokeStep(
+        workflow_steps=(
+            ChallengeWorkflowStep(
                 tool="create_counter",
                 arguments={"start": 4},
                 capture_json={"counter_session_id": "session_id"},
             ),
-            ChallengeSmokeStep(
+            ChallengeWorkflowStep(
                 tool="counter_increment",
                 arguments={"session_id": "{counter_session_id}", "amount": 3},
                 expect_json_fields={"$": 7},
             ),
-            ChallengeSmokeStep(
+            ChallengeWorkflowStep(
                 tool="close_counter",
                 arguments={"session_id": "{counter_session_id}"},
                 expect_structured_fields={"success": True},
@@ -114,7 +115,7 @@ def test_run_challenge_suite_marks_unavailable_targets_as_skipped(tmp_path: Path
         probe=ChallengeProbe(commands=(("definitely_missing_binary",),)),
         scaffold_kind="command",
         scaffold_options={"function_name": "run_missing"},
-        smoke_steps=(ChallengeSmokeStep(tool="run_missing", arguments={}),),
+        workflow_steps=(ChallengeWorkflowStep(tool="run_missing", arguments={}),),
     )
 
     aggregate = run_challenge_suite(
@@ -141,7 +142,7 @@ def test_run_challenge_suite_can_select_specific_ids(tmp_path: Path) -> None:
         probe=ChallengeProbe(commands=(("missing_alpha",),)),
         scaffold_kind="command",
         scaffold_options={},
-        smoke_steps=(ChallengeSmokeStep(tool="alpha"),),
+        workflow_steps=(ChallengeWorkflowStep(tool="alpha"),),
     )
     beta = ChallengeSpec(
         id="beta",
@@ -153,7 +154,7 @@ def test_run_challenge_suite_can_select_specific_ids(tmp_path: Path) -> None:
         probe=ChallengeProbe(commands=(("missing_beta",),)),
         scaffold_kind="command",
         scaffold_options={},
-        smoke_steps=(ChallengeSmokeStep(tool="beta"),),
+        workflow_steps=(ChallengeWorkflowStep(tool="beta"),),
     )
 
     aggregate = run_challenge_suite(
@@ -172,7 +173,7 @@ def test_run_challenge_suite_isolates_upstream_relative_outputs(
     tmp_path: Path,
     monkeypatch: object,
 ) -> None:
-    """Live package smoke steps should run inside the per-challenge artifact directory."""
+    """Live package workflow steps should run inside the per-challenge artifact directory."""
     package_dir = tmp_path / "cwd_pkg"
     package_dir.mkdir()
     (package_dir / "__init__.py").write_text(
@@ -202,8 +203,8 @@ def test_run_challenge_suite_isolates_upstream_relative_outputs(
         probe=ChallengeProbe(imports=("cwd_pkg",)),
         scaffold_kind="package",
         scaffold_options={"symbol_include_patterns": ["^emit_relative_file$"]},
-        smoke_steps=(
-            ChallengeSmokeStep(
+        workflow_steps=(
+            ChallengeWorkflowStep(
                 tool="emit_relative_file",
                 arguments={"name": file_name},
                 expect_files_nonempty=(file_name,),
@@ -223,6 +224,68 @@ def test_run_challenge_suite_isolates_upstream_relative_outputs(
     assert challenge_output.read_text(encoding="utf-8") == "ok"
     assert not repo_side_output.exists()
     assert Path.cwd() == original_cwd
+
+
+def test_run_challenge_suite_renders_setup_inputs_before_the_workflow(
+    tmp_path: Path,
+    monkeypatch: object,
+) -> None:
+    """Rendered setup files should be materialized before workflow execution."""
+    package_dir = tmp_path / "reader_pkg"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text(
+        '"""Challenge package that reads a text file."""\n'
+        "from pathlib import Path\n\n"
+        "def read_text(path: str) -> str:\n"
+        '    """Read a UTF-8 text file.\n\n'
+        "    :param path: File path to read.\n"
+        "    :returns: The file contents.\n"
+        '    """\n'
+        "    return Path(path).read_text(encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    (case_dir / "message.txt.in").write_text("workflow-ready {repo_root}", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    spec = ChallengeSpec(
+        id="reader_pkg",
+        title="Reader package",
+        tier="gha_subset",
+        style="package",
+        slice="systems",
+        target=ChallengeTarget(kind="package", value="reader_pkg"),
+        probe=ChallengeProbe(imports=("reader_pkg",)),
+        scaffold_kind="package",
+        scaffold_options={"symbol_include_patterns": ["^read_text$"]},
+        rendered_files=(
+            ChallengeRenderedFile(
+                source="message.txt.in",
+                destination="{challenge_artifact_dir}/message.txt",
+            ),
+        ),
+        workflow_steps=(
+            ChallengeWorkflowStep(
+                tool="read_text",
+                arguments={"path": "{challenge_artifact_dir}/message.txt"},
+                expect_text_contains=("workflow-ready", "{repo_root}"),
+            ),
+        ),
+        case_dir=case_dir,
+        catalog_path=case_dir / "challenge.toml",
+    )
+
+    aggregate = run_challenge_suite(
+        (spec,),
+        repo_root=tmp_path,
+        artifact_root=tmp_path / "artifacts",
+        selected_tier="gha_subset",
+    )
+
+    rendered_path = tmp_path / "artifacts" / "reader_pkg" / "message.txt"
+    assert aggregate.results[0].status == "passed"
+    assert rendered_path.read_text(encoding="utf-8").startswith("workflow-ready ")
 
 
 def test_challenge_badge_and_summary_render_deterministically() -> None:

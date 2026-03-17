@@ -20,7 +20,7 @@ A lot of engineering tooling is still command-driven, so one-shot CLI ingestion 
 
 ## Ingestion Breadth
 
-This case relies on its smoke flow without extra breadth assertions.
+This case relies on its workflow without extra breadth assertions.
 
 ## Run This Case
 
@@ -36,11 +36,15 @@ Or call the runner directly:
 PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challenges/cases --tier all --only gmsh_cli
 ```
 
+## Prepared Inputs
+
+This case does not need rendered setup inputs.
+
 ## Fixtures
 
 - `challenges/cases/gmsh_cli/fixtures/box.geo`
 
-## Smoke Flow
+## Workflow
 
 ### 1. Generate a mesh from the tiny Gmsh fixture
 
@@ -99,13 +103,13 @@ kind = "command"
 function_name = "run_gmsh"
 help_probe_args = ["-help"]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Generate a mesh from the tiny Gmsh fixture"
 tool = "run_gmsh"
 arguments = { extra_argv = ["{challenge_fixture_dir}/box.geo", "-3", "-o", "{challenge_artifact_dir}/box.msh"] }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 json_fields = { exit_code = 0 }
 files_nonempty = ["{challenge_artifact_dir}/box.msh"]
 ```

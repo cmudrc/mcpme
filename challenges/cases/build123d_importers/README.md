@@ -37,12 +37,16 @@ Or call the runner directly:
 PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challenges/cases --tier all --only build123d_importers
 ```
 
+## Prepared Inputs
+
+This case does not need rendered setup inputs.
+
 ## Fixtures
 
 - `challenges/cases/build123d_importers/fixtures/tri.stl`
 - `challenges/cases/build123d_importers/fixtures/tri.svg`
 
-## Smoke Flow
+## Workflow
 
 ### 1. Import the tiny STL fixture
 
@@ -113,20 +117,20 @@ symbol_include_patterns = ["^import_stl$", "^import_svg$"]
 min_generated_tools = 2
 required_tools = ["import_stl", "import_svg"]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Import the tiny STL fixture"
 tool = "import_stl"
 arguments = { file_name = "{challenge_fixture_dir}/tri.stl" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["Face object"]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Import the tiny SVG fixture"
 tool = "import_svg"
 arguments = { svg_file = "{challenge_fixture_dir}/tri.svg" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["Face object"]
 ```

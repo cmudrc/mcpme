@@ -13,7 +13,7 @@ import argparse
 import json
 from pathlib import Path
 
-from mcpme._challenges import ChallengeSmokeStep, ChallengeSpec, load_challenge_catalog
+from mcpme._challenges import ChallengeSpec, ChallengeWorkflowStep, load_challenge_catalog
 
 
 def _repo_root() -> Path:
@@ -54,11 +54,11 @@ def _render_fixture_list(spec: ChallengeSpec, repo_root: Path) -> list[str]:
     return bullets
 
 
-def _render_step(step: ChallengeSmokeStep, index: int) -> str:
-    """Render one smoke step as readable Markdown.
+def _render_step(step: ChallengeWorkflowStep, index: int) -> str:
+    """Render one workflow step as readable Markdown.
 
     The generated case README should read like a worked example, so we render
-    each smoke step as a short labeled section instead of a dense serialized
+    each workflow step as a short labeled section instead of a dense serialized
     blob.
     """
     label = step.label or step.tool
@@ -93,13 +93,32 @@ def _render_step(step: ChallengeSmokeStep, index: int) -> str:
 def _render_ingestion_breadth(spec: ChallengeSpec) -> list[str]:
     """Render one challenge's scaffold breadth expectations for Markdown."""
     if spec.ingestion.min_generated_tools == 0 and not spec.ingestion.required_tools:
-        return ["This case relies on its smoke flow without extra breadth assertions."]
+        return ["This case relies on its workflow without extra breadth assertions."]
     lines: list[str] = []
     if spec.ingestion.min_generated_tools:
         lines.append(f"- Minimum generated tools: `{spec.ingestion.min_generated_tools}`")
     if spec.ingestion.required_tools:
         required = ", ".join(f"`{tool}`" for tool in spec.ingestion.required_tools)
         lines.append(f"- Required generated tools: {required}")
+    return lines
+
+
+def _render_setup_files(spec: ChallengeSpec, repo_root: Path) -> list[str]:
+    """Render any prepared workflow inputs for one challenge."""
+    if not spec.rendered_files:
+        return ["This case does not need rendered setup inputs."]
+    lines: list[str] = []
+    for rendered_file in spec.rendered_files:
+        source = Path(rendered_file.source)
+        if not source.is_absolute():
+            source = spec.case_dir / source
+        try:
+            source_label = source.relative_to(repo_root).as_posix()
+        except ValueError:
+            source_label = str(source)
+        lines.append(
+            f"- Render `{source_label}` to `{rendered_file.destination}` before the workflow runs."
+        )
     return lines
 
 
@@ -154,6 +173,14 @@ def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
             raw_command,
             "```",
             "",
+            _heading("Prepared Inputs", 2),
+            "",
+        ]
+    )
+    parts.extend(_render_setup_files(spec, repo_root))
+    parts.extend(
+        [
+            "",
             _heading("Fixtures", 2),
             "",
         ]
@@ -164,11 +191,11 @@ def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
     parts.extend(
         [
             "",
-            _heading("Smoke Flow", 2),
+            _heading("Workflow", 2),
             "",
         ]
     )
-    for index, step in enumerate(spec.smoke_steps, start=1):
+    for index, step in enumerate(spec.workflow_steps, start=1):
         parts.extend([_render_step(step, index), ""])
     parts.extend(
         [

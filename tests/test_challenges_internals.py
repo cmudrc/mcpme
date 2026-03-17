@@ -14,10 +14,11 @@ from mcpme._challenges import (
     ChallengeCatalogError,
     ChallengeIngestion,
     ChallengeProbe,
+    ChallengeRenderedFile,
     ChallengeResult,
-    ChallengeSmokeStep,
     ChallengeSpec,
     ChallengeTarget,
+    ChallengeWorkflowStep,
     _badge_color,
     _coerce_capture_name,
     _coerce_json_path,
@@ -32,6 +33,7 @@ from mcpme._challenges import (
     _parse_expectation_table,
     _parse_import_list,
     _parse_ingestion,
+    _parse_rendered_files,
     _parse_string_tuple,
     _path_tokens,
     _probe_availability,
@@ -85,6 +87,15 @@ def test_challenge_parser_and_rendering_helpers_cover_error_paths(tmp_path: Path
         {"min_generated_tools": 2, "required_tools": ["alpha", "beta"]},
         fake_path,
     ) == ChallengeIngestion(min_generated_tools=2, required_tools=("alpha", "beta"))
+    assert _parse_rendered_files(
+        [{"source": "fixtures/demo.in", "destination": "{challenge_artifact_dir}/demo.txt"}],
+        fake_path,
+    ) == (
+        ChallengeRenderedFile(
+            source="fixtures/demo.in",
+            destination="{challenge_artifact_dir}/demo.txt",
+        ),
+    )
     assert _parse_expectation_table({"beta": 2, "alpha": 1}, fake_path) == {
         "alpha": 1,
         "beta": 2,
@@ -129,6 +140,8 @@ def test_challenge_parser_and_rendering_helpers_cover_error_paths(tmp_path: Path
     with pytest.raises(ChallengeCatalogError):
         _parse_string_tuple("value", fake_path)
     with pytest.raises(ChallengeCatalogError):
+        _parse_rendered_files("fixtures/demo.in", fake_path)
+    with pytest.raises(ChallengeCatalogError):
         _parse_ingestion({"min_generated_tools": -1}, fake_path)
     with pytest.raises(ChallengeCatalogError):
         _parse_expectation_table([], fake_path)
@@ -166,7 +179,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert (
         _validate_step_result(
             result=plain_result,
-            step=ChallengeSmokeStep(tool="tool", expect_tool_error=True),
+            step=ChallengeWorkflowStep(tool="tool", expect_tool_error=True),
             context={},
             challenge_dir=tmp_path,
         ).status
@@ -175,7 +188,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert (
         _validate_step_result(
             result=plain_result,
-            step=ChallengeSmokeStep(tool="tool", expect_text_contains=("missing",)),
+            step=ChallengeWorkflowStep(tool="tool", expect_text_contains=("missing",)),
             context={},
             challenge_dir=tmp_path,
         ).status
@@ -184,7 +197,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert (
         _validate_step_result(
             result=plain_result,
-            step=ChallengeSmokeStep(tool="tool", expect_json_fields={"value": 1}),
+            step=ChallengeWorkflowStep(tool="tool", expect_json_fields={"value": 1}),
             context={},
             challenge_dir=tmp_path,
         ).status
@@ -193,7 +206,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert (
         _validate_step_result(
             result=plain_result,
-            step=ChallengeSmokeStep(tool="tool", expect_structured_fields={"value": 1}),
+            step=ChallengeWorkflowStep(tool="tool", expect_structured_fields={"value": 1}),
             context={},
             challenge_dir=tmp_path,
         ).status
@@ -202,7 +215,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert (
         _validate_step_result(
             result=json_result,
-            step=ChallengeSmokeStep(tool="tool", expect_files_exist=("missing.txt",)),
+            step=ChallengeWorkflowStep(tool="tool", expect_files_exist=("missing.txt",)),
             context={},
             challenge_dir=tmp_path,
         ).status
@@ -211,7 +224,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert (
         _validate_step_result(
             result=json_result,
-            step=ChallengeSmokeStep(tool="tool", expect_files_nonempty=(str(empty_file),)),
+            step=ChallengeWorkflowStep(tool="tool", expect_files_nonempty=(str(empty_file),)),
             context={},
             challenge_dir=tmp_path,
         ).status
@@ -220,7 +233,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert (
         _validate_step_result(
             result=plain_result,
-            step=ChallengeSmokeStep(tool="tool", capture_json={"session_id": "session_id"}),
+            step=ChallengeWorkflowStep(tool="tool", capture_json={"session_id": "session_id"}),
             context={},
             challenge_dir=tmp_path,
         ).status
@@ -229,7 +242,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     context: dict[str, object] = {}
     success = _validate_step_result(
         result=json_result,
-        step=ChallengeSmokeStep(
+        step=ChallengeWorkflowStep(
             tool="tool",
             expect_json_fields={"value": 2},
             expect_structured_fields={"value": 2},
@@ -253,7 +266,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
         probe=ChallengeProbe(imports=("missing_pkg",)),
         scaffold_kind="package",
         scaffold_options={},
-        smoke_steps=(ChallengeSmokeStep(tool="tool"),),
+        workflow_steps=(ChallengeWorkflowStep(tool="tool"),),
     )
     missing_path_spec = ChallengeSpec(
         id="missing_path",
@@ -265,7 +278,7 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
         probe=ChallengeProbe(commands=(("/missing/tool",),)),
         scaffold_kind="command",
         scaffold_options={},
-        smoke_steps=(ChallengeSmokeStep(tool="tool"),),
+        workflow_steps=(ChallengeWorkflowStep(tool="tool"),),
     )
     assert "import failed" in _probe_availability(missing_import_spec, {"venv_bin_dir": ""})  # type: ignore[arg-type]
     assert "missing" in _probe_availability(missing_path_spec, {"venv_bin_dir": ""})  # type: ignore[arg-type]
@@ -308,7 +321,7 @@ def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(
         probe=ChallengeProbe(),
         scaffold_kind="command",
         scaffold_options={"function_name": "run_echo", "help_probe_args": ["-h"]},
-        smoke_steps=(ChallengeSmokeStep(tool="run_echo"),),
+        workflow_steps=(ChallengeWorkflowStep(tool="run_echo"),),
     )
     context = {
         "repo_root": str(tmp_path),

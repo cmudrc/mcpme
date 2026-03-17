@@ -37,8 +37,8 @@ def test_load_challenge_catalog_rejects_duplicate_ids(tmp_path: Path) -> None:
                     "[scaffold]",
                     'kind = "package"',
                     "",
-                    "[smoke]",
-                    "[[smoke.steps]]",
+                    "[workflow]",
+                    "[[workflow.steps]]",
                     'tool = "demo"',
                     "",
                 ]
@@ -78,8 +78,8 @@ def test_load_challenge_catalog_rejects_invalid_metadata(tmp_path: Path) -> None
                 "[scaffold]",
                 'kind = "command"',
                 "",
-                "[smoke]",
-                "[[smoke.steps]]",
+                "[workflow]",
+                "[[workflow.steps]]",
                 'tool = "demo"',
                 "",
             ]
@@ -123,8 +123,8 @@ def test_load_challenge_catalog_rejects_invalid_ingestion_metadata(tmp_path: Pat
                 "min_generated_tools = -1",
                 'required_tools = ["demo"]',
                 "",
-                "[smoke]",
-                "[[smoke.steps]]",
+                "[workflow]",
+                "[[workflow.steps]]",
                 'tool = "demo"',
                 "",
             ]

@@ -37,12 +37,16 @@ Or call the runner directly:
 PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challenges/cases --tier all --only build123d_root
 ```
 
+## Prepared Inputs
+
+This case does not need rendered setup inputs.
+
 ## Fixtures
 
 - `challenges/cases/build123d_root/fixtures/tri.stl`
 - `challenges/cases/build123d_root/fixtures/tri.svg`
 
-## Smoke Flow
+## Workflow
 
 ### 1. Import the STL fixture through the filtered root facade
 
@@ -116,20 +120,20 @@ max_generated_tools = 8
 min_generated_tools = 2
 required_tools = ["importers__import_stl", "importers__import_svg"]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Import the STL fixture through the filtered root facade"
 tool = "importers__import_stl"
 arguments = { file_name = "{challenge_fixture_dir}/tri.stl" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["Face object"]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Import the SVG fixture through the filtered root facade"
 tool = "importers__import_svg"
 arguments = { svg_file = "{challenge_fixture_dir}/tri.svg" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["Face object"]
 ```

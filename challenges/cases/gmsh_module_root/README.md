@@ -37,11 +37,15 @@ Or call the runner directly:
 PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challenges/cases --tier all --only gmsh_module_root
 ```
 
+## Prepared Inputs
+
+This case does not need rendered setup inputs.
+
 ## Fixtures
 
 This case does not need checked-in fixtures.
 
-## Smoke Flow
+## Workflow
 
 ### 1. Initialize the upstream Gmsh module
 
@@ -103,26 +107,26 @@ max_generated_tools = 8
 min_generated_tools = 4
 required_tools = ["clear", "finalize", "initialize", "is_initialized"]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Initialize the upstream Gmsh module"
 tool = "initialize"
 arguments = {}
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Verify the upstream Gmsh module reports itself as initialized"
 tool = "is_initialized"
 arguments = {}
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["1"]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Clear any active Gmsh models and views"
 tool = "clear"
 arguments = {}
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Finalize the upstream Gmsh module"
 tool = "finalize"
 arguments = {}

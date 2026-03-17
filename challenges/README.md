@@ -32,8 +32,8 @@ make challenge CASE=openmdao_file_utils
 | [`gmsh_cli`](cases/gmsh_cli/README.md) | `gha_subset` | `aerodynamics` | `gmsh` | Wrap the `gmsh` CLI, feed it a tiny `.geo` model, and verify a mesh file is produced. |
 | [`gmsh_module_root`](cases/gmsh_module_root/README.md) | `local_full` | `aerodynamics` | `gmsh` | Wrap the Python `gmsh` module root and exercise a fuller initialize/check/clear/finalize lifecycle. |
 | [`openmdao_api_problem`](cases/openmdao_api_problem/README.md) | `local_full` | `systems` | `openmdao.api` | Wrap `openmdao.api.Problem` from the package root and drive a broader setup-and-inspection lifecycle. |
-| [`openmdao_file_utils`](cases/openmdao_file_utils/README.md) | `gha_subset` | `systems` | `openmdao.utils.file_utils` | Wrap several `openmdao.utils.file_utils` helpers and exercise real path and iterator routes in this repo. |
+| [`openmdao_file_utils`](cases/openmdao_file_utils/README.md) | `gha_subset` | `systems` | `openmdao.utils.file_utils` | Wrap concrete `openmdao.utils.file_utils` helpers and inspect a checked-in demo package like a real utility workflow. |
 | [`pynastran_bdf`](cases/pynastran_bdf/README.md) | `gha_subset` | `structures` | `pyNastran.bdf.bdf` | Wrap `pyNastran`'s `BDF` class, create a node, inspect model stats, and write a non-empty deck file. |
-| [`su2_cli`](cases/su2_cli/README.md) | `local_full` | `aerodynamics` | `SU2_CFD` | Wrap the `SU2_CFD` executable and at least verify its CLI contract when available. |
+| [`su2_cli`](cases/su2_cli/README.md) | `local_full` | `aerodynamics` | `SU2_CFD` | Wrap the `SU2_CFD` executable and run a tiny adapted official tutorial case when it is available. |
 | [`submitit_root`](cases/submitit_root/README.md) | `local_full` | `hpc` | `submitit` | Wrap `submitit.LocalExecutor` and `submitit.AutoExecutor`, then exercise both executor lifecycles. |
-| [`xfoil_cli`](cases/xfoil_cli/README.md) | `local_full` | `aerodynamics` | `xfoil` | Wrap the `xfoil` executable and verify its CLI contract when it is installed. |
+| [`xfoil_cli`](cases/xfoil_cli/README.md) | `local_full` | `aerodynamics` | `xfoil` | Wrap the `xfoil` executable and run a tiny batch polar-generation workflow when it is installed. |

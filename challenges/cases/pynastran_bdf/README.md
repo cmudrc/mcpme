@@ -37,11 +37,15 @@ Or call the runner directly:
 PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challenges/cases --tier all --only pynastran_bdf
 ```
 
+## Prepared Inputs
+
+This case does not need rendered setup inputs.
+
 ## Fixtures
 
 This case does not need checked-in fixtures.
 
-## Smoke Flow
+## Workflow
 
 ### 1. Create a BDF session
 
@@ -163,35 +167,35 @@ required_tools = [
   "close_bdf",
 ]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Create a BDF session"
 tool = "create_bdf"
 arguments = { debug = false }
 capture_json = { bdf_session_id = "session_id" }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Add one structural grid point"
 tool = "bdf_add_grid"
 arguments = { session_id = "{bdf_session_id}", nid = 1, xyz = [0.0, 0.0, 0.0] }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Inspect BDF statistics after adding the grid"
 tool = "bdf_get_bdf_stats"
 arguments = { session_id = "{bdf_session_id}" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["BDF Statistics"]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Write the resulting BDF deck"
 tool = "bdf_write_bdf"
 arguments = { session_id = "{bdf_session_id}", out_filename = "{challenge_artifact_dir}/model.bdf" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 files_nonempty = ["{challenge_artifact_dir}/model.bdf"]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Close the BDF session"
 tool = "close_bdf"
 arguments = { session_id = "{bdf_session_id}" }

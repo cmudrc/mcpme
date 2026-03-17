@@ -38,35 +38,35 @@ required_tools = [
   "close_local_executor",
 ]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Create a LocalExecutor session"
 tool = "create_local_executor"
 arguments = { folder = "{challenge_artifact_dir}/submitit" }
 capture_json = { local_executor_session_id = "session_id" }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Update executor parameters"
 tool = "local_executor_update_parameters"
 arguments = { session_id = "{local_executor_session_id}", args = [], kwargs = { timeout_min = 1 } }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Close the LocalExecutor session"
 tool = "close_local_executor"
 arguments = { session_id = "{local_executor_session_id}" }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Create an AutoExecutor session"
 tool = "create_auto_executor"
 arguments = { args = ["{challenge_artifact_dir}/submitit_auto"], kwargs = {} }
 capture_json = { auto_executor_session_id = "session_id" }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Update auto executor parameters"
 tool = "auto_executor_update_parameters"
 arguments = { session_id = "{auto_executor_session_id}", args = [], kwargs = { timeout_min = 1 } }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Close the AutoExecutor session"
 tool = "close_auto_executor"
 arguments = { session_id = "{auto_executor_session_id}" }

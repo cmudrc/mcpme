@@ -9,9 +9,10 @@ from mcpme._challenges import (
     ChallengeExample,
     ChallengeIngestion,
     ChallengeProbe,
-    ChallengeSmokeStep,
+    ChallengeRenderedFile,
     ChallengeSpec,
     ChallengeTarget,
+    ChallengeWorkflowStep,
 )
 
 
@@ -46,8 +47,14 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
         probe=ChallengeProbe(imports=("demo.pkg",)),
         scaffold_kind="package",
         scaffold_options={},
-        smoke_steps=(
-            ChallengeSmokeStep(
+        rendered_files=(
+            ChallengeRenderedFile(
+                source="fixtures/demo.in",
+                destination="{challenge_artifact_dir}/demo.txt",
+            ),
+        ),
+        workflow_steps=(
+            ChallengeWorkflowStep(
                 tool="run_demo",
                 label="Run the demo tool",
                 arguments={"message": "hello"},
@@ -75,6 +82,8 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
     assert "demo_case/challenge.toml" in case_readme
     assert "demo_case/fixtures/demo.txt" in case_readme
     assert "Ingestion Breadth" in case_readme
+    assert "Prepared Inputs" in case_readme
+    assert "fixtures/demo.in" in case_readme
     assert "Minimum generated tools" in case_readme
     assert "close_demo" in case_readme
     assert "Run the demo tool" in case_readme

@@ -1,17 +1,17 @@
-# Self-contained case: probe a heavyweight CFD CLI without overfitting to one machine.
+# Self-contained case: run a tiny real SU2 CFD workflow without overfitting to one machine.
 # This case is allowed to skip cleanly when the upstream executable is not installed.
 id = "su2_cli"
-title = "SU2 CLI availability oneshot"
+title = "SU2 CLI oneshot"
 tier = "local_full"
 style = "command"
 slice = "aerodynamics"
 
 [example]
-summary = "Wrap the `SU2_CFD` executable and at least verify its CLI contract when available."
-motivation = "Some important engineering tools are too heavyweight for default CI runners, but they still belong in the live suite so the product keeps pressure on realistic upstream surfaces."
+summary = "Wrap the `SU2_CFD` executable and run a tiny adapted official tutorial case when it is available."
+motivation = "Some important engineering tools are too heavyweight for default CI runners, but the live suite should still pressure-test a real solver run rather than stopping at a help screen."
 proves = [
-  "The challenge harness can represent heavyweight optional CLIs honestly.",
-  "CLI ingestion can still produce a deterministic wrapper even for tools that are often only available on specialist machines.",
+  "The challenge harness can represent heavyweight optional CLIs honestly while still driving a real workflow.",
+  "CLI ingestion can produce a deterministic wrapper for a real SU2 solver run on specialist machines.",
 ]
 limitations = [
   "This case intentionally degrades to `skipped_unavailable` on machines without SU2 installed.",
@@ -29,8 +29,17 @@ kind = "command"
 function_name = "run_su2_cfd"
 help_probe_args = ["-h"]
 
-[smoke]
-[[smoke.steps]]
-label = "Probe the SU2 CLI help path"
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/inv_NACA0012_minimal.cfg.in"
+destination = "{challenge_artifact_dir}/inv_NACA0012_minimal.cfg"
+
+[workflow]
+[[workflow.steps]]
+label = "Run a one-iteration SU2 direct solve on the tiny adapted tutorial case"
 tool = "run_su2_cfd"
-arguments = { extra_argv = ["-h"] }
+arguments = { extra_argv = ["{challenge_artifact_dir}/inv_NACA0012_minimal.cfg"], cwd = "{challenge_artifact_dir}" }
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = ["{challenge_artifact_dir}/history.csv"]

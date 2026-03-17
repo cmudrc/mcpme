@@ -40,38 +40,38 @@ required_tools = [
   "close_atmosphere",
 ]
 
-[smoke]
-[[smoke.steps]]
+[workflow]
+[[workflow.steps]]
 label = "Create an Atmosphere session"
 tool = "create_atmosphere"
 arguments = { altitude = 1000.0 }
 capture_json = { atmosphere_session_id = "session_id" }
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Compute density from the live session"
 tool = "atmosphere_density"
 arguments = { session_id = "{atmosphere_session_id}" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["."]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Compute pressure from the live session"
 tool = "atmosphere_pressure"
 arguments = { session_id = "{atmosphere_session_id}" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["."]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Compute temperature from the live session"
 tool = "atmosphere_temperature"
 arguments = { session_id = "{atmosphere_session_id}" }
 
-[smoke.steps.expect]
+[workflow.steps.expect]
 text_contains = ["."]
 
-[[smoke.steps]]
+[[workflow.steps]]
 label = "Close the Atmosphere session"
 tool = "close_atmosphere"
 arguments = { session_id = "{atmosphere_session_id}" }
