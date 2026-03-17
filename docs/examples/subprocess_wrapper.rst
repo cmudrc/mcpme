@@ -13,13 +13,20 @@ and output files. That is a common engineering pattern, and it is exactly where
 deterministic manifest-driven subprocess wrapping is more useful than trying to
 rewrite the solver.
 
+Preset Environment
+------------------
+
+The checked-in subprocess contract lives under
+`examples/support/subprocess_wrapper/`: the stand-in solver, the manifest TOML,
+and the shell launcher are all inspectable before execution. Running the
+example only creates derived execution artifacts under
+`artifacts/examples/subprocess_wrapper/`.
+
 Technical Implementation
 ------------------------
 
-- Write a tiny stand-in solver under `artifacts/examples/` that reads an input
-  deck and writes both a JSON result and a report file.
-- Materialize a local `mcpme.toml` sidecar that describes the subprocess
-  command, input schema, rendered files, and retained outputs.
+- Keep the stand-in solver, `mcpme.toml`, and shell launcher checked in under
+  `examples/support/subprocess_wrapper/`.
 - Build a manifest from that config and call the wrapped tool with
   :func:`mcpme.execute_tool`.
 - Print the MCP result so the structured content and retained artifact metadata
@@ -30,12 +37,15 @@ Expected Results
 
 Running this script prints a structured result with a computed lift estimate and
 includes `_meta` artifact details. The retained report file remains available
-under `artifacts/examples/subprocess_wrapper/artifacts/`.
+under `artifacts/examples/subprocess_wrapper/`.
 
 References
 ----------
 
 - ``README.md``
+- ``examples/support/subprocess_wrapper/mcpme.toml``
+- ``examples/support/subprocess_wrapper/legacy_solver.py``
+- ``examples/support/subprocess_wrapper/commands/run_legacy_solver.sh``
 - ``docs/specification.rst``
 - ``docs/quickstart.rst``
 
@@ -45,4 +55,4 @@ Source Code
 .. literalinclude:: ../../examples/subprocess_wrapper.py
    :language: python
    :linenos:
-   :lines: 34-
+   :lines: 43-

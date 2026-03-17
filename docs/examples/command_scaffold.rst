@@ -13,12 +13,21 @@ interface is only exposed through `--help`. `mcpme` captures that help output,
 turns it into a deterministic Python facade, and then wraps the facade like any
 other source-backed tool.
 
+Preset Environment
+------------------
+
+The underlying CLI implementation and its command wrappers are checked in under
+`examples/support/command_scaffold/`. That makes the help surface inspectable
+before execution, while the generated facade still lands under
+`artifacts/examples/command_scaffold/`.
+
 Technical Implementation
 ------------------------
 
-- Write a tiny `argparse`-based CLI under `artifacts/examples/`.
-- Run `python -m mcpme.cli scaffold-command` to generate a wrapper module that
-  exposes named MCP inputs for the command.
+- Keep the tiny CLI and the scaffold command wrapper checked in under
+  `examples/support/command_scaffold/`.
+- Run the public scaffold CLI through the checked-in shell wrapper to generate
+  a facade module under `artifacts/examples/command_scaffold/`.
 - Build a manifest from the generated facade and execute it through
   :func:`mcpme.execute_tool`.
 - Print the scaffold report and normalized subprocess result as JSON.
@@ -34,6 +43,9 @@ References
 ----------
 
 - ``README.md``
+- ``examples/support/command_scaffold/beam_cli.py``
+- ``examples/support/command_scaffold/commands/run_beam_cli.sh``
+- ``examples/support/command_scaffold/commands/scaffold_command.sh``
 - ``docs/quickstart.rst``
 - ``docs/specification.rst``
 
@@ -43,4 +55,4 @@ Source Code
 .. literalinclude:: ../../examples/command_scaffold.py
    :language: python
    :linenos:
-   :lines: 32-
+   :lines: 43-

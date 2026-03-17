@@ -5,7 +5,9 @@ Examples
 
 The examples are part of the maintained public contract for `mcpme`.
 Each page below is generated from the example module docstring and the
-checked-in source file, so the code and prose stay aligned.
+checked-in source file, so the code and prose stay aligned. Examples
+that need local helper inputs keep them under `examples/support/`,
+while derived outputs stay under `artifacts/examples/`.
 
 .. toctree::
    :maxdepth: 1

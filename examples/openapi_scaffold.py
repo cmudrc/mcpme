@@ -6,12 +6,19 @@ This example shows how to ingest an OpenAPI specification without adding any
 runtime AI layer. `mcpme` turns the spec into a plain Python HTTP facade, then
 wraps the generated functions through its normal deterministic discovery path.
 
+## Preset Environment
+
+The OpenAPI document, local test server, and scaffold wrapper are checked in
+under `examples/support/openapi_scaffold/`. That makes the source API surface
+inspectable before running the example, while the generated facade remains a
+derived artifact under `artifacts/examples/openapi_scaffold/`.
+
 ## Technical Implementation
 
-- Write a tiny OpenAPI document and a matching local HTTP server under
-  `artifacts/examples/`.
-- Run `python -m mcpme.cli scaffold-openapi` to generate a Python facade for
-  the API operations.
+- Keep the OpenAPI document and local server checked in under
+  `examples/support/openapi_scaffold/`.
+- Run the public scaffold CLI through a checked-in shell wrapper to generate a
+  Python facade for the API operations.
 - Build a manifest from the generated facade and execute the resulting tools
   through :func:`mcpme.execute_tool`.
 - Print the scaffold report and the normalized HTTP responses as JSON.
@@ -25,6 +32,9 @@ generated facade remains available under `artifacts/examples/openapi_scaffold/`.
 ## References
 
 - ``README.md``
+- ``examples/support/openapi_scaffold/solver_api.json``
+- ``examples/support/openapi_scaffold/solver_api_server.py``
+- ``examples/support/openapi_scaffold/commands/scaffold_openapi.sh``
 - ``docs/quickstart.rst``
 - ``docs/specification.rst``
 """
@@ -35,95 +45,41 @@ import json
 import os
 import subprocess
 import sys
-import threading
-from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
 
 from mcpme import build_manifest, execute_tool
+from support.openapi_scaffold.solver_api_server import solver_api_server
 
-SUPPORT_ROOT = Path("artifacts/examples/openapi_scaffold")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "openapi_scaffold"
+ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "openapi_scaffold"
+SCAFFOLD_PATH = SOURCE_ROOT / "commands" / "scaffold_openapi.sh"
 
 
-def _write_spec(path: Path) -> None:
-    """Write the tiny OpenAPI document ingested by the example."""
-    path.write_text(
-        json.dumps(
-            {
-                "openapi": "3.1.0",
-                "servers": [{"url": "https://example.invalid"}],
-                "paths": {
-                    "/cases/{case_id}": {
-                        "get": {
-                            "operationId": "get_case",
-                            "summary": "Fetch a case.",
-                            "parameters": [
-                                {
-                                    "name": "case_id",
-                                    "in": "path",
-                                    "required": True,
-                                    "description": "Case identifier.",
-                                    "schema": {"type": "string"},
-                                },
-                                {
-                                    "name": "verbose",
-                                    "in": "query",
-                                    "description": "Verbose output.",
-                                    "schema": {"type": "boolean"},
-                                },
-                                {
-                                    "name": "X-Mode",
-                                    "in": "header",
-                                    "description": "Execution mode header.",
-                                    "schema": {"type": "string"},
-                                },
-                            ],
-                        }
-                    },
-                    "/cases": {
-                        "post": {
-                            "operationId": "create_case",
-                            "summary": "Create a case.",
-                            "requestBody": {
-                                "required": True,
-                                "description": "Case payload.",
-                                "content": {"application/json": {"schema": {"type": "object"}}},
-                            },
-                        }
-                    },
-                },
-            },
-            indent=2,
-            sort_keys=True,
-        ),
-        encoding="utf-8",
-    )
+def _require_support_file(path: Path) -> Path:
+    """Require one checked-in support file before running the example."""
+    if not path.exists():
+        raise FileNotFoundError(f"Missing checked-in example support file: {path}")
+    return path
 
 
 def _pythonpath_env() -> dict[str, str]:
     """Build an environment that keeps `mcpme` importable for child processes."""
     env = dict(os.environ)
     existing = env.get("PYTHONPATH")
-    paths = [str(Path("src").resolve())]
+    paths = [str((REPO_ROOT / "src").resolve())]
     if existing:
         paths.append(existing)
     env["PYTHONPATH"] = os.pathsep.join(paths)
+    env.setdefault("PYTHON_BIN", sys.executable)
     return env
 
 
-def _scaffold_openapi(spec_path: Path, output_path: Path) -> dict[str, object]:
+def _scaffold_openapi(output_path: Path) -> dict[str, object]:
     """Run the public OpenAPI scaffold flow and return its JSON report."""
     completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "mcpme.cli",
-            "scaffold-openapi",
-            str(spec_path),
-            str(output_path),
-        ],
-        cwd=Path.cwd(),
+        ["sh", str(_require_support_file(SCAFFOLD_PATH).resolve()), str(output_path)],
+        cwd=REPO_ROOT,
         env=_pythonpath_env(),
         capture_output=True,
         text=True,
@@ -134,14 +90,11 @@ def _scaffold_openapi(spec_path: Path, output_path: Path) -> dict[str, object]:
 
 def run_example() -> dict[str, object]:
     """Ingest the example OpenAPI spec and execute the generated wrappers."""
-    SUPPORT_ROOT.mkdir(parents=True, exist_ok=True)
-    spec_path = SUPPORT_ROOT / "solver_api.json"
-    output_path = SUPPORT_ROOT / "generated_openapi_facade.py"
-    artifact_root = (SUPPORT_ROOT / "artifacts").resolve()
-    _write_spec(spec_path)
-    report = _scaffold_openapi(spec_path, output_path)
-    manifest = build_manifest(targets=[output_path], artifact_root=artifact_root)
-    with _solver_api_server() as base_url:
+    ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    output_path = ARTIFACT_ROOT / "generated_openapi_facade.py"
+    report = _scaffold_openapi(output_path)
+    manifest = build_manifest(targets=[output_path], artifact_root=ARTIFACT_ROOT)
+    with solver_api_server() as base_url:
         get_result = execute_tool(
             manifest,
             "get_case",
@@ -167,54 +120,6 @@ def run_example() -> dict[str, object]:
 def main() -> None:
     """Run the OpenAPI scaffolding example and print JSON output."""
     print(json.dumps(run_example(), indent=2, sort_keys=True))
-
-
-@contextmanager
-def _solver_api_server() -> str:
-    """Run a tiny local HTTP server used by the example OpenAPI calls."""
-
-    class Handler(BaseHTTPRequestHandler):
-        """Serve a tiny deterministic JSON API."""
-
-        def do_GET(self) -> None:
-            """Handle ``GET /cases/<id>`` requests."""
-            parts = urlsplit(self.path)
-            payload = {
-                "case_id": parts.path.rsplit("/", 1)[-1],
-                "verbose": parse_qs(parts.query).get("verbose", ["false"])[0],
-                "mode": self.headers.get("X-Mode"),
-            }
-            body = json.dumps(payload).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        def do_POST(self) -> None:
-            """Handle ``POST /cases`` requests."""
-            content_length = int(self.headers.get("Content-Length", "0"))
-            request_body = self.rfile.read(content_length).decode("utf-8")
-            payload = json.dumps({"received": json.loads(request_body)}).encode("utf-8")
-            self.send_response(201)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(payload)))
-            self.end_headers()
-            self.wfile.write(payload)
-
-        def log_message(self, format: str, *args: object) -> None:
-            """Suppress test-server access logs."""
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        host, port = server.server_address
-        yield f"http://{host}:{port}"
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=5)
 
 
 if __name__ == "__main__":

@@ -7,12 +7,18 @@ and output files. That is a common engineering pattern, and it is exactly where
 deterministic manifest-driven subprocess wrapping is more useful than trying to
 rewrite the solver.
 
+## Preset Environment
+
+The checked-in subprocess contract lives under
+`examples/support/subprocess_wrapper/`: the stand-in solver, the manifest TOML,
+and the shell launcher are all inspectable before execution. Running the
+example only creates derived execution artifacts under
+`artifacts/examples/subprocess_wrapper/`.
+
 ## Technical Implementation
 
-- Write a tiny stand-in solver under `artifacts/examples/` that reads an input
-  deck and writes both a JSON result and a report file.
-- Materialize a local `mcpme.toml` sidecar that describes the subprocess
-  command, input schema, rendered files, and retained outputs.
+- Keep the stand-in solver, `mcpme.toml`, and shell launcher checked in under
+  `examples/support/subprocess_wrapper/`.
 - Build a manifest from that config and call the wrapped tool with
   :func:`mcpme.execute_tool`.
 - Print the MCP result so the structured content and retained artifact metadata
@@ -22,11 +28,14 @@ rewrite the solver.
 
 Running this script prints a structured result with a computed lift estimate and
 includes `_meta` artifact details. The retained report file remains available
-under `artifacts/examples/subprocess_wrapper/artifacts/`.
+under `artifacts/examples/subprocess_wrapper/`.
 
 ## References
 
 - ``README.md``
+- ``examples/support/subprocess_wrapper/mcpme.toml``
+- ``examples/support/subprocess_wrapper/legacy_solver.py``
+- ``examples/support/subprocess_wrapper/commands/run_legacy_solver.sh``
 - ``docs/specification.rst``
 - ``docs/quickstart.rst``
 """
@@ -34,80 +43,24 @@ under `artifacts/examples/subprocess_wrapper/artifacts/`.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
 from mcpme import ToolExecutionResult, build_manifest, execute_tool
 
-SUPPORT_ROOT = Path("artifacts/examples/subprocess_wrapper")
-
-
-def _write_solver_script(path: Path) -> None:
-    """Write the deterministic stand-in solver used by the example."""
-    path.write_text(
-        "import json\n"
-        "from pathlib import Path\n\n"
-        "deck = json.loads(Path('deck.json').read_text(encoding='utf-8'))\n"
-        "lift = round(deck['velocity'] * deck['area'] * 0.5, 3)\n"
-        "Path('result.json').write_text(\n"
-        "    json.dumps({'case_name': deck['case_name'], 'lift': lift}, sort_keys=True),\n"
-        "    encoding='utf-8',\n"
-        ")\n"
-        "reports = Path('reports')\n"
-        "reports.mkdir(exist_ok=True)\n"
-        "Path(reports / 'summary.txt').write_text(\n"
-        "    f\"case={deck['case_name']} lift={lift}\\n\",\n"
-        "    encoding='utf-8',\n"
-        ")\n"
-        "print('solver finished')\n",
-        encoding="utf-8",
-    )
-
-
-def _write_config(path: Path, solver_script: Path, artifact_root: Path) -> None:
-    """Write the subprocess manifest configuration used by the example."""
-    path.write_text(
-        (
-            "[tool.mcpme]\n"
-            f'artifact_root = "{artifact_root.as_posix()}"\n'
-            'artifact_mode = "summary"\n\n'
-            "[[tool.mcpme.subprocess]]\n"
-            'name = "legacy_solver"\n'
-            'description = "Run a deterministic file-driven legacy solver."\n'
-            f'argv = ["{sys.executable}", "{solver_script.as_posix()}"]\n'
-            'result_kind = "file_json"\n'
-            'result_path = "result.json"\n\n'
-            "[tool.mcpme.subprocess.input_schema]\n"
-            'type = "object"\n'
-            'required = ["case_name", "velocity", "area"]\n\n'
-            "[tool.mcpme.subprocess.input_schema.properties.case_name]\n"
-            'type = "string"\n\n'
-            "[tool.mcpme.subprocess.input_schema.properties.velocity]\n"
-            'type = "number"\n\n'
-            "[tool.mcpme.subprocess.input_schema.properties.area]\n"
-            'type = "number"\n\n'
-            "[[tool.mcpme.subprocess.files]]\n"
-            'path = "deck.json"\n'
-            'template = "{{\\"case_name\\": \\"{case_name}\\", '
-            '\\"velocity\\": {velocity}, \\"area\\": {area}}}"\n\n'
-            "[[tool.mcpme.subprocess.outputs]]\n"
-            'path = "reports"\n'
-            'kind = "directory"\n'
-            'when = "success"\n'
-        ),
-        encoding="utf-8",
-    )
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "subprocess_wrapper"
+ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "subprocess_wrapper"
+CONFIG_PATH = SOURCE_ROOT / "mcpme.toml"
 
 
 def run_example() -> ToolExecutionResult:
     """Execute the manifest-driven subprocess example."""
-    SUPPORT_ROOT.mkdir(parents=True, exist_ok=True)
-    solver_script = SUPPORT_ROOT / "legacy_solver.py"
-    config_path = SUPPORT_ROOT / "mcpme.toml"
-    artifact_root = (SUPPORT_ROOT / "artifacts").resolve()
-    _write_solver_script(solver_script)
-    _write_config(config_path, solver_script.resolve(), artifact_root)
-    manifest = build_manifest(config_path=config_path)
+    os.environ.setdefault("PYTHON_BIN", sys.executable)
+    os.environ.setdefault("MCPME_EXAMPLE_SOURCE_ROOT", str(SOURCE_ROOT.resolve()))
+    ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    manifest = build_manifest(config_path=CONFIG_PATH, artifact_root=ARTIFACT_ROOT)
     return execute_tool(
         manifest,
         "legacy_solver",

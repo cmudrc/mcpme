@@ -54,6 +54,19 @@ Run the maintained runnable examples:
 make run-examples
 ```
 
+The smaller runnable examples keep inspectable source inputs under
+`examples/support/` and write only derived outputs under `artifacts/examples/`.
+
+Run the richer case studies for real upstream surfaces:
+
+```bash
+make run-case-studies
+make run-case-study CASE=pycycle_mpcycle
+```
+
+The separate case-study lane follows the same pattern with support inputs under
+`case_studies/support/` and derived outputs under `artifacts/case_studies/`.
+
 Run the live raw-upstream challenge cases:
 
 ```bash
@@ -62,3 +75,4 @@ make challenge CASE=openmdao_file_utils
 ```
 
 The broader live challenge track lives in [challenges/README.md](challenges/README.md).
+The separate case-study lane lives in [case_studies/README.md](case_studies/README.md).

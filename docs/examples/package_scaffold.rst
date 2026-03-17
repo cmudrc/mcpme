@@ -12,12 +12,19 @@ This example shows how to ingest an installed-style Python package that mixes
 plain functions and stateful classes. The package is translated into a plain
 Python facade first, then wrapped through the normal `mcpme` manifest flow.
 
+Preset Environment
+------------------
+
+The demo package and scaffold wrapper are checked in under
+`examples/support/package_scaffold/`. That keeps the package source immediately
+inspectable, while the generated facade remains a derived artifact under
+`artifacts/examples/package_scaffold/`.
+
 Technical Implementation
 ------------------------
 
-- Materialize a tiny package under `artifacts/examples/` so the example stays
-  self-contained and inspectable.
-- Run `python -m mcpme.cli scaffold-package` against that package to generate a
+- Keep the tiny package checked in under `examples/support/package_scaffold/`.
+- Run the public scaffold CLI through a checked-in shell wrapper to generate a
   deterministic wrapper module.
 - Build a manifest from the generated facade and execute both function and
   class-session tools through :func:`mcpme.execute_tool`.
@@ -34,6 +41,9 @@ References
 ----------
 
 - ``README.md``
+- ``examples/support/package_scaffold/workspace/demo_pkg/__init__.py``
+- ``examples/support/package_scaffold/workspace/demo_pkg/core.py``
+- ``examples/support/package_scaffold/commands/scaffold_package.sh``
 - ``docs/quickstart.rst``
 - ``docs/specification.rst``
 
@@ -43,4 +53,4 @@ Source Code
 .. literalinclude:: ../../examples/package_scaffold.py
    :language: python
    :linenos:
-   :lines: 32-
+   :lines: 41-
