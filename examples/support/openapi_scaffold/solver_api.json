@@ -1,0 +1,60 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/cases": {
+      "post": {
+        "operationId": "create_case",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "description": "Case payload.",
+          "required": true
+        },
+        "summary": "Create a case."
+      }
+    },
+    "/cases/{case_id}": {
+      "get": {
+        "operationId": "get_case",
+        "parameters": [
+          {
+            "description": "Case identifier.",
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Verbose output.",
+            "in": "query",
+            "name": "verbose",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Execution mode header.",
+            "in": "header",
+            "name": "X-Mode",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Fetch a case."
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://example.invalid"
+    }
+  ]
+}

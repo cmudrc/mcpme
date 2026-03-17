@@ -10,6 +10,11 @@ Each Python example:
 - exercises at least one real deterministic wrapping pattern, and
 - is runnable from the repository root with `PYTHONPATH=src`.
 
+Examples that need local helper inputs keep them checked in under
+`examples/support/<example_id>/`, so the environment is inspectable before
+execution. Derived outputs such as generated facades and retained run artifacts
+belong under `artifacts/examples/<example_id>/`.
+
 Included examples:
 
 - `basic_usage.py`: wrap a typed Python callable and inspect the generated manifest.

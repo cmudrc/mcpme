@@ -26,8 +26,12 @@ merging.
   - `make type`
   - `make test`
 - If docs changed:
+  - `make case-study-docs-check`
   - `make docs-check`
   - `make docs`
+- If case studies changed:
+  - `python scripts/generate_case_study_docs.py`
+  - `make run-case-studies`
 - If the example changed:
   - `make run-examples`
   - `python scripts/generate_example_docs.py`
@@ -62,6 +66,14 @@ merging.
   intentionally live, separate from the main gate, and should remain
   non-gating.
 - Update tests, docs, and examples alongside behavior changes.
+- Keep `case_studies/` separate from the small core `examples/` contract. Case
+  studies may depend on heavyweight optional upstream runtimes and may report
+  `skipped_unavailable`, but they should still use only the public `mcpme`
+  surface.
+- Keep checked-in support inputs under `examples/support/<id>/` and
+  `case_studies/support/<id>/`. Generated facades and retained execution
+  artifacts belong under `artifacts/` and should not be promoted into the
+  support trees.
 - Keep example module docstrings authoritative. Generated example docs should be
   refreshed whenever examples change.
 - Keep `challenges/` out of the public API and example-doc contract unless

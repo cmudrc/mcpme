@@ -11,12 +11,14 @@ from pathlib import Path
 
 REQUIRED_SECTIONS = (
     "Introduction",
+    "Preset Environment",
     "Technical Implementation",
     "Expected Results",
     "References",
 )
 HEADING_CHARS = {
     "Introduction": "-",
+    "Preset Environment": "-",
     "Technical Implementation": "-",
     "Expected Results": "-",
     "References": "-",
@@ -43,13 +45,7 @@ def _repo_root() -> Path:
 def _discover_examples(repo_root: Path) -> list[Path]:
     """Discover runnable Python example scripts."""
     examples_root = repo_root / "examples"
-    return [
-        path
-        for path in sorted(examples_root.rglob("*.py"))
-        if "__pycache__" not in path.parts
-        and "artifacts" not in path.parts
-        and not path.name.startswith("_")
-    ]
+    return [path for path in sorted(examples_root.glob("*.py")) if not path.name.startswith("_")]
 
 
 def _parse_module_doc_text(path: Path) -> tuple[str, int]:
@@ -172,7 +168,9 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
         "",
         "The examples are part of the maintained public contract for `mcpme`.",
         "Each page below is generated from the example module docstring and the",
-        "checked-in source file, so the code and prose stay aligned.",
+        "checked-in source file, so the code and prose stay aligned. Examples",
+        "that need local helper inputs keep them under `examples/support/`,",
+        "while derived outputs stay under `artifacts/examples/`.",
         "",
         ".. toctree::",
         "   :maxdepth: 1",

@@ -12,11 +12,15 @@ It is built for teams that want wrappers they can inspect and trust:
 - generate plain Python facades for packages, CLIs, OpenAPI specs, and
   batch-style subprocess tools
 
+The checked-in examples and case studies keep their preset support inputs in
+source control and reserve ``artifacts/`` for derived outputs only.
+
 Start Here
 ----------
 
 - :doc:`Quickstart <quickstart>` for the fastest end-to-end path
 - :doc:`Examples <examples/index>` for runnable patterns
+- :doc:`Case Studies <case_studies/index>` for richer optional upstream walkthroughs
 - :doc:`API <api>` for the supported public surface
 - :doc:`Specification <specification>` for the deterministic contract
 
@@ -26,6 +30,7 @@ Start Here
 
    Quickstart <quickstart>
    Examples <examples/index>
+   Case Studies <case_studies/index>
    API <api>
    Spec <specification>
    Notes <development_notes>

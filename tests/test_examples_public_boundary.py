@@ -12,6 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES_ROOT = REPO_ROOT / "examples"
 REQUIRED_DOC_SECTIONS = (
     "Introduction",
+    "Preset Environment",
     "Technical Implementation",
     "Expected Results",
     "References",
@@ -34,8 +35,8 @@ def _collect_violations(*, pattern: re.Pattern[str], root: Path) -> list[str]:
 def _iter_example_doc_lines() -> list[tuple[Path, list[str]]]:
     """Yield example paths and their module docstring lines."""
     docs: list[tuple[Path, list[str]]] = []
-    for path in sorted(EXAMPLES_ROOT.rglob("*.py")):
-        if "__pycache__" in path.parts or "artifacts" in path.parts or path.name.startswith("_"):
+    for path in sorted(EXAMPLES_ROOT.glob("*.py")):
+        if path.name.startswith("_"):
             continue
         module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         docstring = ast.get_docstring(module, clean=False)
@@ -58,6 +59,57 @@ def _extract_markdown_section_names(lines: list[str]) -> set[str]:
     return names
 
 
+def _expr_uses_artifact_root(expression: ast.AST) -> bool:
+    """Return whether one AST expression clearly points at the artifact tree."""
+    rendered = ast.unparse(expression)
+    return "ARTIFACT_ROOT" in rendered or "artifacts" in rendered
+
+
+def _iter_runtime_materialization_violations() -> list[str]:
+    """Find example entrypoints that still materialize source inputs at runtime."""
+    violations: list[str] = []
+    for path in sorted(EXAMPLES_ROOT.glob("*.py")):
+        if path.name.startswith("_"):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if isinstance(node.func, ast.Attribute) and node.func.attr in {
+                "write_text",
+                "write_bytes",
+            }:
+                violations.append(
+                    f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file writes are not "
+                    "allowed in example entrypoints."
+                )
+                continue
+            if isinstance(node.func, ast.Attribute) and node.func.attr == "mkdir":
+                if not _expr_uses_artifact_root(node.func.value):
+                    violations.append(
+                        f"{path.relative_to(REPO_ROOT)}:{node.lineno}: mkdir is only allowed "
+                        "under ARTIFACT_ROOT in example entrypoints."
+                    )
+                continue
+            if isinstance(node.func, ast.Name) and node.func.id == "open":
+                mode_arg = node.args[1] if len(node.args) > 1 else None
+                if mode_arg is None:
+                    for keyword in node.keywords:
+                        if keyword.arg == "mode":
+                            mode_arg = keyword.value
+                            break
+                if (
+                    isinstance(mode_arg, ast.Constant)
+                    and isinstance(mode_arg.value, str)
+                    and any(flag in mode_arg.value for flag in ("w", "a", "x", "+"))
+                ):
+                    violations.append(
+                        f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file opens in "
+                        "write mode are not allowed in example entrypoints."
+                    )
+    return violations
+
+
 def test_examples_import_only_the_public_package_root() -> None:
     """Examples should not import internal modules or deep package paths."""
     private_pattern = re.compile(r"^\s*(from|import)\s+mcpme\._")
@@ -75,6 +127,12 @@ def test_examples_include_canonical_module_doc_sections() -> None:
         missing = [section for section in REQUIRED_DOC_SECTIONS if section not in present]
         if missing:
             violations.append(f"{path.relative_to(REPO_ROOT)}: missing sections {missing}")
+    assert violations == [], "\n".join(violations)
+
+
+def test_examples_do_not_materialize_support_inputs_at_runtime() -> None:
+    """Examples should keep support inputs checked in rather than writing them on the fly."""
+    violations = _iter_runtime_materialization_violations()
     assert violations == [], "\n".join(violations)
 
 

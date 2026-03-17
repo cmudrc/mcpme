@@ -9,6 +9,13 @@ The wrapped function models a small engineering post-processing helper. It is
 already trusted and deterministic, so the wrapper layer focuses on harvesting
 its public interface and preserving its execution contract.
 
+## Preset Environment
+
+This example is intentionally a single-file in-memory walkthrough. There is no
+checked-in support tree under `examples/support/` for it because the point is
+to show the smallest source-first path from a plain Python callable to a
+manifest.
+
 ## Technical Implementation
 
 - Import only the curated top-level public API from `mcpme`.

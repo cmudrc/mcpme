@@ -15,6 +15,14 @@ The wrapped function models a small engineering post-processing helper. It is
 already trusted and deterministic, so the wrapper layer focuses on harvesting
 its public interface and preserving its execution contract.
 
+Preset Environment
+------------------
+
+This example is intentionally a single-file in-memory walkthrough. There is no
+checked-in support tree under `examples/support/` for it because the point is
+to show the smallest source-first path from a plain Python callable to a
+manifest.
+
 Technical Implementation
 ------------------------
 
@@ -44,4 +52,4 @@ Source Code
 .. literalinclude:: ../../examples/basic_usage.py
    :language: python
    :linenos:
-   :lines: 33-
+   :lines: 40-

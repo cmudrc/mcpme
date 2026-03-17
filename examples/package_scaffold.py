@@ -6,11 +6,17 @@ This example shows how to ingest an installed-style Python package that mixes
 plain functions and stateful classes. The package is translated into a plain
 Python facade first, then wrapped through the normal `mcpme` manifest flow.
 
+## Preset Environment
+
+The demo package and scaffold wrapper are checked in under
+`examples/support/package_scaffold/`. That keeps the package source immediately
+inspectable, while the generated facade remains a derived artifact under
+`artifacts/examples/package_scaffold/`.
+
 ## Technical Implementation
 
-- Materialize a tiny package under `artifacts/examples/` so the example stays
-  self-contained and inspectable.
-- Run `python -m mcpme.cli scaffold-package` against that package to generate a
+- Keep the tiny package checked in under `examples/support/package_scaffold/`.
+- Run the public scaffold CLI through a checked-in shell wrapper to generate a
   deterministic wrapper module.
 - Build a manifest from the generated facade and execute both function and
   class-session tools through :func:`mcpme.execute_tool`.
@@ -25,6 +31,9 @@ facade remains on disk under `artifacts/examples/package_scaffold/`.
 ## References
 
 - ``README.md``
+- ``examples/support/package_scaffold/workspace/demo_pkg/__init__.py``
+- ``examples/support/package_scaffold/workspace/demo_pkg/core.py``
+- ``examples/support/package_scaffold/commands/scaffold_package.sh``
 - ``docs/quickstart.rst``
 - ``docs/specification.rst``
 """
@@ -39,43 +48,18 @@ from pathlib import Path
 
 from mcpme import build_manifest, execute_tool
 
-SUPPORT_ROOT = Path("artifacts/examples/package_scaffold")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "package_scaffold"
+ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "package_scaffold"
+WORKSPACE_ROOT = SOURCE_ROOT / "workspace"
+SCAFFOLD_PATH = SOURCE_ROOT / "commands" / "scaffold_package.sh"
 
 
-def _write_package(package_root: Path) -> None:
-    """Write the tiny package ingested by the example."""
-    package_root.mkdir(parents=True, exist_ok=True)
-    (package_root / "__init__.py").write_text(
-        '"""Tiny package used by the package scaffolding example."""\n'
-        "from .core import CounterSession, solve\n\n"
-        '__all__ = ["solve", "CounterSession"]\n',
-        encoding="utf-8",
-    )
-    (package_root / "core.py").write_text(
-        '"""Core package tools."""\n\n'
-        "def solve(mesh_size: int = 2) -> int:\n"
-        '    """Solve a deterministic case.\n\n'
-        "    :param mesh_size: Mesh size.\n"
-        "    :returns: Scaled score.\n"
-        '    """\n'
-        "    return mesh_size * 3\n\n\n"
-        "class CounterSession:\n"
-        '    """Maintain a tiny mutable counter.\n\n'
-        "    :param start: Starting count.\n"
-        '    """\n\n'
-        "    def __init__(self, start: int = 0) -> None:\n"
-        "        self.value = start\n\n"
-        "    def increment(self, amount: int = 1) -> int:\n"
-        '        """Increment the counter.\n\n'
-        "        :param amount: Increment amount.\n"
-        "        :returns: Updated count.\n"
-        '        """\n'
-        "        self.value += amount\n"
-        "        return self.value\n\n"
-        "    def close(self) -> None:\n"
-        "        self.value = -1\n",
-        encoding="utf-8",
-    )
+def _require_support_file(path: Path) -> Path:
+    """Require one checked-in support file before running the example."""
+    if not path.exists():
+        raise FileNotFoundError(f"Missing checked-in example support file: {path}")
+    return path
 
 
 def _pythonpath_env(*paths: Path) -> dict[str, str]:
@@ -86,22 +70,16 @@ def _pythonpath_env(*paths: Path) -> dict[str, str]:
     if current:
         extra_paths.append(current)
     env["PYTHONPATH"] = os.pathsep.join(extra_paths)
+    env.setdefault("PYTHON_BIN", sys.executable)
     return env
 
 
 def _scaffold_package(package_parent: Path, output_path: Path) -> dict[str, object]:
     """Run the public CLI package scaffold flow and return its JSON report."""
     completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "mcpme.cli",
-            "scaffold-package",
-            "demo_pkg",
-            str(output_path),
-        ],
-        cwd=Path.cwd(),
-        env=_pythonpath_env(Path("src"), package_parent),
+        ["sh", str(_require_support_file(SCAFFOLD_PATH).resolve()), str(output_path)],
+        cwd=REPO_ROOT,
+        env=_pythonpath_env(REPO_ROOT / "src", package_parent),
         capture_output=True,
         text=True,
         check=True,
@@ -111,17 +89,16 @@ def _scaffold_package(package_parent: Path, output_path: Path) -> dict[str, obje
 
 def run_example() -> dict[str, object]:
     """Ingest the example package, wrap it, and execute the generated tools."""
-    package_root = SUPPORT_ROOT / "workspace" / "demo_pkg"
-    artifact_root = (SUPPORT_ROOT / "artifacts").resolve()
-    output_path = SUPPORT_ROOT / "generated_package_facade.py"
-    _write_package(package_root)
+    package_root = WORKSPACE_ROOT / "demo_pkg"
+    ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    output_path = ARTIFACT_ROOT / "generated_package_facade.py"
 
     package_parent = package_root.parent.resolve()
     if str(package_parent) not in sys.path:
         sys.path.insert(0, str(package_parent))
 
     report = _scaffold_package(package_parent, output_path)
-    manifest = build_manifest(targets=[output_path], artifact_root=artifact_root)
+    manifest = build_manifest(targets=[output_path], artifact_root=ARTIFACT_ROOT)
     solve_result = execute_tool(manifest, "solve", {"mesh_size": 4})
     create_result = execute_tool(manifest, "create_counter_session", {"start": 10})
     session_record = json.loads(create_result.content[0]["text"])

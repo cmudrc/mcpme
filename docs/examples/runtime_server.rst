@@ -12,6 +12,13 @@ This example demonstrates the smallest practical MCP runtime loop you can build
 with `mcpme`. It keeps the public API surface small: build a manifest, hand it
 to :class:`mcpme.McpServer`, and exchange JSON-RPC messages.
 
+Preset Environment
+------------------
+
+This example is intentionally self-contained. It does not rely on a checked-in
+support tree because the goal is to make the in-process runtime mechanics
+inspectable directly in one file.
+
 Technical Implementation
 ------------------------
 
@@ -41,4 +48,4 @@ Source Code
 .. literalinclude:: ../../examples/runtime_server.py
    :language: python
    :linenos:
-   :lines: 30-
+   :lines: 36-

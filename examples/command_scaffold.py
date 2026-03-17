@@ -7,11 +7,19 @@ interface is only exposed through `--help`. `mcpme` captures that help output,
 turns it into a deterministic Python facade, and then wraps the facade like any
 other source-backed tool.
 
+## Preset Environment
+
+The underlying CLI implementation and its command wrappers are checked in under
+`examples/support/command_scaffold/`. That makes the help surface inspectable
+before execution, while the generated facade still lands under
+`artifacts/examples/command_scaffold/`.
+
 ## Technical Implementation
 
-- Write a tiny `argparse`-based CLI under `artifacts/examples/`.
-- Run `python -m mcpme.cli scaffold-command` to generate a wrapper module that
-  exposes named MCP inputs for the command.
+- Keep the tiny CLI and the scaffold command wrapper checked in under
+  `examples/support/command_scaffold/`.
+- Run the public scaffold CLI through the checked-in shell wrapper to generate
+  a facade module under `artifacts/examples/command_scaffold/`.
 - Build a manifest from the generated facade and execute it through
   :func:`mcpme.execute_tool`.
 - Print the scaffold report and normalized subprocess result as JSON.
@@ -25,6 +33,9 @@ available under `artifacts/examples/command_scaffold/`.
 ## References
 
 - ``README.md``
+- ``examples/support/command_scaffold/beam_cli.py``
+- ``examples/support/command_scaffold/commands/run_beam_cli.sh``
+- ``examples/support/command_scaffold/commands/scaffold_command.sh``
 - ``docs/quickstart.rst``
 - ``docs/specification.rst``
 """
@@ -39,55 +50,36 @@ from pathlib import Path
 
 from mcpme import build_manifest, execute_tool
 
-SUPPORT_ROOT = Path("artifacts/examples/command_scaffold")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "command_scaffold"
+ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "command_scaffold"
+SCAFFOLD_PATH = SOURCE_ROOT / "commands" / "scaffold_command.sh"
 
 
-def _write_cli_script(path: Path) -> None:
-    """Write the tiny CLI ingested by the example."""
-    path.write_text(
-        "import argparse\n"
-        "import json\n\n"
-        "parser = argparse.ArgumentParser(description='Deterministic beam CLI.')\n"
-        "parser.add_argument('job_name', help='Job label.')\n"
-        "parser.add_argument('--scale', type=float, default=1.0, help='Scale factor.')\n"
-        "parser.add_argument('--verbose', action='store_true', help='Verbose mode.')\n"
-        "args = parser.parse_args()\n"
-        "print(\n"
-        "    json.dumps(\n"
-        "        {'job_name': args.job_name, 'scale': args.scale, 'verbose': args.verbose}\n"
-        "    )\n"
-        ")\n",
-        encoding="utf-8",
-    )
+def _require_support_file(path: Path) -> Path:
+    """Require one checked-in support file before running the example."""
+    if not path.exists():
+        raise FileNotFoundError(f"Missing checked-in example support file: {path}")
+    return path
 
 
 def _pythonpath_env() -> dict[str, str]:
     """Build an environment that keeps `mcpme` importable for child processes."""
     env = dict(os.environ)
     existing = env.get("PYTHONPATH")
-    paths = [str(Path("src").resolve())]
+    paths = [str((REPO_ROOT / "src").resolve())]
     if existing:
         paths.append(existing)
     env["PYTHONPATH"] = os.pathsep.join(paths)
+    env.setdefault("PYTHON_BIN", sys.executable)
     return env
 
 
-def _scaffold_command(script_path: Path, output_path: Path) -> dict[str, object]:
+def _scaffold_command(output_path: Path) -> dict[str, object]:
     """Run the public CLI command scaffold flow and return its JSON report."""
     completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "mcpme.cli",
-            "scaffold-command",
-            str(output_path),
-            "--name",
-            "run_beam_cli",
-            "--",
-            sys.executable,
-            str(script_path.resolve()),
-        ],
-        cwd=Path.cwd(),
+        ["sh", str(_require_support_file(SCAFFOLD_PATH).resolve()), str(output_path)],
+        cwd=REPO_ROOT,
         env=_pythonpath_env(),
         capture_output=True,
         text=True,
@@ -98,13 +90,10 @@ def _scaffold_command(script_path: Path, output_path: Path) -> dict[str, object]
 
 def run_example() -> dict[str, object]:
     """Ingest the example CLI, wrap it, and execute the generated tool."""
-    SUPPORT_ROOT.mkdir(parents=True, exist_ok=True)
-    script_path = SUPPORT_ROOT / "beam_cli.py"
-    output_path = SUPPORT_ROOT / "generated_cli_facade.py"
-    artifact_root = (SUPPORT_ROOT / "artifacts").resolve()
-    _write_cli_script(script_path)
-    report = _scaffold_command(script_path, output_path)
-    manifest = build_manifest(targets=[output_path], artifact_root=artifact_root)
+    ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    output_path = ARTIFACT_ROOT / "generated_cli_facade.py"
+    report = _scaffold_command(output_path)
+    manifest = build_manifest(targets=[output_path], artifact_root=ARTIFACT_ROOT)
     result = execute_tool(
         manifest,
         "run_beam_cli",

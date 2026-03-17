@@ -12,13 +12,21 @@ This example shows how to ingest an OpenAPI specification without adding any
 runtime AI layer. `mcpme` turns the spec into a plain Python HTTP facade, then
 wraps the generated functions through its normal deterministic discovery path.
 
+Preset Environment
+------------------
+
+The OpenAPI document, local test server, and scaffold wrapper are checked in
+under `examples/support/openapi_scaffold/`. That makes the source API surface
+inspectable before running the example, while the generated facade remains a
+derived artifact under `artifacts/examples/openapi_scaffold/`.
+
 Technical Implementation
 ------------------------
 
-- Write a tiny OpenAPI document and a matching local HTTP server under
-  `artifacts/examples/`.
-- Run `python -m mcpme.cli scaffold-openapi` to generate a Python facade for
-  the API operations.
+- Keep the OpenAPI document and local server checked in under
+  `examples/support/openapi_scaffold/`.
+- Run the public scaffold CLI through a checked-in shell wrapper to generate a
+  Python facade for the API operations.
 - Build a manifest from the generated facade and execute the resulting tools
   through :func:`mcpme.execute_tool`.
 - Print the scaffold report and the normalized HTTP responses as JSON.
@@ -34,6 +42,9 @@ References
 ----------
 
 - ``README.md``
+- ``examples/support/openapi_scaffold/solver_api.json``
+- ``examples/support/openapi_scaffold/solver_api_server.py``
+- ``examples/support/openapi_scaffold/commands/scaffold_openapi.sh``
 - ``docs/quickstart.rst``
 - ``docs/specification.rst``
 
@@ -43,4 +54,4 @@ Source Code
 .. literalinclude:: ../../examples/openapi_scaffold.py
    :language: python
    :linenos:
-   :lines: 32-
+   :lines: 42-

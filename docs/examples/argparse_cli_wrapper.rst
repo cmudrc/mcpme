@@ -12,11 +12,20 @@ This example wraps a small command-line engineering helper that already exposes
 its interface through `argparse`. That is a strong deterministic source of
 truth, so `mcpme` can build a tool schema without resorting to heuristics.
 
+Preset Environment
+------------------
+
+The inspectable CLI implementation lives under
+`examples/support/argparse_cli_wrapper/beam_cli.py`, and the visible command
+surface lives under
+`examples/support/argparse_cli_wrapper/commands/run_beam_cli.sh`. Running the
+example only produces derived outputs under `artifacts/examples/argparse_cli_wrapper/`.
+
 Technical Implementation
 ------------------------
 
-- Materialize a tiny CLI script under `artifacts/examples/` so the example stays
-  self-contained and runnable from the repository root.
+- Keep the wrapped CLI and its shell launcher checked in under
+  `examples/support/`.
 - Register its parser and command prefix with :class:`mcpme.ArgparseCommand`.
 - Build a manifest from that registration and execute it through
   :func:`mcpme.execute_tool`.
@@ -34,6 +43,8 @@ References
 ----------
 
 - ``README.md``
+- ``examples/support/argparse_cli_wrapper/beam_cli.py``
+- ``examples/support/argparse_cli_wrapper/commands/run_beam_cli.sh``
 - ``docs/quickstart.rst``
 - ``docs/api.rst``
 
@@ -43,4 +54,4 @@ Source Code
 .. literalinclude:: ../../examples/argparse_cli_wrapper.py
    :language: python
    :linenos:
-   :lines: 32-
+   :lines: 42-

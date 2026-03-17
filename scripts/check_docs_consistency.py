@@ -16,7 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 SCAN_FILE_SUFFIXES = (".rst", ".md")
-EXAMPLE_PATH_PATTERN = re.compile(r"(examples/[A-Za-z0-9_./-]+\.(?:py|md))")
+PUBLIC_PATH_PATTERN = re.compile(
+    r"((?:examples|case_studies)/[A-Za-z0-9_./-]+\.(?:py|md|xml|json|toml|sh))"
+)
 API_AUTODOC_DIRECTIVE_PATTERN = re.compile(
     r"^\.\.\s+auto(?:class|data|function|attribute|exception)::\s+"
     r"mcpme\.([A-Za-z_][A-Za-z0-9_]*)\s*$",
@@ -42,7 +44,11 @@ def _repo_root() -> Path:
 
 def _scan_files(repo_root: Path) -> list[Path]:
     """Collect user-facing documentation files to scan."""
-    files = [repo_root / "README.md", repo_root / "examples" / "README.md"]
+    files = [
+        repo_root / "README.md",
+        repo_root / "examples" / "README.md",
+        repo_root / "case_studies" / "README.md",
+    ]
     docs_root = repo_root / "docs"
     if docs_root.exists():
         files.extend(
@@ -82,6 +88,7 @@ def _find_missing_docs_entries(repo_root: Path) -> list[Violation]:
     for index_path in (
         repo_root / "docs" / "index.rst",
         repo_root / "docs" / "examples" / "index.rst",
+        repo_root / "docs" / "case_studies" / "index.rst",
     ):
         if not index_path.exists():
             violations.append(
@@ -159,17 +166,17 @@ def _find_export_mismatch_violations(repo_root: Path) -> list[Violation]:
     return violations
 
 
-def _find_missing_example_path_violations(repo_root: Path, files: list[Path]) -> list[Violation]:
-    """Find local example links that point to missing files."""
+def _find_missing_public_path_violations(repo_root: Path, files: list[Path]) -> list[Violation]:
+    """Find local example and case-study links that point to missing files."""
     referenced_paths: set[str] = set()
     for path in files:
         text = path.read_text(encoding="utf-8")
-        for match in EXAMPLE_PATH_PATTERN.finditer(text):
+        for match in PUBLIC_PATH_PATTERN.finditer(text):
             referenced_paths.add(match.group(1))
     return [
         Violation(
-            category="missing-example-path",
-            detail=f"Referenced example path does not exist: {path_str}",
+            category="missing-public-path",
+            detail=f"Referenced public path does not exist: {path_str}",
         )
         for path_str in sorted(referenced_paths)
         if not (repo_root / path_str).exists()
@@ -215,7 +222,7 @@ def validate_docs_tree() -> list[Violation]:
     violations: list[Violation] = []
     violations.extend(_find_missing_docs_entries(repo_root))
     violations.extend(_find_export_mismatch_violations(repo_root))
-    violations.extend(_find_missing_example_path_violations(repo_root, files))
+    violations.extend(_find_missing_public_path_violations(repo_root, files))
     violations.extend(_find_internal_reference_violations(repo_root, files))
     violations.extend(_find_stale_name_violations(repo_root, files))
     return violations

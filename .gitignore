@@ -191,6 +191,9 @@ cython_debug/
 .ruff_cache/
 
 # Project-local generated artifacts
+# Checked-in example and case-study support inputs live under
+# `examples/support/` and `case_studies/support/`. Only derived outputs belong
+# under `artifacts/`.
 artifacts/
 .mcpme-artifacts/
 

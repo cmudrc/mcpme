@@ -6,10 +6,18 @@ This example wraps a small command-line engineering helper that already exposes
 its interface through `argparse`. That is a strong deterministic source of
 truth, so `mcpme` can build a tool schema without resorting to heuristics.
 
+## Preset Environment
+
+The inspectable CLI implementation lives under
+`examples/support/argparse_cli_wrapper/beam_cli.py`, and the visible command
+surface lives under
+`examples/support/argparse_cli_wrapper/commands/run_beam_cli.sh`. Running the
+example only produces derived outputs under `artifacts/examples/argparse_cli_wrapper/`.
+
 ## Technical Implementation
 
-- Materialize a tiny CLI script under `artifacts/examples/` so the example stays
-  self-contained and runnable from the repository root.
+- Keep the wrapped CLI and its shell launcher checked in under
+  `examples/support/`.
 - Register its parser and command prefix with :class:`mcpme.ArgparseCommand`.
 - Build a manifest from that registration and execute it through
   :func:`mcpme.execute_tool`.
@@ -25,6 +33,8 @@ argument rendering, and result normalization.
 ## References
 
 - ``README.md``
+- ``examples/support/argparse_cli_wrapper/beam_cli.py``
+- ``examples/support/argparse_cli_wrapper/commands/run_beam_cli.sh``
 - ``docs/quickstart.rst``
 - ``docs/api.rst``
 """
@@ -33,32 +43,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 from mcpme import ArgparseCommand, ToolExecutionResult, build_manifest, execute_tool
 
-SUPPORT_ROOT = Path("artifacts/examples/argparse_cli_wrapper")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "argparse_cli_wrapper"
+ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "argparse_cli_wrapper"
+COMMAND_PATH = SOURCE_ROOT / "commands" / "run_beam_cli.sh"
 
 
-def _write_cli_script(path: Path) -> None:
-    """Write the small deterministic CLI used by the example."""
-    path.write_text(
-        "import argparse\n"
-        "import json\n\n"
-        "parser = argparse.ArgumentParser(description='Beam post-processor.')\n"
-        "parser.add_argument('case_name')\n"
-        "parser.add_argument('--scale', type=float, default=1.0)\n"
-        "parser.add_argument('--export-vtk', action='store_true')\n"
-        "args = parser.parse_args()\n"
-        "print(json.dumps({\n"
-        "    'case_name': args.case_name,\n"
-        "    'scale': args.scale,\n"
-        "    'export_vtk': args.export_vtk,\n"
-        "    'stress_limit': round(125.0 * args.scale, 3),\n"
-        "}, sort_keys=True))\n",
-        encoding="utf-8",
-    )
+def _require_support_file(path: Path) -> Path:
+    """Require one checked-in support file before running the example."""
+    if not path.exists():
+        raise FileNotFoundError(f"Missing checked-in example support file: {path}")
+    return path
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -72,20 +73,18 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def run_example() -> ToolExecutionResult:
     """Execute the wrapped argparse CLI through the public API."""
-    SUPPORT_ROOT.mkdir(parents=True, exist_ok=True)
-    script_path = SUPPORT_ROOT / "beam_cli.py"
-    artifact_root = (SUPPORT_ROOT / "artifacts").resolve()
-    _write_cli_script(script_path)
+    os.environ.setdefault("PYTHON_BIN", sys.executable)
+    ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
     manifest = build_manifest(
         targets=[
             ArgparseCommand(
                 name="beam_cli",
                 parser=_build_parser(),
-                command=(sys.executable, str(script_path.resolve())),
+                command=("sh", str(_require_support_file(COMMAND_PATH).resolve())),
                 description="Run a beam post-processing CLI.",
             )
         ],
-        artifact_root=artifact_root,
+        artifact_root=ARTIFACT_ROOT,
     )
     return execute_tool(
         manifest,

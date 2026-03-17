@@ -19,6 +19,22 @@ Run the bundled example:
 
    make run-example
 
+The bundled examples that need helper inputs keep them checked in under
+``examples/support/<example_id>/`` so the environment is inspectable before
+execution. Generated facades and retained outputs go under
+``artifacts/examples/<example_id>/``.
+
+Run the separate case-study lane for richer real-upstream workflows:
+
+.. code-block:: bash
+
+   make run-case-studies
+   make run-case-study CASE=pycycle_mpcycle
+
+Case studies follow the same convention with checked-in support inputs under
+``case_studies/support/<case_id>/`` and derived outputs under
+``artifacts/case_studies/<case_id>/``.
+
 Inspect a target with the CLI:
 
 .. code-block:: bash
@@ -46,6 +62,11 @@ The three scaffold flows have deliberately explicit trust boundaries:
   names inputs when the help surface is deterministic enough to parse safely.
 - ``scaffold-openapi`` reads the local OpenAPI document and generates a plain
   Python HTTP facade rather than introducing a separate opaque runtime path.
+
+The case studies use those same public scaffold flows, but they are kept
+separate from the small core examples because they may depend on heavyweight
+optional upstream runtimes and are allowed to report
+``skipped_unavailable`` instead of always passing.
 
 Standalone subprocess tools are configured explicitly in TOML. A minimal
 example that retains a report directory looks like:
