@@ -18,6 +18,10 @@ A lot of engineering tooling is still command-driven, so one-shot CLI ingestion 
 - Upstream Target: `gmsh`
 - Catalog Source: `challenges/cases/gmsh_cli/challenge.toml`
 
+## Ingestion Breadth
+
+This case relies on its smoke flow without extra breadth assertions.
+
 ## Run This Case
 
 Use the convenience target:

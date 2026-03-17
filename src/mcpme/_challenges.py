@@ -124,6 +124,20 @@ class ChallengeExample:
 
 
 @dataclass(frozen=True, slots=True)
+class ChallengeIngestion:
+    """Describe scaffold breadth requirements for one live challenge.
+
+    :param min_generated_tools: Minimum number of generated tools expected from
+        one-shot ingestion.
+    :param required_tools: Specific tool names that must appear in the
+        generated facade.
+    """
+
+    min_generated_tools: int = 0
+    required_tools: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ChallengeSpec:
     """Represent one catalogued live challenge.
 
@@ -137,6 +151,8 @@ class ChallengeSpec:
     :param probe: Availability probe configuration.
     :param scaffold_kind: Scaffold entry point used for the target.
     :param scaffold_options: Deterministic scaffold options from the catalog.
+    :param ingestion: Expected breadth of the generated facade before smoke
+        execution begins.
     :param smoke_steps: Smoke-step sequence executed after ingestion succeeds.
     :param example: Narrative metadata rendered into challenge-local README
         files.
@@ -156,6 +172,7 @@ class ChallengeSpec:
     scaffold_kind: str
     scaffold_options: dict[str, Any]
     smoke_steps: tuple[ChallengeSmokeStep, ...]
+    ingestion: ChallengeIngestion = field(default_factory=ChallengeIngestion)
     example: ChallengeExample = field(
         default_factory=lambda: ChallengeExample(
             summary="Ad hoc challenge.",
@@ -493,6 +510,7 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
             f"{path}: scaffold.kind {scaffold_kind!r} must match target.kind {target.kind!r}."
         )
     scaffold_options = {key: value for key, value in scaffold_data.items() if key != "kind"}
+    ingestion = _parse_ingestion(_optional_table(data, "ingestion"), path)
     smoke_data = _require_table(data, "smoke", path)
     raw_steps = smoke_data.get("steps")
     if not isinstance(raw_steps, list) or not raw_steps:
@@ -512,6 +530,7 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
         probe=probe,
         scaffold_kind=scaffold_kind,
         scaffold_options=scaffold_options,
+        ingestion=ingestion,
         smoke_steps=smoke_steps,
         example=example,
         catalog_path=path,
@@ -533,6 +552,24 @@ def _parse_example(example_data: dict[str, Any], path: Path) -> ChallengeExample
         motivation=motivation,
         proves=proves,
         limitations=limitations,
+    )
+
+
+def _parse_ingestion(ingestion_data: dict[str, Any], path: Path) -> ChallengeIngestion:
+    """Parse optional scaffold breadth expectations from one challenge catalog."""
+    min_generated_tools = ingestion_data.get("min_generated_tools", 0)
+    if (
+        isinstance(min_generated_tools, bool)
+        or not isinstance(min_generated_tools, int)
+        or min_generated_tools < 0
+    ):
+        raise ChallengeCatalogError(
+            f"{path}: ingestion.min_generated_tools must be a non-negative integer."
+        )
+    required_tools = _parse_string_tuple(ingestion_data.get("required_tools", ()), path)
+    return ChallengeIngestion(
+        min_generated_tools=min_generated_tools,
+        required_tools=required_tools,
     )
 
 
@@ -612,6 +649,23 @@ def _run_single_challenge(
                 scaffold_path=scaffold_path,
                 context=context,
             )
+            generated_tools = tuple(tool.name for tool in scaffold_report.generated_tools)
+            ingestion_message = _validate_ingestion(spec.ingestion, generated_tools)
+            if ingestion_message is not None:
+                result = ChallengeResult(
+                    id=spec.id,
+                    title=spec.title,
+                    tier=spec.tier,
+                    style=spec.style,
+                    slice=spec.slice,
+                    status="failed",
+                    message=ingestion_message,
+                    generated_tools=generated_tools,
+                    scaffold_path=str(scaffold_path),
+                    notes=spec.notes,
+                )
+                _write_challenge_result(challenge_dir, result)
+                return result
             manifest = build_manifest(
                 targets=[scaffold_path],
                 artifact_root=challenge_dir / "tool_artifacts",
@@ -634,9 +688,7 @@ def _run_single_challenge(
                         slice=spec.slice,
                         status="failed",
                         message=step_result.message,
-                        generated_tools=tuple(
-                            tool.name for tool in scaffold_report.generated_tools
-                        ),
+                        generated_tools=generated_tools,
                         steps=tuple(step_results),
                         scaffold_path=str(scaffold_path),
                         notes=spec.notes,
@@ -651,7 +703,7 @@ def _run_single_challenge(
             slice=spec.slice,
             status="passed",
             message="All scaffold and smoke steps passed.",
-            generated_tools=tuple(tool.name for tool in scaffold_report.generated_tools),
+            generated_tools=generated_tools,
             steps=tuple(step_results),
             scaffold_path=str(scaffold_path),
             notes=spec.notes,
@@ -898,6 +950,27 @@ def _probe_availability(spec: ChallengeSpec, context: dict[str, Any]) -> str | N
         if shutil.which(executable, path=search_path) is None:
             return f"Availability probe command is unavailable on PATH: {executable!r}"
     return None
+
+
+def _validate_ingestion(
+    ingestion: ChallengeIngestion,
+    generated_tools: tuple[str, ...],
+) -> str | None:
+    """Return an explicit failure message when scaffold breadth is too narrow."""
+    failures: list[str] = []
+    if len(generated_tools) < ingestion.min_generated_tools:
+        failures.append(
+            "expected at least "
+            f"{ingestion.min_generated_tools} generated tools, got {len(generated_tools)}"
+        )
+    missing_tools = [
+        tool_name for tool_name in ingestion.required_tools if tool_name not in generated_tools
+    ]
+    if missing_tools:
+        failures.append(f"missing required generated tools {missing_tools!r}")
+    if not failures:
+        return None
+    return f"Ingestion breadth check failed: {'; '.join(failures)}."
 
 
 def _write_challenge_result(challenge_dir: Path, result: ChallengeResult) -> None:

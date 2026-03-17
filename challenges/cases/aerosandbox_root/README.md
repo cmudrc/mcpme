@@ -2,7 +2,7 @@
 
 # AeroSandbox root oneshot
 
-Wrap AeroSandbox's `Atmosphere` class in one shot and call a real instance method.
+Wrap AeroSandbox's `Atmosphere` class in one shot and call several real instance methods.
 
 ## Why This Case Exists
 
@@ -17,6 +17,11 @@ Many engineering libraries are object-oriented, so a realistic wrapper system ha
 - Target Kind: `package`
 - Upstream Target: `aerosandbox`
 - Catalog Source: `challenges/cases/aerosandbox_root/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `10`
+- Required generated tools: `create_atmosphere`, `atmosphere_density`, `atmosphere_pressure`, `atmosphere_temperature`, `close_atmosphere`
 
 ## Run This Case
 
@@ -64,9 +69,37 @@ Arguments:
 }
 ```
 
-Expectations: text contains ['1.'].
+Expectations: text contains ['.'].
 
-### 3. Close the Atmosphere session
+### 3. Compute pressure from the live session
+
+Tool: `atmosphere_pressure`
+
+Arguments:
+
+```json
+{
+  "session_id": "{atmosphere_session_id}"
+}
+```
+
+Expectations: text contains ['.'].
+
+### 4. Compute temperature from the live session
+
+Tool: `atmosphere_temperature`
+
+Arguments:
+
+```json
+{
+  "session_id": "{atmosphere_session_id}"
+}
+```
+
+Expectations: text contains ['.'].
+
+### 5. Close the Atmosphere session
 
 Tool: `close_atmosphere`
 
@@ -80,9 +113,9 @@ Arguments:
 
 ## What This Case Proves
 
-- One-shot package ingestion can discover a useful class from a broad upstream namespace.
-- Session-style wrapping works for a real aerospace object lifecycle.
-- The generated facade can execute a meaningful physics method deterministically.
+- One-shot package ingestion can discover a useful class from a broad upstream namespace and keep a meaningful slice of its method surface.
+- Session-style wrapping works for a real aerospace object lifecycle across multiple physics queries.
+- The generated facade can execute meaningful physics methods deterministically.
 
 ## Known Limits
 
@@ -100,12 +133,12 @@ style = "package"
 slice = "mission"
 
 [example]
-summary = "Wrap AeroSandbox's `Atmosphere` class in one shot and call a real instance method."
+summary = "Wrap AeroSandbox's `Atmosphere` class in one shot and call several real instance methods."
 motivation = "Many engineering libraries are object-oriented, so a realistic wrapper system has to create, use, and close sessions without hand-written package adapters."
 proves = [
-  "One-shot package ingestion can discover a useful class from a broad upstream namespace.",
-  "Session-style wrapping works for a real aerospace object lifecycle.",
-  "The generated facade can execute a meaningful physics method deterministically.",
+  "One-shot package ingestion can discover a useful class from a broad upstream namespace and keep a meaningful slice of its method surface.",
+  "Session-style wrapping works for a real aerospace object lifecycle across multiple physics queries.",
+  "The generated facade can execute meaningful physics methods deterministically.",
 ]
 limitations = [
   "This case exercises a lightweight object interaction, not a full multi-component workflow.",
@@ -123,6 +156,16 @@ kind = "package"
 symbol_include_patterns = ["^Atmosphere$"]
 max_generated_tools = 16
 
+[ingestion]
+min_generated_tools = 10
+required_tools = [
+  "create_atmosphere",
+  "atmosphere_density",
+  "atmosphere_pressure",
+  "atmosphere_temperature",
+  "close_atmosphere",
+]
+
 [smoke]
 [[smoke.steps]]
 label = "Create an Atmosphere session"
@@ -136,7 +179,23 @@ tool = "atmosphere_density"
 arguments = { session_id = "{atmosphere_session_id}" }
 
 [smoke.steps.expect]
-text_contains = ["1."]
+text_contains = ["."]
+
+[[smoke.steps]]
+label = "Compute pressure from the live session"
+tool = "atmosphere_pressure"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[smoke.steps.expect]
+text_contains = ["."]
+
+[[smoke.steps]]
+label = "Compute temperature from the live session"
+tool = "atmosphere_temperature"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[smoke.steps.expect]
+text_contains = ["."]
 
 [[smoke.steps]]
 label = "Close the Atmosphere session"

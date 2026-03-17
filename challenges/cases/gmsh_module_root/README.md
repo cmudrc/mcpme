@@ -2,7 +2,7 @@
 
 # Gmsh module root oneshot
 
-Wrap the Python `gmsh` module root and exercise its initialize/finalize lifecycle.
+Wrap the Python `gmsh` module root and exercise a fuller initialize/check/clear/finalize lifecycle.
 
 ## Why This Case Exists
 
@@ -17,6 +17,11 @@ Some engineering tools expose both a CLI and a Python module, and a wrapper syst
 - Target Kind: `package`
 - Upstream Target: `gmsh`
 - Catalog Source: `challenges/cases/gmsh_module_root/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `4`
+- Required generated tools: `clear`, `finalize`, `initialize`, `is_initialized`
 
 ## Run This Case
 
@@ -42,14 +47,24 @@ This case does not need checked-in fixtures.
 
 Tool: `initialize`
 
-### 2. Finalize the upstream Gmsh module
+### 2. Verify the upstream Gmsh module reports itself as initialized
+
+Tool: `is_initialized`
+
+Expectations: text contains ['1'].
+
+### 3. Clear any active Gmsh models and views
+
+Tool: `clear`
+
+### 4. Finalize the upstream Gmsh module
 
 Tool: `finalize`
 
 ## What This Case Proves
 
-- Package-root ingestion can target simple lifecycle functions from a compiled upstream module.
-- The generated wrapper can drive a real initialize/finalize sequence.
+- Package-root ingestion can target multiple lifecycle helpers from a compiled upstream module in one shot.
+- The generated wrapper can drive a real initialize/check/clear/finalize sequence.
 - The same upstream tool can be pressure-tested through both command and Python surfaces.
 
 ## Challenge Definition
@@ -64,11 +79,11 @@ style = "package"
 slice = "aerodynamics"
 
 [example]
-summary = "Wrap the Python `gmsh` module root and exercise its initialize/finalize lifecycle."
+summary = "Wrap the Python `gmsh` module root and exercise a fuller initialize/check/clear/finalize lifecycle."
 motivation = "Some engineering tools expose both a CLI and a Python module, and a wrapper system should handle both cleanly without package-specific code."
 proves = [
-  "Package-root ingestion can target simple lifecycle functions from a compiled upstream module.",
-  "The generated wrapper can drive a real initialize/finalize sequence.",
+  "Package-root ingestion can target multiple lifecycle helpers from a compiled upstream module in one shot.",
+  "The generated wrapper can drive a real initialize/check/clear/finalize sequence.",
   "The same upstream tool can be pressure-tested through both command and Python surfaces.",
 ]
 
@@ -81,13 +96,30 @@ imports = ["gmsh"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^(initialize|finalize)$"]
-max_generated_tools = 4
+symbol_include_patterns = ["^(clear|finalize|initialize|is_initialized)$"]
+max_generated_tools = 8
+
+[ingestion]
+min_generated_tools = 4
+required_tools = ["clear", "finalize", "initialize", "is_initialized"]
 
 [smoke]
 [[smoke.steps]]
 label = "Initialize the upstream Gmsh module"
 tool = "initialize"
+arguments = {}
+
+[[smoke.steps]]
+label = "Verify the upstream Gmsh module reports itself as initialized"
+tool = "is_initialized"
+arguments = {}
+
+[smoke.steps.expect]
+text_contains = ["1"]
+
+[[smoke.steps]]
+label = "Clear any active Gmsh models and views"
+tool = "clear"
 arguments = {}
 
 [[smoke.steps]]

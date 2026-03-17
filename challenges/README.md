@@ -10,6 +10,7 @@ case exists and how to run it in isolation.
 ## Why These Cases Matter
 
 - They pressure-test one-shot ingestion against real engineering packages and CLIs.
+- Many cases assert scaffold breadth explicitly so the suite checks more than one route.
 - They stay separate from the public example contract so we can keep them brutally honest.
 - They are still documented enough to serve as worked examples for contributors.
 
@@ -25,14 +26,14 @@ make challenge CASE=openmdao_file_utils
 
 | Case | Tier | Slice | Target | Summary |
 | --- | --- | --- | --- | --- |
-| [`aerosandbox_root`](cases/aerosandbox_root/README.md) | `local_full` | `mission` | `aerosandbox` | Wrap AeroSandbox's `Atmosphere` class in one shot and call a real instance method. |
-| [`build123d_importers`](cases/build123d_importers/README.md) | `gha_subset` | `manufacturing` | `build123d.importers` | Wrap `build123d.importers.import_stl` and import a tiny checked-in STL file. |
-| [`build123d_root`](cases/build123d_root/README.md) | `local_full` | `manufacturing` | `build123d` | Wrap the `build123d` package root while filtering down to the `import_stl` workflow. |
+| [`aerosandbox_root`](cases/aerosandbox_root/README.md) | `local_full` | `mission` | `aerosandbox` | Wrap AeroSandbox's `Atmosphere` class in one shot and call several real instance methods. |
+| [`build123d_importers`](cases/build123d_importers/README.md) | `gha_subset` | `manufacturing` | `build123d.importers` | Wrap `build123d.importers` and exercise both STL and SVG import routes with tiny checked-in fixtures. |
+| [`build123d_root`](cases/build123d_root/README.md) | `local_full` | `manufacturing` | `build123d` | Wrap the `build123d` package root while filtering down to both STL and SVG importer workflows. |
 | [`gmsh_cli`](cases/gmsh_cli/README.md) | `gha_subset` | `aerodynamics` | `gmsh` | Wrap the `gmsh` CLI, feed it a tiny `.geo` model, and verify a mesh file is produced. |
-| [`gmsh_module_root`](cases/gmsh_module_root/README.md) | `local_full` | `aerodynamics` | `gmsh` | Wrap the Python `gmsh` module root and exercise its initialize/finalize lifecycle. |
-| [`openmdao_api_problem`](cases/openmdao_api_problem/README.md) | `local_full` | `systems` | `openmdao.api` | Wrap `openmdao.api.Problem` from the package root and drive a basic setup lifecycle. |
-| [`openmdao_file_utils`](cases/openmdao_file_utils/README.md) | `gha_subset` | `systems` | `openmdao.utils.file_utils` | Wrap `openmdao.utils.file_utils.get_module_path` and resolve a real module path in this repo. |
-| [`pynastran_bdf`](cases/pynastran_bdf/README.md) | `gha_subset` | `structures` | `pyNastran.bdf.bdf` | Wrap `pyNastran`'s `BDF` class, create a node, and write a non-empty deck file. |
+| [`gmsh_module_root`](cases/gmsh_module_root/README.md) | `local_full` | `aerodynamics` | `gmsh` | Wrap the Python `gmsh` module root and exercise a fuller initialize/check/clear/finalize lifecycle. |
+| [`openmdao_api_problem`](cases/openmdao_api_problem/README.md) | `local_full` | `systems` | `openmdao.api` | Wrap `openmdao.api.Problem` from the package root and drive a broader setup-and-inspection lifecycle. |
+| [`openmdao_file_utils`](cases/openmdao_file_utils/README.md) | `gha_subset` | `systems` | `openmdao.utils.file_utils` | Wrap several `openmdao.utils.file_utils` helpers and exercise real path and iterator routes in this repo. |
+| [`pynastran_bdf`](cases/pynastran_bdf/README.md) | `gha_subset` | `structures` | `pyNastran.bdf.bdf` | Wrap `pyNastran`'s `BDF` class, create a node, inspect model stats, and write a non-empty deck file. |
 | [`su2_cli`](cases/su2_cli/README.md) | `local_full` | `aerodynamics` | `SU2_CFD` | Wrap the `SU2_CFD` executable and at least verify its CLI contract when available. |
-| [`submitit_root`](cases/submitit_root/README.md) | `local_full` | `hpc` | `submitit` | Wrap `submitit.LocalExecutor`, create a session, and update its parameters. |
+| [`submitit_root`](cases/submitit_root/README.md) | `local_full` | `hpc` | `submitit` | Wrap `submitit.LocalExecutor` and `submitit.AutoExecutor`, then exercise both executor lifecycles. |
 | [`xfoil_cli`](cases/xfoil_cli/README.md) | `local_full` | `aerodynamics` | `xfoil` | Wrap the `xfoil` executable and verify its CLI contract when it is installed. |

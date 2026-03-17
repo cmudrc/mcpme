@@ -7,12 +7,12 @@ style = "package"
 slice = "manufacturing"
 
 [example]
-summary = "Wrap `build123d.importers.import_stl` and import a tiny checked-in STL file."
-motivation = "Geometry importers are great early targets because they use concrete file contracts and produce inspectable results without requiring a full CAD session."
+summary = "Wrap `build123d.importers` and exercise both STL and SVG import routes with tiny checked-in fixtures."
+motivation = "Geometry importer families are great one-shot targets because they use concrete file contracts and produce inspectable results without requiring a full CAD session, while still giving the ingester more than one route to discover."
 proves = [
-  "One-shot ingestion can target a narrow submodule instead of a whole package.",
-  "Path-heavy engineering APIs remain usable after deterministic wrapping.",
-  "A tiny geometric fixture is enough to validate a real upstream import path.",
+  "One-shot ingestion can target a narrow submodule while still discovering a meaningful cluster of related functions.",
+  "Path-heavy engineering APIs remain usable after deterministic wrapping across multiple fixture formats.",
+  "Tiny geometric fixtures are enough to validate more than one real upstream import path.",
 ]
 
 [target]
@@ -24,7 +24,11 @@ imports = ["build123d.importers"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^import_stl$"]
+symbol_include_patterns = ["^import_stl$", "^import_svg$"]
+
+[ingestion]
+min_generated_tools = 2
+required_tools = ["import_stl", "import_svg"]
 
 [smoke]
 [[smoke.steps]]
@@ -33,4 +37,12 @@ tool = "import_stl"
 arguments = { file_name = "{challenge_fixture_dir}/tri.stl" }
 
 [smoke.steps.expect]
-text_contains = ["Face"]
+text_contains = ["Face object"]
+
+[[smoke.steps]]
+label = "Import the tiny SVG fixture"
+tool = "import_svg"
+arguments = { svg_file = "{challenge_fixture_dir}/tri.svg" }
+
+[smoke.steps.expect]
+text_contains = ["Face object"]

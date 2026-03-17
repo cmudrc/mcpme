@@ -18,6 +18,10 @@ Long-lived engineering CLIs matter, even when they are not universally available
 - Upstream Target: `xfoil`
 - Catalog Source: `challenges/cases/xfoil_cli/challenge.toml`
 
+## Ingestion Breadth
+
+This case relies on its smoke flow without extra breadth assertions.
+
 ## Run This Case
 
 Use the convenience target:

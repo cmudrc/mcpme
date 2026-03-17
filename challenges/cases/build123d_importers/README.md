@@ -2,11 +2,11 @@
 
 # build123d importers oneshot
 
-Wrap `build123d.importers.import_stl` and import a tiny checked-in STL file.
+Wrap `build123d.importers` and exercise both STL and SVG import routes with tiny checked-in fixtures.
 
 ## Why This Case Exists
 
-Geometry importers are great early targets because they use concrete file contracts and produce inspectable results without requiring a full CAD session.
+Geometry importer families are great one-shot targets because they use concrete file contracts and produce inspectable results without requiring a full CAD session, while still giving the ingester more than one route to discover.
 
 ## Case Shape
 
@@ -17,6 +17,11 @@ Geometry importers are great early targets because they use concrete file contra
 - Target Kind: `package`
 - Upstream Target: `build123d.importers`
 - Catalog Source: `challenges/cases/build123d_importers/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `2`
+- Required generated tools: `import_stl`, `import_svg`
 
 ## Run This Case
 
@@ -35,6 +40,7 @@ PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challeng
 ## Fixtures
 
 - `challenges/cases/build123d_importers/fixtures/tri.stl`
+- `challenges/cases/build123d_importers/fixtures/tri.svg`
 
 ## Smoke Flow
 
@@ -50,13 +56,27 @@ Arguments:
 }
 ```
 
-Expectations: text contains ['Face'].
+Expectations: text contains ['Face object'].
+
+### 2. Import the tiny SVG fixture
+
+Tool: `import_svg`
+
+Arguments:
+
+```json
+{
+  "svg_file": "{challenge_fixture_dir}/tri.svg"
+}
+```
+
+Expectations: text contains ['Face object'].
 
 ## What This Case Proves
 
-- One-shot ingestion can target a narrow submodule instead of a whole package.
-- Path-heavy engineering APIs remain usable after deterministic wrapping.
-- A tiny geometric fixture is enough to validate a real upstream import path.
+- One-shot ingestion can target a narrow submodule while still discovering a meaningful cluster of related functions.
+- Path-heavy engineering APIs remain usable after deterministic wrapping across multiple fixture formats.
+- Tiny geometric fixtures are enough to validate more than one real upstream import path.
 
 ## Challenge Definition
 
@@ -70,12 +90,12 @@ style = "package"
 slice = "manufacturing"
 
 [example]
-summary = "Wrap `build123d.importers.import_stl` and import a tiny checked-in STL file."
-motivation = "Geometry importers are great early targets because they use concrete file contracts and produce inspectable results without requiring a full CAD session."
+summary = "Wrap `build123d.importers` and exercise both STL and SVG import routes with tiny checked-in fixtures."
+motivation = "Geometry importer families are great one-shot targets because they use concrete file contracts and produce inspectable results without requiring a full CAD session, while still giving the ingester more than one route to discover."
 proves = [
-  "One-shot ingestion can target a narrow submodule instead of a whole package.",
-  "Path-heavy engineering APIs remain usable after deterministic wrapping.",
-  "A tiny geometric fixture is enough to validate a real upstream import path.",
+  "One-shot ingestion can target a narrow submodule while still discovering a meaningful cluster of related functions.",
+  "Path-heavy engineering APIs remain usable after deterministic wrapping across multiple fixture formats.",
+  "Tiny geometric fixtures are enough to validate more than one real upstream import path.",
 ]
 
 [target]
@@ -87,7 +107,11 @@ imports = ["build123d.importers"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^import_stl$"]
+symbol_include_patterns = ["^import_stl$", "^import_svg$"]
+
+[ingestion]
+min_generated_tools = 2
+required_tools = ["import_stl", "import_svg"]
 
 [smoke]
 [[smoke.steps]]
@@ -96,5 +120,13 @@ tool = "import_stl"
 arguments = { file_name = "{challenge_fixture_dir}/tri.stl" }
 
 [smoke.steps.expect]
-text_contains = ["Face"]
+text_contains = ["Face object"]
+
+[[smoke.steps]]
+label = "Import the tiny SVG fixture"
+tool = "import_svg"
+arguments = { svg_file = "{challenge_fixture_dir}/tri.svg" }
+
+[smoke.steps.expect]
+text_contains = ["Face object"]
 ```

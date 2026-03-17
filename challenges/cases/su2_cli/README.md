@@ -18,6 +18,10 @@ Some important engineering tools are too heavyweight for default CI runners, but
 - Upstream Target: `SU2_CFD`
 - Catalog Source: `challenges/cases/su2_cli/challenge.toml`
 
+## Ingestion Breadth
+
+This case relies on its smoke flow without extra breadth assertions.
+
 ## Run This Case
 
 Use the convenience target:

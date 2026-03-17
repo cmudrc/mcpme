@@ -2,7 +2,7 @@
 
 # pyNastran BDF oneshot
 
-Wrap `pyNastran`'s `BDF` class, create a node, and write a non-empty deck file.
+Wrap `pyNastran`'s `BDF` class, create a node, inspect model stats, and write a non-empty deck file.
 
 ## Why This Case Exists
 
@@ -17,6 +17,11 @@ Deck-oriented structural tools are common legacy integration points, and they ar
 - Target Kind: `package`
 - Upstream Target: `pyNastran.bdf.bdf`
 - Catalog Source: `challenges/cases/pynastran_bdf/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `100`
+- Required generated tools: `create_bdf`, `bdf_add_grid`, `bdf_get_bdf_stats`, `bdf_write_bdf`, `close_bdf`
 
 ## Run This Case
 
@@ -70,7 +75,21 @@ Arguments:
 }
 ```
 
-### 3. Write the resulting BDF deck
+### 3. Inspect BDF statistics after adding the grid
+
+Tool: `bdf_get_bdf_stats`
+
+Arguments:
+
+```json
+{
+  "session_id": "{bdf_session_id}"
+}
+```
+
+Expectations: text contains ['BDF Statistics'].
+
+### 4. Write the resulting BDF deck
 
 Tool: `bdf_write_bdf`
 
@@ -85,7 +104,7 @@ Arguments:
 
 Expectations: files are non-empty ['{challenge_artifact_dir}/model.bdf'].
 
-### 4. Close the BDF session
+### 5. Close the BDF session
 
 Tool: `close_bdf`
 
@@ -99,9 +118,9 @@ Arguments:
 
 ## What This Case Proves
 
-- One-shot class ingestion works for a real structures-oriented package.
+- One-shot class ingestion works for a real structures-oriented package with a very large method surface.
 - The generated session facade can call inherited mutator methods as well as output methods.
-- The wrapped tool can emit a concrete structural-analysis artifact for inspection.
+- The wrapped tool can inspect the in-memory model and emit a concrete structural-analysis artifact for inspection.
 
 ## Challenge Definition
 
@@ -115,12 +134,12 @@ style = "package"
 slice = "structures"
 
 [example]
-summary = "Wrap `pyNastran`'s `BDF` class, create a node, and write a non-empty deck file."
+summary = "Wrap `pyNastran`'s `BDF` class, create a node, inspect model stats, and write a non-empty deck file."
 motivation = "Deck-oriented structural tools are common legacy integration points, and they are a strong test of deterministic wrapping because the inputs and outputs are explicit files."
 proves = [
-  "One-shot class ingestion works for a real structures-oriented package.",
+  "One-shot class ingestion works for a real structures-oriented package with a very large method surface.",
   "The generated session facade can call inherited mutator methods as well as output methods.",
-  "The wrapped tool can emit a concrete structural-analysis artifact for inspection.",
+  "The wrapped tool can inspect the in-memory model and emit a concrete structural-analysis artifact for inspection.",
 ]
 
 [target]
@@ -134,6 +153,16 @@ imports = ["pyNastran.bdf.bdf"]
 kind = "package"
 symbol_include_patterns = ["^BDF$"]
 
+[ingestion]
+min_generated_tools = 100
+required_tools = [
+  "create_bdf",
+  "bdf_add_grid",
+  "bdf_get_bdf_stats",
+  "bdf_write_bdf",
+  "close_bdf",
+]
+
 [smoke]
 [[smoke.steps]]
 label = "Create a BDF session"
@@ -145,6 +174,14 @@ capture_json = { bdf_session_id = "session_id" }
 label = "Add one structural grid point"
 tool = "bdf_add_grid"
 arguments = { session_id = "{bdf_session_id}", nid = 1, xyz = [0.0, 0.0, 0.0] }
+
+[[smoke.steps]]
+label = "Inspect BDF statistics after adding the grid"
+tool = "bdf_get_bdf_stats"
+arguments = { session_id = "{bdf_session_id}" }
+
+[smoke.steps.expect]
+text_contains = ["BDF Statistics"]
 
 [[smoke.steps]]
 label = "Write the resulting BDF deck"

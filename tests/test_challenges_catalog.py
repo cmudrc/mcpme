@@ -90,3 +90,48 @@ def test_load_challenge_catalog_rejects_invalid_metadata(tmp_path: Path) -> None
 
     with pytest.raises(ChallengeCatalogError, match="tier must be one of"):
         load_challenge_catalog(catalog_dir)
+
+
+def test_load_challenge_catalog_rejects_invalid_ingestion_metadata(tmp_path: Path) -> None:
+    """Ingestion breadth requirements should validate with explicit errors."""
+    catalog_dir = tmp_path / "catalog"
+    catalog_dir.mkdir()
+    case_dir = catalog_dir / "bad_ingestion"
+    case_dir.mkdir()
+    (case_dir / "challenge.toml").write_text(
+        "\n".join(
+            [
+                'id = "bad_ingestion"',
+                'title = "Bad ingestion"',
+                'tier = "gha_subset"',
+                'style = "package"',
+                'slice = "systems"',
+                "",
+                "[example]",
+                'summary = "Summary"',
+                'motivation = "Motivation"',
+                'proves = ["Proof"]',
+                "",
+                "[target]",
+                'kind = "package"',
+                'value = "demo_pkg"',
+                "",
+                "[scaffold]",
+                'kind = "package"',
+                "",
+                "[ingestion]",
+                "min_generated_tools = -1",
+                'required_tools = ["demo"]',
+                "",
+                "[smoke]",
+                "[[smoke.steps]]",
+                'tool = "demo"',
+                "",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ChallengeCatalogError, match=r"ingestion\.min_generated_tools"):
+        load_challenge_catalog(catalog_dir)

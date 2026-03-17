@@ -90,6 +90,19 @@ def _render_step(step: ChallengeSmokeStep, index: int) -> str:
     return "\n".join(lines)
 
 
+def _render_ingestion_breadth(spec: ChallengeSpec) -> list[str]:
+    """Render one challenge's scaffold breadth expectations for Markdown."""
+    if spec.ingestion.min_generated_tools == 0 and not spec.ingestion.required_tools:
+        return ["This case relies on its smoke flow without extra breadth assertions."]
+    lines: list[str] = []
+    if spec.ingestion.min_generated_tools:
+        lines.append(f"- Minimum generated tools: `{spec.ingestion.min_generated_tools}`")
+    if spec.ingestion.required_tools:
+        required = ", ".join(f"`{tool}`" for tool in spec.ingestion.required_tools)
+        lines.append(f"- Required generated tools: {required}")
+    return lines
+
+
 def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
     """Render one challenge-local README file."""
     relative_catalog = spec.catalog_path.relative_to(repo_root).as_posix()
@@ -120,23 +133,31 @@ def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
         f"- Upstream Target: {_format_target_value(spec.target.value)}",
         f"- Catalog Source: `{relative_catalog}`",
         "",
-        _heading("Run This Case", 2),
-        "",
-        "Use the convenience target:",
-        "",
-        "```bash",
-        run_command,
-        "```",
-        "",
-        "Or call the runner directly:",
-        "",
-        "```bash",
-        raw_command,
-        "```",
-        "",
-        _heading("Fixtures", 2),
+        _heading("Ingestion Breadth", 2),
         "",
     ]
+    parts.extend(_render_ingestion_breadth(spec))
+    parts.extend(
+        [
+            "",
+            _heading("Run This Case", 2),
+            "",
+            "Use the convenience target:",
+            "",
+            "```bash",
+            run_command,
+            "```",
+            "",
+            "Or call the runner directly:",
+            "",
+            "```bash",
+            raw_command,
+            "```",
+            "",
+            _heading("Fixtures", 2),
+            "",
+        ]
+    )
     parts.extend(
         f"- {line}" if not line.startswith("This case") else line for line in fixture_lines
     )
@@ -203,6 +224,7 @@ def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -
         _heading("Why These Cases Matter", 2),
         "",
         "- They pressure-test one-shot ingestion against real engineering packages and CLIs.",
+        "- Many cases assert scaffold breadth explicitly so the suite checks more than one route.",
         (
             "- They stay separate from the public example contract so we can keep them "
             "brutally honest."

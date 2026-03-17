@@ -7,6 +7,7 @@ from pathlib import Path
 
 from mcpme._challenges import (
     ChallengeExample,
+    ChallengeIngestion,
     ChallengeProbe,
     ChallengeSmokeStep,
     ChallengeSpec,
@@ -53,6 +54,10 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
                 expect_text_contains=("hello",),
             ),
         ),
+        ingestion=ChallengeIngestion(
+            min_generated_tools=2,
+            required_tools=("run_demo", "close_demo"),
+        ),
         example=ChallengeExample(
             summary="Summarize one compact challenge.",
             motivation="Show why the challenge system doubles as documentation.",
@@ -69,5 +74,8 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
     assert "make challenge CASE=demo_case" in case_readme
     assert "demo_case/challenge.toml" in case_readme
     assert "demo_case/fixtures/demo.txt" in case_readme
+    assert "Ingestion Breadth" in case_readme
+    assert "Minimum generated tools" in case_readme
+    assert "close_demo" in case_readme
     assert "Run the demo tool" in case_readme
     assert "[`demo_case`](cases/demo_case/README.md)" in index_readme

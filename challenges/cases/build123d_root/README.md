@@ -2,11 +2,11 @@
 
 # build123d root oneshot
 
-Wrap the `build123d` package root while filtering down to the `import_stl` workflow.
+Wrap the `build123d` package root while filtering down to both STL and SVG importer workflows.
 
 ## Why This Case Exists
 
-Real users often point a one-shot ingester at a broad package root, so the filters need to produce something useful without manual cleanup first.
+Real users often point a one-shot ingester at a broad package root, so the filters need to produce something useful without manual cleanup first and without collapsing all the way down to a single lucky route.
 
 ## Case Shape
 
@@ -17,6 +17,11 @@ Real users often point a one-shot ingester at a broad package root, so the filte
 - Target Kind: `package`
 - Upstream Target: `build123d`
 - Catalog Source: `challenges/cases/build123d_root/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `2`
+- Required generated tools: `importers__import_stl`, `importers__import_svg`
 
 ## Run This Case
 
@@ -35,6 +40,7 @@ PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --catalog-dir challeng
 ## Fixtures
 
 - `challenges/cases/build123d_root/fixtures/tri.stl`
+- `challenges/cases/build123d_root/fixtures/tri.svg`
 
 ## Smoke Flow
 
@@ -50,12 +56,26 @@ Arguments:
 }
 ```
 
-Expectations: text contains ['Face'].
+Expectations: text contains ['Face object'].
+
+### 2. Import the SVG fixture through the filtered root facade
+
+Tool: `importers__import_svg`
+
+Arguments:
+
+```json
+{
+  "svg_file": "{challenge_fixture_dir}/tri.svg"
+}
+```
+
+Expectations: text contains ['Face object'].
 
 ## What This Case Proves
 
-- Package-root ingestion can be constrained with module and symbol filters.
-- The filtered wrapper still executes a real upstream geometry import.
+- Package-root ingestion can be constrained with module and symbol filters while still keeping multiple useful routes.
+- The filtered wrapper still executes real upstream geometry imports from more than one file format.
 - The challenge stays inspectable even when the original namespace is broad.
 
 ## Challenge Definition
@@ -70,11 +90,11 @@ style = "package"
 slice = "manufacturing"
 
 [example]
-summary = "Wrap the `build123d` package root while filtering down to the `import_stl` workflow."
-motivation = "Real users often point a one-shot ingester at a broad package root, so the filters need to produce something useful without manual cleanup first."
+summary = "Wrap the `build123d` package root while filtering down to both STL and SVG importer workflows."
+motivation = "Real users often point a one-shot ingester at a broad package root, so the filters need to produce something useful without manual cleanup first and without collapsing all the way down to a single lucky route."
 proves = [
-  "Package-root ingestion can be constrained with module and symbol filters.",
-  "The filtered wrapper still executes a real upstream geometry import.",
+  "Package-root ingestion can be constrained with module and symbol filters while still keeping multiple useful routes.",
+  "The filtered wrapper still executes real upstream geometry imports from more than one file format.",
   "The challenge stays inspectable even when the original namespace is broad.",
 ]
 
@@ -89,8 +109,12 @@ imports = ["build123d"]
 kind = "package"
 include_submodules = true
 module_include_patterns = ["^build123d\\.importers$"]
-symbol_include_patterns = ["^import_stl$"]
+symbol_include_patterns = ["^import_stl$", "^import_svg$"]
 max_generated_tools = 8
+
+[ingestion]
+min_generated_tools = 2
+required_tools = ["importers__import_stl", "importers__import_svg"]
 
 [smoke]
 [[smoke.steps]]
@@ -99,5 +123,13 @@ tool = "importers__import_stl"
 arguments = { file_name = "{challenge_fixture_dir}/tri.stl" }
 
 [smoke.steps.expect]
-text_contains = ["Face"]
+text_contains = ["Face object"]
+
+[[smoke.steps]]
+label = "Import the SVG fixture through the filtered root facade"
+tool = "importers__import_svg"
+arguments = { svg_file = "{challenge_fixture_dir}/tri.svg" }
+
+[smoke.steps.expect]
+text_contains = ["Face object"]
 ```

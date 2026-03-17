@@ -12,6 +12,7 @@ import pytest
 from mcpme._challenges import (
     ChallengeAggregate,
     ChallengeCatalogError,
+    ChallengeIngestion,
     ChallengeProbe,
     ChallengeResult,
     ChallengeSmokeStep,
@@ -30,6 +31,7 @@ from mcpme._challenges import (
     _parse_content_json,
     _parse_expectation_table,
     _parse_import_list,
+    _parse_ingestion,
     _parse_string_tuple,
     _path_tokens,
     _probe_availability,
@@ -42,6 +44,7 @@ from mcpme._challenges import (
     _resolve_expected_path,
     _run_scaffold,
     _tuple_from_iterable_of_strings,
+    _validate_ingestion,
     _validate_step_result,
     write_junit_xml,
     write_summary_markdown,
@@ -78,6 +81,10 @@ def test_challenge_parser_and_rendering_helpers_cover_error_paths(tmp_path: Path
     )
     assert _parse_import_list(["demo.pkg"], fake_path) == ("demo.pkg",)
     assert _parse_string_tuple(["a", "b"], fake_path) == ("a", "b")
+    assert _parse_ingestion(
+        {"min_generated_tools": 2, "required_tools": ["alpha", "beta"]},
+        fake_path,
+    ) == ChallengeIngestion(min_generated_tools=2, required_tools=("alpha", "beta"))
     assert _parse_expectation_table({"beta": 2, "alpha": 1}, fake_path) == {
         "alpha": 1,
         "beta": 2,
@@ -121,6 +128,8 @@ def test_challenge_parser_and_rendering_helpers_cover_error_paths(tmp_path: Path
         _parse_command_sequence_list("gmsh", fake_path)
     with pytest.raises(ChallengeCatalogError):
         _parse_string_tuple("value", fake_path)
+    with pytest.raises(ChallengeCatalogError):
+        _parse_ingestion({"min_generated_tools": -1}, fake_path)
     with pytest.raises(ChallengeCatalogError):
         _parse_expectation_table([], fake_path)
     with pytest.raises(ChallengeCatalogError):
@@ -260,6 +269,14 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     )
     assert "import failed" in _probe_availability(missing_import_spec, {"venv_bin_dir": ""})  # type: ignore[arg-type]
     assert "missing" in _probe_availability(missing_path_spec, {"venv_bin_dir": ""})  # type: ignore[arg-type]
+    message = _validate_ingestion(
+        ChallengeIngestion(min_generated_tools=2, required_tools=("alpha", "beta")),
+        ("alpha",),
+    )
+    assert message is not None
+    assert "expected at least 2 generated tools, got 1" in message
+    assert "missing required generated tools ['beta']" in message
+    assert _validate_ingestion(ChallengeIngestion(required_tools=("alpha",)), ("alpha",)) is None
 
 
 def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(

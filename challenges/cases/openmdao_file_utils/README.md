@@ -2,11 +2,11 @@
 
 # OpenMDAO file_utils oneshot
 
-Wrap `openmdao.utils.file_utils.get_module_path` and resolve a real module path in this repo.
+Wrap several `openmdao.utils.file_utils` helpers and exercise real path and iterator routes in this repo.
 
 ## Why This Case Exists
 
-Utility modules are often the safest first foothold when wrapping a large engineering package, so this case acts like a minimal real-world starting example.
+Utility modules are often the safest first foothold when wrapping a large engineering package, but a realistic one-shot pass should still ingest a useful cluster of helpers instead of stopping at a single function.
 
 ## Case Shape
 
@@ -17,6 +17,11 @@ Utility modules are often the safest first foothold when wrapping a large engine
 - Target Kind: `package`
 - Upstream Target: `openmdao.utils.file_utils`
 - Catalog Source: `challenges/cases/openmdao_file_utils/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `3`
+- Required generated tools: `files_iter`, `get_module_path`, `package_iter`
 
 ## Run This Case
 
@@ -52,11 +57,42 @@ Arguments:
 
 Expectations: text contains ['mcpme'].
 
+### 2. Create a file iterator rooted at the local mcpme package
+
+Tool: `files_iter`
+
+Arguments:
+
+```json
+{
+  "file_includes": [
+    "*.py"
+  ],
+  "start_dir": "{repo_root}/src/mcpme"
+}
+```
+
+Expectations: text contains ['generator object files_iter'].
+
+### 3. Create a package iterator rooted at the local src tree
+
+Tool: `package_iter`
+
+Arguments:
+
+```json
+{
+  "start_dir": "{repo_root}/src"
+}
+```
+
+Expectations: text contains ['generator object package_iter'].
+
 ## What This Case Proves
 
-- Installed engineering utility modules can be scaffolded deterministically in one shot.
-- Simple path-like parameters survive the generated wrapper path cleanly.
-- The generated facade can execute a real upstream function without hand-written glue code.
+- Installed engineering utility modules can be scaffolded deterministically in one shot without narrowing to a single function.
+- Simple path-like parameters and iterator-heavy helpers survive the generated wrapper path cleanly.
+- The generated facade can execute multiple real upstream functions without hand-written glue code.
 
 ## Challenge Definition
 
@@ -70,12 +106,12 @@ style = "package"
 slice = "systems"
 
 [example]
-summary = "Wrap `openmdao.utils.file_utils.get_module_path` and resolve a real module path in this repo."
-motivation = "Utility modules are often the safest first foothold when wrapping a large engineering package, so this case acts like a minimal real-world starting example."
+summary = "Wrap several `openmdao.utils.file_utils` helpers and exercise real path and iterator routes in this repo."
+motivation = "Utility modules are often the safest first foothold when wrapping a large engineering package, but a realistic one-shot pass should still ingest a useful cluster of helpers instead of stopping at a single function."
 proves = [
-  "Installed engineering utility modules can be scaffolded deterministically in one shot.",
-  "Simple path-like parameters survive the generated wrapper path cleanly.",
-  "The generated facade can execute a real upstream function without hand-written glue code.",
+  "Installed engineering utility modules can be scaffolded deterministically in one shot without narrowing to a single function.",
+  "Simple path-like parameters and iterator-heavy helpers survive the generated wrapper path cleanly.",
+  "The generated facade can execute multiple real upstream functions without hand-written glue code.",
 ]
 
 [target]
@@ -87,7 +123,11 @@ imports = ["openmdao.utils.file_utils"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^get_module_path$"]
+symbol_include_patterns = ["^files_iter$", "^get_module_path$", "^package_iter$"]
+
+[ingestion]
+min_generated_tools = 3
+required_tools = ["files_iter", "get_module_path", "package_iter"]
 
 [smoke]
 [[smoke.steps]]
@@ -97,4 +137,20 @@ arguments = { fpath = "{repo_root}/src/mcpme/__init__.py" }
 
 [smoke.steps.expect]
 text_contains = ["mcpme"]
+
+[[smoke.steps]]
+label = "Create a file iterator rooted at the local mcpme package"
+tool = "files_iter"
+arguments = { start_dir = "{repo_root}/src/mcpme", file_includes = ["*.py"] }
+
+[smoke.steps.expect]
+text_contains = ["generator object files_iter"]
+
+[[smoke.steps]]
+label = "Create a package iterator rooted at the local src tree"
+tool = "package_iter"
+arguments = { start_dir = "{repo_root}/src" }
+
+[smoke.steps.expect]
+text_contains = ["generator object package_iter"]
 ```

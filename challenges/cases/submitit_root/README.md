@@ -2,7 +2,7 @@
 
 # submitit root oneshot
 
-Wrap `submitit.LocalExecutor`, create a session, and update its parameters.
+Wrap `submitit.LocalExecutor` and `submitit.AutoExecutor`, then exercise both executor lifecycles.
 
 ## Why This Case Exists
 
@@ -17,6 +17,11 @@ Engineering workflows often end at job submission or orchestration, so the chall
 - Target Kind: `package`
 - Upstream Target: `submitit`
 - Catalog Source: `challenges/cases/submitit_root/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `12`
+- Required generated tools: `create_auto_executor`, `auto_executor_update_parameters`, `close_auto_executor`, `create_local_executor`, `local_executor_update_parameters`, `close_local_executor`
 
 ## Run This Case
 
@@ -80,10 +85,55 @@ Arguments:
 }
 ```
 
+### 4. Create an AutoExecutor session
+
+Tool: `create_auto_executor`
+
+Arguments:
+
+```json
+{
+  "args": [
+    "{challenge_artifact_dir}/submitit_auto"
+  ],
+  "kwargs": {}
+}
+```
+
+Captures: `{'auto_executor_session_id': 'session_id'}`
+
+### 5. Update auto executor parameters
+
+Tool: `auto_executor_update_parameters`
+
+Arguments:
+
+```json
+{
+  "args": [],
+  "kwargs": {
+    "timeout_min": 1
+  },
+  "session_id": "{auto_executor_session_id}"
+}
+```
+
+### 6. Close the AutoExecutor session
+
+Tool: `close_auto_executor`
+
+Arguments:
+
+```json
+{
+  "session_id": "{auto_executor_session_id}"
+}
+```
+
 ## What This Case Proves
 
-- One-shot package ingestion can wrap an HPC-adjacent executor class.
-- The generated session facade can call parameter-update methods with keyword arguments.
+- One-shot package ingestion can wrap an HPC-adjacent executor family instead of a single class.
+- The generated session facades can call parameter-update methods with keyword arguments on both concrete and auto-selecting executors.
 - The deterministic wrapper path can reach beyond solvers into orchestration tooling.
 
 ## Challenge Definition
@@ -98,11 +148,11 @@ style = "package"
 slice = "hpc"
 
 [example]
-summary = "Wrap `submitit.LocalExecutor`, create a session, and update its parameters."
+summary = "Wrap `submitit.LocalExecutor` and `submitit.AutoExecutor`, then exercise both executor lifecycles."
 motivation = "Engineering workflows often end at job submission or orchestration, so the challenge suite needs at least one scheduler-oriented object case."
 proves = [
-  "One-shot package ingestion can wrap an HPC-adjacent executor class.",
-  "The generated session facade can call parameter-update methods with keyword arguments.",
+  "One-shot package ingestion can wrap an HPC-adjacent executor family instead of a single class.",
+  "The generated session facades can call parameter-update methods with keyword arguments on both concrete and auto-selecting executors.",
   "The deterministic wrapper path can reach beyond solvers into orchestration tooling.",
 ]
 
@@ -115,8 +165,19 @@ imports = ["submitit"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^LocalExecutor$"]
-max_generated_tools = 10
+symbol_include_patterns = ["^AutoExecutor$", "^LocalExecutor$"]
+max_generated_tools = 20
+
+[ingestion]
+min_generated_tools = 12
+required_tools = [
+  "create_auto_executor",
+  "auto_executor_update_parameters",
+  "close_auto_executor",
+  "create_local_executor",
+  "local_executor_update_parameters",
+  "close_local_executor",
+]
 
 [smoke]
 [[smoke.steps]]
@@ -134,4 +195,20 @@ arguments = { session_id = "{local_executor_session_id}", args = [], kwargs = { 
 label = "Close the LocalExecutor session"
 tool = "close_local_executor"
 arguments = { session_id = "{local_executor_session_id}" }
+
+[[smoke.steps]]
+label = "Create an AutoExecutor session"
+tool = "create_auto_executor"
+arguments = { args = ["{challenge_artifact_dir}/submitit_auto"], kwargs = {} }
+capture_json = { auto_executor_session_id = "session_id" }
+
+[[smoke.steps]]
+label = "Update auto executor parameters"
+tool = "auto_executor_update_parameters"
+arguments = { session_id = "{auto_executor_session_id}", args = [], kwargs = { timeout_min = 1 } }
+
+[[smoke.steps]]
+label = "Close the AutoExecutor session"
+tool = "close_auto_executor"
+arguments = { session_id = "{auto_executor_session_id}" }
 ```

@@ -2,7 +2,7 @@
 
 # OpenMDAO Problem root oneshot
 
-Wrap `openmdao.api.Problem` from the package root and drive a basic setup lifecycle.
+Wrap `openmdao.api.Problem` from the package root and drive a broader setup-and-inspection lifecycle.
 
 ## Why This Case Exists
 
@@ -17,6 +17,11 @@ Large engineering platforms usually revolve around stateful top-level objects, s
 - Target Kind: `package`
 - Upstream Target: `openmdao.api`
 - Catalog Source: `challenges/cases/openmdao_api_problem/challenge.toml`
+
+## Ingestion Breadth
+
+- Minimum generated tools: `20`
+- Required generated tools: `create_problem`, `problem_set_solver_print`, `problem_setup`, `problem_get_outputs_dir`, `close_problem`
 
 ## Run This Case
 
@@ -53,7 +58,20 @@ Arguments:
 
 Captures: `{'problem_session_id': 'session_id'}`
 
-### 2. Run a basic Problem setup
+### 2. Configure solver-print verbosity on the live Problem session
+
+Tool: `problem_set_solver_print`
+
+Arguments:
+
+```json
+{
+  "level": 0,
+  "session_id": "{problem_session_id}"
+}
+```
+
+### 3. Run a basic Problem setup
 
 Tool: `problem_setup`
 
@@ -66,7 +84,23 @@ Arguments:
 }
 ```
 
-### 3. Close the Problem session
+Expectations: text contains ['Problem object'].
+
+### 4. Inspect the Problem outputs directory
+
+Tool: `problem_get_outputs_dir`
+
+Arguments:
+
+```json
+{
+  "session_id": "{problem_session_id}"
+}
+```
+
+Expectations: text contains ['_out'].
+
+### 5. Close the Problem session
 
 Tool: `close_problem`
 
@@ -80,8 +114,8 @@ Arguments:
 
 ## What This Case Proves
 
-- One-shot package-root ingestion can discover a high-value stateful class.
-- Session wrappers can create, operate on, and close an OpenMDAO `Problem` object.
+- One-shot package-root ingestion can discover a high-value stateful class and expose a meaningful slice of its API in one pass.
+- Session wrappers can create, configure, set up, inspect, and close an OpenMDAO `Problem` object.
 - The deterministic path is viable beyond utility functions and small helpers.
 
 ## Known Limits
@@ -100,11 +134,11 @@ style = "package"
 slice = "systems"
 
 [example]
-summary = "Wrap `openmdao.api.Problem` from the package root and drive a basic setup lifecycle."
+summary = "Wrap `openmdao.api.Problem` from the package root and drive a broader setup-and-inspection lifecycle."
 motivation = "Large engineering platforms usually revolve around stateful top-level objects, so this case checks whether one-shot ingestion can reach that shape without a custom adapter."
 proves = [
-  "One-shot package-root ingestion can discover a high-value stateful class.",
-  "Session wrappers can create, operate on, and close an OpenMDAO `Problem` object.",
+  "One-shot package-root ingestion can discover a high-value stateful class and expose a meaningful slice of its API in one pass.",
+  "Session wrappers can create, configure, set up, inspect, and close an OpenMDAO `Problem` object.",
   "The deterministic path is viable beyond utility functions and small helpers.",
 ]
 limitations = [
@@ -123,6 +157,16 @@ kind = "package"
 symbol_include_patterns = ["^Problem$"]
 max_generated_tools = 40
 
+[ingestion]
+min_generated_tools = 20
+required_tools = [
+  "create_problem",
+  "problem_set_solver_print",
+  "problem_setup",
+  "problem_get_outputs_dir",
+  "close_problem",
+]
+
 [smoke]
 [[smoke.steps]]
 label = "Create a Problem session"
@@ -131,9 +175,25 @@ arguments = { args = [], kwargs = {} }
 capture_json = { problem_session_id = "session_id" }
 
 [[smoke.steps]]
+label = "Configure solver-print verbosity on the live Problem session"
+tool = "problem_set_solver_print"
+arguments = { session_id = "{problem_session_id}", level = 0 }
+
+[[smoke.steps]]
 label = "Run a basic Problem setup"
 tool = "problem_setup"
 arguments = { session_id = "{problem_session_id}", check = false }
+
+[smoke.steps.expect]
+text_contains = ["Problem object"]
+
+[[smoke.steps]]
+label = "Inspect the Problem outputs directory"
+tool = "problem_get_outputs_dir"
+arguments = { session_id = "{problem_session_id}" }
+
+[smoke.steps.expect]
+text_contains = ["_out"]
 
 [[smoke.steps]]
 label = "Close the Problem session"
