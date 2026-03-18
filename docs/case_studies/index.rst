@@ -8,7 +8,8 @@ They document richer real-upstream workflows while preserving the
 public-API-only contract and a stable `passed`/`skipped_unavailable`
 JSON output shape. Each case is split into `ingest.py`, `serve.py`,
 and `use.py` so the generated facade can be inspected after ingestion,
-served over stdio MCP, and then exercised through a client request.
+served over stdio MCP, and exercised through MCP requests without
+regenerating it.
 Checked-in support inputs live under
 `case_studies/support/`, while generated facades and run artifacts
 stay under `artifacts/case_studies/`.

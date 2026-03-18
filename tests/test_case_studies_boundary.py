@@ -169,6 +169,27 @@ def test_case_studies_do_not_materialize_support_inputs_at_runtime() -> None:
     assert violations == [], "\n".join(violations)
 
 
+def test_case_study_use_scripts_do_not_launch_serve_processes() -> None:
+    """`use.py` should exercise saved facades without starting `serve.py` itself."""
+    violations: list[str] = []
+    for case_dir in _iter_case_study_dirs():
+        path = case_dir / "use.py"
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "subprocess"
+                and node.func.attr in {"Popen", "run"}
+            ):
+                violations.append(
+                    f"{path.relative_to(REPO_ROOT)}:{node.lineno}: use.py must not launch "
+                    "subprocess-based serve flows."
+                )
+    assert violations == [], "\n".join(violations)
+
+
 def test_generated_case_study_docs_are_up_to_date() -> None:
     """Checked-in generated case-study docs should match current docstrings."""
     completed = subprocess.run(

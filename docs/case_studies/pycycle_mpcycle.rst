@@ -12,8 +12,7 @@ This case study shows how `mcpme` can carve a useful session-oriented wrapper
 out of a real engineering Python package without teaching the library
 anything pyCycle-specific. The workflow mirrors a more realistic integration
 path: ingest the package once, persist the generated facade with a standard
-scaffold report, serve that facade over stdio MCP, and then drive the wrapped
-session lifecycle through MCP.
+scaffold report, and then drive the wrapped session lifecycle through MCP.
 
 Preset Environment
 ------------------
@@ -23,8 +22,8 @@ The case-study-specific public scaffold command is checked in under
 `case_studies/pycycle_mpcycle/ingest.py` first to write `generated_facade.py`
 and `scaffold_report.json` under `artifacts/case_studies/pycycle_mpcycle/`,
 `case_studies/pycycle_mpcycle/serve.py` to expose that generated facade over
-stdio MCP, and `case_studies/pycycle_mpcycle/use.py` to hit that MCP server
-and exercise the generated tools.
+stdio MCP, and `case_studies/pycycle_mpcycle/use.py` separately to exercise
+the same generated tools through MCP requests without launching `serve.py`.
 
 Technical Implementation
 ------------------------
@@ -36,9 +35,9 @@ Technical Implementation
   `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpme.serve_stdio`.
-- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
-  `tools/call` requests, then exercises the create/add-parameter/close
-  lifecycle entirely through the served MCP interface.
+- `use.py` builds an in-process `mcpme.McpServer` from the saved facade, sends
+  `initialize`, `tools/list`, and `tools/call` requests, then exercises the
+  create/add-parameter/close lifecycle through the MCP runtime.
 
 Expected Results
 ----------------
@@ -93,4 +92,4 @@ Use Script
 .. literalinclude:: ../../case_studies/pycycle_mpcycle/use.py
    :language: python
    :linenos:
-   :lines: 61-
+   :lines: 60-

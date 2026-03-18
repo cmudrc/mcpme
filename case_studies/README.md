@@ -15,8 +15,8 @@ Each case lives in its own directory with three companion scripts:
 - `ingest.py` performs the one-shot scaffold step and writes the standard
   artifact pair: `generated_facade.py` and `scaffold_report.json`.
 - `serve.py` loads that saved generated facade and serves it over stdio MCP.
-- `use.py` starts the served MCP and demonstrates the ingested capability
-  through client requests instead of calling the manifest directly.
+- `use.py` demonstrates the ingested capability through MCP requests against
+  the saved facade without launching `serve.py`.
 
 Checked-in support inputs live under `case_studies/support/<case_id>/`, while
 generated facades and execution artifacts belong under
@@ -28,15 +28,22 @@ Included case studies:
 - `pycycle_mpcycle/`: ingest and then use a package facade around `pycycle.api.MPCycle`.
 - `tigl_cpacs/`: ingest and then use a package facade around a tiny TiGL/TiXI helper package.
 
-Run one case study manually with the real ingest-then-use flow:
+Run one case study manually with the ingest-then-use flow:
 
 ```bash
 PYTHONPATH=src python case_studies/pycycle_mpcycle/ingest.py
 PYTHONPATH=src python case_studies/pycycle_mpcycle/use.py
 ```
 
-`use.py` starts `serve.py` automatically. Run `serve.py` directly only when you
-want to inspect the served MCP endpoint yourself.
+Inspect the stdio server separately when you want to demo the served facade:
+
+```bash
+PYTHONPATH=src python case_studies/pycycle_mpcycle/serve.py
+```
+
+`serve.py` and `use.py` are intentionally separate. `serve.py` exposes the
+saved facade over stdio MCP, while `use.py` exercises that same saved facade
+through in-process MCP requests.
 
 Or use the convenience targets:
 

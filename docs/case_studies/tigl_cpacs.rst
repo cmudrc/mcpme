@@ -13,8 +13,7 @@ TiGL workflows revolve around native bindings, CPACS files, and handles that
 are not themselves JSON-friendly. Instead of baking that complexity into
 `mcpme`, the case study keeps a tiny helper package checked in, ingests that
 helper through the public CLI, persists the generated facade with a standard
-scaffold report, serves that facade over stdio MCP, and then uses it through a
-real MCP client request.
+scaffold report, and then exercises that saved facade through MCP requests.
 
 Preset Environment
 ------------------
@@ -24,8 +23,8 @@ fixture all live under `case_studies/support/tigl_cpacs/`. Run
 `case_studies/tigl_cpacs/ingest.py` first to write `generated_facade.py` and
 `scaffold_report.json` under `artifacts/case_studies/tigl_cpacs/`,
 `case_studies/tigl_cpacs/serve.py` to expose that generated facade over stdio
-MCP, and `case_studies/tigl_cpacs/use.py` to hit that MCP server and execute
-the helper against the checked-in CPACS input.
+MCP, and `case_studies/tigl_cpacs/use.py` separately to exercise the helper
+against the checked-in CPACS input without launching `serve.py`.
 
 Technical Implementation
 ------------------------
@@ -38,9 +37,10 @@ Technical Implementation
 - `serve.py` adds the checked-in helper package parent to `sys.path`, loads the
   saved generated facade through the public API, and serves it over stdio with
   `mcpme.serve_stdio`.
-- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
-  `tools/call` requests, and captures the TiGL summary through the served MCP
-  interface.
+- `use.py` adds the checked-in helper package parent to `sys.path`, builds an
+  in-process `mcpme.McpServer` from the saved facade, sends `initialize`,
+  `tools/list`, and `tools/call` requests, and captures the TiGL summary
+  through the MCP runtime.
 
 Expected Results
 ----------------
