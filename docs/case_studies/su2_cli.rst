@@ -3,16 +3,17 @@
 Su2 Cli
 =======
 
-Source: ``case_studies/su2_cli/use.py`` with companion ``case_studies/su2_cli/ingest.py``
+Source: ``case_studies/su2_cli/use.py`` with companions ``case_studies/su2_cli/ingest.py`` and ``case_studies/su2_cli/serve.py``
 
 Introduction
 ------------
 
 This case study models the shape of a real heavyweight CLI integration more
 closely than the smaller examples: first ingest the upstream surface into a
-generated facade, persist that generated artifact, and only then use it
-through the normal `mcpme` runtime. The split is deliberate so contributors
-can inspect the generated wrapper before the wrapped command is executed.
+generated facade, persist that generated artifact, serve it over stdio MCP,
+and only then use it through a client request. The split is deliberate so
+contributors can inspect the generated wrapper before the wrapped command is
+executed.
 
 Preset Environment
 ------------------
@@ -20,8 +21,9 @@ Preset Environment
 The checked-in command surface for this case study lives under
 `case_studies/support/su2_cli/commands/`. Run `case_studies/su2_cli/ingest.py`
 to scaffold and persist the facade under `artifacts/case_studies/su2_cli/`,
-then run `case_studies/su2_cli/use.py` to build a manifest from that persisted
-facade and exercise the wrapped CLI.
+`case_studies/su2_cli/serve.py` to expose that persisted facade as an MCP
+server, and `case_studies/su2_cli/use.py` to hit that MCP server and exercise
+the wrapped CLI.
 
 Technical Implementation
 ------------------------
@@ -29,28 +31,30 @@ Technical Implementation
 - `ingest.py` probes for `SU2_CFD`, runs the public scaffold CLI through the
   checked-in shell wrapper, and writes `ingest_state.json` under the case-study
   artifact directory.
-- `use.py` reads that persisted ingest state rather than scaffolding again.
-- The use step builds a manifest from the saved generated facade through the
-  top-level public API and executes the generated wrapper with
-  `extra_argv=["-h"]`.
+- `serve.py` loads the saved generated facade through the public API and serves
+  it over stdio with `mcpme.serve_stdio`.
+- `use.py` reads the persisted ingest state, starts `serve.py` as a
+  subprocess, sends `initialize`, `tools/list`, and `tools/call` requests, and
+  captures the JSON-RPC responses.
 - The result payload retains both the scaffold report and the wrapped help-path
-  execution evidence.
+  execution evidence returned by the served MCP runtime.
 
 Expected Results
 ----------------
 
 When SU2 is available, `ingest.py` prints a `passed` payload with the scaffold
-report, and `use.py` prints a `passed` payload with the manifest tool names and
-the wrapped help-path result. On machines without SU2 installed, the ingest
-step persists a `skipped_unavailable` state and the use step reports the same
-skip reason without failing.
+report, `serve.py` can expose the persisted facade over stdio MCP, and
+`use.py` prints a `passed` payload with the served tool names and the wrapped
+help-path result. On machines without SU2 installed, the ingest step persists
+a `skipped_unavailable` state and the use step reports the same skip reason
+without failing.
 
 Availability
 ------------
 
 This case study requires the `SU2_CFD` executable to be available on `PATH`.
-The repository does not install SU2 automatically, so both scripts are
-expected to report `skipped_unavailable` cleanly on many machines.
+The repository does not install SU2 automatically, so the case study is
+expected to skip cleanly on many machines.
 
 References
 ----------
@@ -58,6 +62,7 @@ References
 - ``README.md``
 - ``case_studies/README.md``
 - ``case_studies/su2_cli/ingest.py``
+- ``case_studies/su2_cli/serve.py``
 - ``case_studies/support/su2_cli/commands/su2_cfd.sh``
 - ``case_studies/support/su2_cli/commands/scaffold_su2_cli.sh``
 - ``docs/quickstart.rst``
@@ -74,10 +79,18 @@ Ingest Script
    :linenos:
    :lines: 12-
 
+Serve Script
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../case_studies/su2_cli/serve.py
+   :language: python
+   :linenos:
+   :lines: 3-
+
 Use Script
 ~~~~~~~~~~
 
 .. literalinclude:: ../../case_studies/su2_cli/use.py
    :language: python
    :linenos:
-   :lines: 56-
+   :lines: 61-

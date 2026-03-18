@@ -29,6 +29,7 @@ def _iter_case_study_dirs() -> list[Path]:
         and not path.name.startswith("_")
         and path.name != "support"
         and (path / "ingest.py").exists()
+        and (path / "serve.py").exists()
         and (path / "use.py").exists()
     ]
 
@@ -85,7 +86,7 @@ def _iter_runtime_materialization_violations() -> list[str]:
     """Find case-study entrypoints that still materialize source inputs at runtime."""
     violations: list[str] = []
     for case_dir in _iter_case_study_dirs():
-        for path in (case_dir / "ingest.py", case_dir / "use.py"):
+        for path in (case_dir / "ingest.py", case_dir / "serve.py", case_dir / "use.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
@@ -154,7 +155,7 @@ def test_case_study_entrypoints_include_module_docstrings() -> None:
     """Every checked-in case-study entrypoint should have a module docstring."""
     violations: list[str] = []
     for case_dir in _iter_case_study_dirs():
-        for path in (case_dir / "ingest.py", case_dir / "use.py"):
+        for path in (case_dir / "ingest.py", case_dir / "serve.py", case_dir / "use.py"):
             module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             docstring = ast.get_docstring(module, clean=False)
             if not isinstance(docstring, str) or not docstring.strip():

@@ -3,7 +3,7 @@
 Pycycle Mpcycle
 ===============
 
-Source: ``case_studies/pycycle_mpcycle/use.py`` with companion ``case_studies/pycycle_mpcycle/ingest.py``
+Source: ``case_studies/pycycle_mpcycle/use.py`` with companions ``case_studies/pycycle_mpcycle/ingest.py`` and ``case_studies/pycycle_mpcycle/serve.py``
 
 Introduction
 ------------
@@ -11,8 +11,8 @@ Introduction
 This case study shows how `mcpme` can carve a useful session-oriented wrapper
 out of a real engineering Python package without teaching the library
 anything pyCycle-specific. The workflow mirrors a more realistic integration
-path: ingest the package once, persist the generated facade, and then execute
-the wrapped session lifecycle from that persisted artifact.
+path: ingest the package once, persist the generated facade, serve that facade
+over stdio MCP, and then drive the wrapped session lifecycle through MCP.
 
 Preset Environment
 ------------------
@@ -20,9 +20,10 @@ Preset Environment
 The case-study-specific public scaffold command is checked in under
 `case_studies/support/pycycle_mpcycle/commands/`. Run
 `case_studies/pycycle_mpcycle/ingest.py` first to generate and persist the
-facade under `artifacts/case_studies/pycycle_mpcycle/`, then run
-`case_studies/pycycle_mpcycle/use.py` to build a manifest from that persisted
-facade and exercise the generated tools.
+facade under `artifacts/case_studies/pycycle_mpcycle/`,
+`case_studies/pycycle_mpcycle/serve.py` to expose that persisted facade over
+stdio MCP, and `case_studies/pycycle_mpcycle/use.py` to hit that MCP server
+and exercise the generated tools.
 
 Technical Implementation
 ------------------------
@@ -31,26 +32,28 @@ Technical Implementation
   runs against the engineering `om-pycycle` distribution.
 - The ingest step runs the public scaffold CLI through a checked-in shell
   wrapper and persists the discovered tool names for the `MPCycle` lifecycle.
-- `use.py` reads that persisted ingest state instead of re-running ingestion.
-- The use step creates an `MPCycle` session, calls `pyc_add_cycle_param`, and
-  closes the session through the generated runtime bindings.
+- `serve.py` loads the saved generated facade through the public API and serves
+  it over stdio with `mcpme.serve_stdio`.
+- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
+  `tools/call` requests, then exercises the create/add-parameter/close
+  lifecycle entirely through the served MCP interface.
 
 Expected Results
 ----------------
 
 When the engineering pyCycle package is available, `ingest.py` prints a
-`passed` payload with the scaffold report and persisted tool names, and
-`use.py` prints a `passed` payload with the session lifecycle outputs. On
-machines without `pycycle.api`, the ingest step persists a
-`skipped_unavailable` state and the use step reports the same skip reason
-without failing.
+`passed` payload with the scaffold report and persisted tool names, `serve.py`
+can expose the persisted facade over stdio MCP, and `use.py` prints a
+`passed` payload with the session lifecycle outputs. On machines without
+`pycycle.api`, the ingest step persists a `skipped_unavailable` state and the
+use step reports the same skip reason without failing.
 
 Availability
 ------------
 
 This case study requires the OpenMDAO pyCycle distribution, installed from the
 `om-pycycle` package while still importing as `pycycle`. If `pycycle.api`
-cannot be imported, both scripts skip cleanly.
+cannot be imported, the case study skips cleanly.
 
 References
 ----------
@@ -58,6 +61,7 @@ References
 - ``README.md``
 - ``case_studies/README.md``
 - ``case_studies/pycycle_mpcycle/ingest.py``
+- ``case_studies/pycycle_mpcycle/serve.py``
 - ``case_studies/support/pycycle_mpcycle/commands/scaffold_pycycle_mpcycle.sh``
 - ``docs/quickstart.rst``
 - ``docs/specification.rst``
@@ -73,10 +77,18 @@ Ingest Script
    :linenos:
    :lines: 11-
 
+Serve Script
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../case_studies/pycycle_mpcycle/serve.py
+   :language: python
+   :linenos:
+   :lines: 3-
+
 Use Script
 ~~~~~~~~~~
 
 .. literalinclude:: ../../case_studies/pycycle_mpcycle/use.py
    :language: python
    :linenos:
-   :lines: 55-
+   :lines: 59-

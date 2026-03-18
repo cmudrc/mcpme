@@ -27,6 +27,8 @@ def test_case_study_doc_renderer_produces_case_study_pages() -> None:
         title="Demo Case",
         ingest_rel_path="case_studies/demo_case/ingest.py",
         ingest_source_start_line=9,
+        serve_rel_path="case_studies/demo_case/serve.py",
+        serve_source_start_line=15,
         use_rel_path="case_studies/demo_case/use.py",
         use_source_start_line=21,
         sections={
@@ -47,7 +49,9 @@ def test_case_study_doc_renderer_produces_case_study_pages() -> None:
     assert "Availability" in case_page
     assert "case_studies/demo_case/use.py" in case_page
     assert "case_studies/demo_case/ingest.py" in case_page
+    assert "case_studies/demo_case/serve.py" in case_page
     assert ".. literalinclude:: ../../case_studies/demo_case/ingest.py" in case_page
+    assert ".. literalinclude:: ../../case_studies/demo_case/serve.py" in case_page
     assert ".. literalinclude:: ../../case_studies/demo_case/use.py" in case_page
     assert "Case Studies" in index_page
     assert "demo_case" in index_page

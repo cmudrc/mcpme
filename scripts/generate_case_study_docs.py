@@ -26,6 +26,7 @@ HEADING_CHARS = {
     "References": "-",
     "Source Code": "-",
     "Ingest Script": "~",
+    "Serve Script": "~",
     "Use Script": "~",
 }
 
@@ -39,6 +40,8 @@ class CaseStudyDocSpec:
     title: str
     ingest_rel_path: str
     ingest_source_start_line: int
+    serve_rel_path: str
+    serve_source_start_line: int
     use_rel_path: str
     use_source_start_line: int
     sections: dict[str, str]
@@ -56,7 +59,11 @@ def _discover_case_studies(repo_root: Path) -> list[Path]:
     for path in sorted(case_studies_root.iterdir()):
         if path.name.startswith("_") or path.name == "support" or not path.is_dir():
             continue
-        if (path / "ingest.py").exists() and (path / "use.py").exists():
+        if (
+            (path / "ingest.py").exists()
+            and (path / "serve.py").exists()
+            and (path / "use.py").exists()
+        ):
             case_dirs.append(path)
     return case_dirs
 
@@ -121,9 +128,11 @@ def _build_case_study_specs(repo_root: Path) -> list[CaseStudyDocSpec]:
     specs: list[CaseStudyDocSpec] = []
     for case_dir in _discover_case_studies(repo_root):
         ingest_path = case_dir / "ingest.py"
+        serve_path = case_dir / "serve.py"
         use_path = case_dir / "use.py"
         use_doc_text, use_source_start_line = _parse_module_doc_text(use_path)
         _, ingest_source_start_line = _parse_module_doc_text(ingest_path)
+        _, serve_source_start_line = _parse_module_doc_text(serve_path)
         specs.append(
             CaseStudyDocSpec(
                 case_dir_rel_path=case_dir.relative_to(repo_root).as_posix(),
@@ -131,6 +140,8 @@ def _build_case_study_specs(repo_root: Path) -> list[CaseStudyDocSpec]:
                 title=_title_for_case_study(case_dir),
                 ingest_rel_path=ingest_path.relative_to(repo_root).as_posix(),
                 ingest_source_start_line=ingest_source_start_line,
+                serve_rel_path=serve_path.relative_to(repo_root).as_posix(),
+                serve_source_start_line=serve_source_start_line,
                 use_rel_path=use_path.relative_to(repo_root).as_posix(),
                 use_source_start_line=use_source_start_line,
                 sections=_parse_sections(doc_text=use_doc_text, source_path=use_path),
@@ -151,7 +162,10 @@ def _render_case_study_page(spec: CaseStudyDocSpec) -> str:
         "",
         _heading(spec.title),
         "",
-        f"Source: ``{spec.use_rel_path}`` with companion ``{spec.ingest_rel_path}``",
+        (
+            f"Source: ``{spec.use_rel_path}`` with companions "
+            f"``{spec.ingest_rel_path}`` and ``{spec.serve_rel_path}``"
+        ),
         "",
     ]
     for section in REQUIRED_SECTIONS:
@@ -175,6 +189,13 @@ def _render_case_study_page(spec: CaseStudyDocSpec) -> str:
             "   :linenos:",
             f"   :lines: {spec.ingest_source_start_line}-",
             "",
+            _heading("Serve Script", HEADING_CHARS["Serve Script"]),
+            "",
+            f".. literalinclude:: ../../{spec.serve_rel_path}",
+            "   :language: python",
+            "   :linenos:",
+            f"   :lines: {spec.serve_source_start_line}-",
+            "",
             _heading("Use Script", HEADING_CHARS["Use Script"]),
             "",
             f".. literalinclude:: ../../{spec.use_rel_path}",
@@ -197,9 +218,10 @@ def _render_case_studies_index(specs: list[CaseStudyDocSpec]) -> str:
         "The case studies are a separate lane from the small core examples.",
         "They document richer real-upstream workflows while preserving the",
         "public-API-only contract and a stable `passed`/`skipped_unavailable`",
-        "JSON output shape. Each case is split into `ingest.py` and `use.py`",
-        "so the generated facade can be inspected after ingestion and before",
-        "the wrapped capability is exercised. Checked-in support inputs live under",
+        "JSON output shape. Each case is split into `ingest.py`, `serve.py`,",
+        "and `use.py` so the generated facade can be inspected after ingestion,",
+        "served over stdio MCP, and then exercised through a client request.",
+        "Checked-in support inputs live under",
         "`case_studies/support/`, while generated facades and run artifacts",
         "stay under `artifacts/case_studies/`.",
         "",

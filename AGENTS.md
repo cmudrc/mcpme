@@ -72,8 +72,9 @@ merging.
   surface.
 - Keep each case-study directory readable as a real ingest/persist/use flow:
   `case_studies/<id>/ingest.py` should persist the generated facade state under
-  `artifacts/case_studies/<id>/`, and `case_studies/<id>/use.py` should
-  demonstrate the saved capabilities from that persisted state.
+  `artifacts/case_studies/<id>/`, `case_studies/<id>/serve.py` should expose
+  that saved facade over stdio MCP, and `case_studies/<id>/use.py` should
+  demonstrate the saved capabilities through MCP requests.
 - Keep checked-in support inputs under `examples/support/<id>/` and
   `case_studies/support/<id>/`. Generated facades and retained execution
   artifacts belong under `artifacts/` and should not be promoted into the

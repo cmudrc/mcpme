@@ -6,9 +6,10 @@ Case Studies
 The case studies are a separate lane from the small core examples.
 They document richer real-upstream workflows while preserving the
 public-API-only contract and a stable `passed`/`skipped_unavailable`
-JSON output shape. Each case is split into `ingest.py` and `use.py`
-so the generated facade can be inspected after ingestion and before
-the wrapped capability is exercised. Checked-in support inputs live under
+JSON output shape. Each case is split into `ingest.py`, `serve.py`,
+and `use.py` so the generated facade can be inspected after ingestion,
+served over stdio MCP, and then exercised through a client request.
+Checked-in support inputs live under
 `case_studies/support/`, while generated facades and run artifacts
 stay under `artifacts/case_studies/`.
 

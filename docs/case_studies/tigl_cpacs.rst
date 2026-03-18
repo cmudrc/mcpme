@@ -3,7 +3,7 @@
 Tigl Cpacs
 ==========
 
-Source: ``case_studies/tigl_cpacs/use.py`` with companion ``case_studies/tigl_cpacs/ingest.py``
+Source: ``case_studies/tigl_cpacs/use.py`` with companions ``case_studies/tigl_cpacs/ingest.py`` and ``case_studies/tigl_cpacs/serve.py``
 
 Introduction
 ------------
@@ -12,8 +12,8 @@ This case study tackles a more awkward upstream than the small core examples:
 TiGL workflows revolve around native bindings, CPACS files, and handles that
 are not themselves JSON-friendly. Instead of baking that complexity into
 `mcpme`, the case study keeps a tiny helper package checked in, ingests that
-helper through the public CLI, persists the generated facade, and then uses
-that persisted facade through the normal public runtime.
+helper through the public CLI, persists the generated facade, serves that
+facade over stdio MCP, and then uses it through a real MCP client request.
 
 Preset Environment
 ------------------
@@ -21,9 +21,10 @@ Preset Environment
 The helper package, the public scaffold wrapper, and the real D150 CPACS XML
 fixture all live under `case_studies/support/tigl_cpacs/`. Run
 `case_studies/tigl_cpacs/ingest.py` first to scaffold and persist the helper
-facade under `artifacts/case_studies/tigl_cpacs/`, then run
-`case_studies/tigl_cpacs/use.py` to build a manifest from that persisted
-facade and execute the helper against the checked-in CPACS input.
+facade under `artifacts/case_studies/tigl_cpacs/`,
+`case_studies/tigl_cpacs/serve.py` to expose that persisted facade over stdio
+MCP, and `case_studies/tigl_cpacs/use.py` to hit that MCP server and execute
+the helper against the checked-in CPACS input.
 
 Technical Implementation
 ------------------------
@@ -32,28 +33,29 @@ Technical Implementation
   importable before attempting any scaffold work.
 - The ingest step runs the public package scaffold CLI through a checked-in
   shell wrapper against the checked-in `tigl_support` helper package.
-- `use.py` adds the checked-in helper package parent to `sys.path`, reads the
-  persisted ingest state, and builds a manifest from the saved generated
-  facade.
-- The use step executes the generated `open_cpacs_summary` tool against a real
-  checked-in CPACS XML file and returns a JSON-friendly summary.
+- `serve.py` adds the checked-in helper package parent to `sys.path`, loads the
+  saved generated facade through the public API, and serves it over stdio with
+  `mcpme.serve_stdio`.
+- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
+  `tools/call` requests, and captures the TiGL summary through the served MCP
+  interface.
 
 Expected Results
 ----------------
 
 When the TiGL and TiXI bindings are available, `ingest.py` prints a `passed`
-payload with the scaffold report and persisted facade location, and `use.py`
-prints a `passed` payload with the CPACS summary produced through the real
-bindings. On machines without those bindings, the ingest step persists a
-`skipped_unavailable` state and the use step reports the same skip reason
-without failing.
+payload with the scaffold report and persisted facade location, `serve.py` can
+expose the persisted facade over stdio MCP, and `use.py` prints a `passed`
+payload with the CPACS summary produced through the real bindings. On machines
+without those bindings, the ingest step persists a `skipped_unavailable` state
+and the use step reports the same skip reason without failing.
 
 Availability
 ------------
 
 This case study requires the real `tigl3` and `tixi3` Python bindings, which
 are typically installed outside the base Python toolchain. The repository does
-not install them automatically, so both scripts are expected to skip cleanly
+not install them automatically, so the case study is expected to skip cleanly
 on many machines.
 
 References
@@ -62,6 +64,7 @@ References
 - ``README.md``
 - ``case_studies/README.md``
 - ``case_studies/tigl_cpacs/ingest.py``
+- ``case_studies/tigl_cpacs/serve.py``
 - ``case_studies/support/tigl_cpacs/commands/scaffold_tigl_cpacs.sh``
 - ``case_studies/support/tigl_cpacs/tigl_support/__init__.py``
 - ``case_studies/support/tigl_cpacs/tigl_support/core.py``
@@ -79,10 +82,18 @@ Ingest Script
    :linenos:
    :lines: 11-
 
+Serve Script
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../case_studies/tigl_cpacs/serve.py
+   :language: python
+   :linenos:
+   :lines: 3-
+
 Use Script
 ~~~~~~~~~~
 
 .. literalinclude:: ../../case_studies/tigl_cpacs/use.py
    :language: python
    :linenos:
-   :lines: 61-
+   :lines: 64-

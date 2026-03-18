@@ -14,8 +14,9 @@ It is built for teams that want wrappers they can inspect and trust:
 
 The checked-in examples and case studies keep their preset support inputs in
 source control and reserve ``artifacts/`` for derived outputs only. The case
-studies go a step further and split each walkthrough into an ingest phase and
-a use phase so the generated facade remains directly inspectable.
+studies go a step further and split each walkthrough into ingest, serve, and
+use phases so the generated facade remains directly inspectable and testable as
+an MCP server.
 
 Start Here
 ----------
