@@ -79,6 +79,8 @@ def main() -> None:
     """Hit the served pyCycle MCP runtime and print the stable JSON payload."""
     if not GENERATED_FACADE_PATH.exists():
         try:
+            # Reuse the ingest availability probe so a machine without pyCycle
+            # skips cleanly instead of failing with a missing-artifact error.
             importlib.import_module("pycycle.api")
         except Exception as exc:
             payload = {
@@ -94,6 +96,7 @@ def main() -> None:
             "Run case_studies/pycycle_mpcycle/ingest.py first."
         )
 
+    # Treat the scaffold report as part of the contract for a complete ingest.
     if not REPORT_PATH.exists():
         raise FileNotFoundError(
             f"Missing scaffold report artifact: {REPORT_PATH}. "
@@ -108,6 +111,8 @@ def main() -> None:
         pythonpath_entries.append(env["PYTHONPATH"])
     env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
 
+    # Launch the MCP server as an external process so the tutorial shows the
+    # actual boundary between client and served facade.
     server = subprocess.Popen(
         [sys.executable, str(SERVE_PATH)],
         cwd=REPO_ROOT,
@@ -121,17 +126,22 @@ def main() -> None:
         raise RuntimeError("Expected stdio pipes when launching the pyCycle case-study MCP server.")
 
     try:
+        # Perform the MCP handshake manually to make the protocol sequence
+        # visible in the teaching example.
         server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}) + "\n")
         server.stdin.flush()
         initialize = json.loads(server.stdout.readline())
         if "error" in initialize:
             raise RuntimeError(f"pyCycle MCP initialize failed: {initialize['error']}")
 
+        # `initialized` tells the server it can start handling normal traffic.
         server.stdin.write(
             json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n"
         )
         server.stdin.flush()
 
+        # List tools first so the case study proves which wrapper names were
+        # actually generated and served.
         server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n")
         server.stdin.flush()
         tools_list = json.loads(server.stdout.readline())
@@ -154,6 +164,8 @@ def main() -> None:
                     f"{expected_name!r}; got {tool_names!r}."
                 )
 
+        # Create a server-side session first; subsequent tool calls thread that
+        # session identifier through the generated wrappers.
         server.stdin.write(
             json.dumps(
                 {
@@ -172,6 +184,7 @@ def main() -> None:
         create_record = json.loads(create_call["result"]["content"][0]["text"])
         session_id = create_record["session_id"]
 
+        # Exercise a representative mutating tool against that saved session.
         server.stdin.write(
             json.dumps(
                 {
@@ -194,6 +207,8 @@ def main() -> None:
             )
         add_param_record = json.loads(add_param_call["result"]["content"][0]["text"])
 
+        # Close the session explicitly to demonstrate the full lifecycle that
+        # the generated facade exposes.
         server.stdin.write(
             json.dumps(
                 {
@@ -214,20 +229,27 @@ def main() -> None:
             raise RuntimeError(f"pyCycle MCP close call failed: {close_call['error']}")
         close_record = json.loads(close_call["result"]["content"][0]["text"])
     finally:
+        # Closing stdin gives the stdio server permission to stop once we are
+        # done sending requests.
         if not server.stdin.closed:
             server.stdin.close()
         try:
             return_code = server.wait(timeout=5)
         except subprocess.TimeoutExpired:
+            # Force termination on timeout so the example remains deterministic.
             server.kill()
             return_code = server.wait(timeout=5)
         server_stderr = server.stderr.read()
 
+    # Bubble up stderr verbatim when the served runtime fails so contributors
+    # can inspect the wrapped pyCycle behavior.
     if return_code != 0:
         raise RuntimeError(
             f"pyCycle MCP server exited with code {return_code}.\nstderr:\n{server_stderr}"
         )
 
+    # A successful close call is our simplest proof that the lifecycle stayed
+    # coherent all the way through teardown.
     if close_record.get("success") is not True:
         raise ValueError("Expected the served close wrapper to report success.")
 

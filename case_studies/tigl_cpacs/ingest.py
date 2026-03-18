@@ -30,6 +30,8 @@ FIXTURE_PATH = SOURCE_ROOT / "fixtures" / "CPACS_30_D150.xml"
 
 def main() -> None:
     """Run the TiGL ingest step and print the stable JSON payload."""
+    # Fail fast when the checked-in teaching assets drift so the case study
+    # stays self-contained and debuggable.
     for required_path in (
         SCAFFOLD_PATH,
         PACKAGE_ROOT / "__init__.py",
@@ -40,10 +42,13 @@ def main() -> None:
             raise FileNotFoundError(f"Missing checked-in case-study support file: {required_path}")
 
     ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    # Remove stale outputs so every ingest run rewrites the canonical artifact
+    # pair instead of quietly reusing older data.
     for stale_path in (GENERATED_FACADE_PATH, REPORT_PATH):
         if stale_path.exists():
             stale_path.unlink()
 
+    # Keep the machine-readable payload shape stable across pass and skip paths.
     payload: dict[str, object] = {
         "artifacts": {
             "generated_facade": str(GENERATED_FACADE_PATH),
@@ -56,6 +61,8 @@ def main() -> None:
     }
 
     try:
+        # Probe the real native bindings before scaffolding so the skip reason
+        # reflects upstream availability rather than a later scaffold failure.
         importlib.import_module("tigl3.tigl3wrapper")
         importlib.import_module("tixi3.tixi3wrapper")
     except Exception as exc:
@@ -66,6 +73,8 @@ def main() -> None:
 
     env = dict(os.environ)
     pythonpath_entries = [
+        # The wrapper runs in a subprocess, so point it at this checkout's
+        # public package and the checked-in TiGL helper package explicitly.
         str((REPO_ROOT / "src").resolve()),
         str(PACKAGE_ROOT.parent.resolve()),
     ]
@@ -74,6 +83,8 @@ def main() -> None:
     env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
     env.setdefault("PYTHON_BIN", sys.executable)
 
+    # Exercise the public scaffold command through the checked-in wrapper
+    # rather than calling private internals directly from this script.
     completed = subprocess.run(
         ["sh", str(SCAFFOLD_PATH.resolve()), str(GENERATED_FACADE_PATH)],
         cwd=REPO_ROOT,
@@ -84,6 +95,8 @@ def main() -> None:
     )
 
     report = json.loads(completed.stdout)
+    # Persist the raw scaffold report next to the generated facade so later
+    # serve/use steps can inspect the exact ingest result.
     REPORT_PATH.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     payload["report"] = report

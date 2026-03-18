@@ -78,6 +78,8 @@ SERVE_PATH = REPO_ROOT / "case_studies" / CASE_STUDY_ID / "serve.py"
 def main() -> None:
     """Hit the served SU2 MCP runtime and print the stable JSON payload."""
     if not GENERATED_FACADE_PATH.exists():
+        # Mirror the ingest availability check so missing artifacts become
+        # readable skips on machines without SU2 installed.
         if shutil.which("SU2_CFD") is None:
             payload = {
                 "case_study": CASE_STUDY_ID,
@@ -92,6 +94,7 @@ def main() -> None:
             "Run case_studies/su2_cli/ingest.py first."
         )
 
+    # The use step expects the standard two-file handoff written by ingest.
     if not REPORT_PATH.exists():
         raise FileNotFoundError(
             f"Missing scaffold report artifact: {REPORT_PATH}. "
@@ -106,6 +109,8 @@ def main() -> None:
         pythonpath_entries.append(env["PYTHONPATH"])
     env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
 
+    # Start the stdio server in its own process to demonstrate the real client
+    # boundary for a wrapped CLI tool.
     server = subprocess.Popen(
         [sys.executable, str(SERVE_PATH)],
         cwd=REPO_ROOT,
@@ -119,17 +124,21 @@ def main() -> None:
         raise RuntimeError("Expected stdio pipes when launching the SU2 case-study MCP server.")
 
     try:
+        # Manually issue the MCP handshake so the example teaches the protocol
+        # shape rather than hiding it behind a helper library.
         server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}) + "\n")
         server.stdin.flush()
         initialize = json.loads(server.stdout.readline())
         if "error" in initialize:
             raise RuntimeError(f"SU2 MCP initialize failed: {initialize['error']}")
 
+        # Complete initialization before normal requests.
         server.stdin.write(
             json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n"
         )
         server.stdin.flush()
 
+        # Prove which tool names the generated facade exposes before using one.
         server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n")
         server.stdin.flush()
         tools_list = json.loads(server.stdout.readline())
@@ -146,6 +155,8 @@ def main() -> None:
                 f"Expected the served tool list to include 'run_su2_cfd'; got {tool_names!r}."
             )
 
+        # Use `-h` as a cheap, deterministic smoke test that still exercises
+        # the real wrapped CLI entry point.
         server.stdin.write(
             json.dumps(
                 {
@@ -162,21 +173,26 @@ def main() -> None:
         if "error" in tool_call:
             raise RuntimeError(f"SU2 MCP tools/call failed: {tool_call['error']}")
     finally:
+        # Closing stdin allows the stdio server to notice end-of-session and exit.
         if not server.stdin.closed:
             server.stdin.close()
         try:
             return_code = server.wait(timeout=5)
         except subprocess.TimeoutExpired:
+            # Kill hung servers so the example does not block indefinitely.
             server.kill()
             return_code = server.wait(timeout=5)
         server_stderr = server.stderr.read()
 
+    # Report server stderr verbatim to keep the wrapped command behavior
+    # inspectable when something goes wrong.
     if return_code != 0:
         raise RuntimeError(
             f"SU2 MCP server exited with code {return_code}.\nstderr:\n{server_stderr}"
         )
 
     tool_result = tool_call["result"]
+    # Sanity-check that the help path reached the real upstream executable.
     if "SU2_CFD" not in json.dumps(tool_result, sort_keys=True):
         raise ValueError("Expected the wrapped SU2 help output to mention 'SU2_CFD'.")
 

@@ -28,14 +28,19 @@ SCAFFOLD_PATH = SOURCE_ROOT / "commands" / "scaffold_pycycle_mpcycle.sh"
 
 def main() -> None:
     """Run the pyCycle ingest step and print the stable JSON payload."""
+    # The checked-in shell wrapper is part of the case study contract, so make
+    # missing support assets a loud error instead of silently skipping.
     if not SCAFFOLD_PATH.exists():
         raise FileNotFoundError(f"Missing checked-in case-study support file: {SCAFFOLD_PATH}")
 
     ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    # Rebuild the deterministic artifact pair from scratch on every run.
     for stale_path in (GENERATED_FACADE_PATH, REPORT_PATH):
         if stale_path.exists():
             stale_path.unlink()
 
+    # Keep skip and success payloads structurally aligned for downstream docs
+    # and tests.
     payload: dict[str, object] = {
         "artifacts": {
             "generated_facade": str(GENERATED_FACADE_PATH),
@@ -47,6 +52,7 @@ def main() -> None:
     }
 
     try:
+        # Probe the real engineering package first so availability is explicit.
         importlib.import_module("pycycle.api")
     except Exception as exc:
         payload["reason"] = f"Import probe failed for 'pycycle.api': {exc}"
@@ -55,12 +61,16 @@ def main() -> None:
         return
 
     env = dict(os.environ)
+    # The wrapper invokes `python -m mcpme.cli`, so give it this checkout's
+    # source tree rather than relying on an installed wheel.
     pythonpath_entries = [str((REPO_ROOT / "src").resolve())]
     if env.get("PYTHONPATH"):
         pythonpath_entries.append(env["PYTHONPATH"])
     env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
     env.setdefault("PYTHON_BIN", sys.executable)
 
+    # Run the public scaffold flow through the shell wrapper to demonstrate the
+    # same interface users would invoke themselves.
     completed = subprocess.run(
         ["sh", str(SCAFFOLD_PATH.resolve()), str(GENERATED_FACADE_PATH)],
         cwd=REPO_ROOT,
@@ -71,6 +81,7 @@ def main() -> None:
     )
 
     report = json.loads(completed.stdout)
+    # Retain the scaffold report as a first-class artifact beside the facade.
     REPORT_PATH.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     payload["report"] = report

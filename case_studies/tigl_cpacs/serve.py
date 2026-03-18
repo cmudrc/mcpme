@@ -17,6 +17,8 @@ PACKAGE_ROOT = SOURCE_ROOT / "tigl_support"
 
 def main() -> None:
     """Load the generated TiGL facade and serve it over stdio."""
+    # Serving is intentionally a second phase: we only expose the previously
+    # generated artifact, never regenerate it on the fly.
     if not GENERATED_FACADE_PATH.exists():
         raise FileNotFoundError(
             f"Missing generated facade artifact: {GENERATED_FACADE_PATH}. "
@@ -24,9 +26,13 @@ def main() -> None:
         )
 
     package_parent = str(PACKAGE_ROOT.parent.resolve())
+    # The generated facade imports the tiny checked-in helper package, so make
+    # that package importable before building the manifest.
     if package_parent not in sys.path:
         sys.path.insert(0, package_parent)
 
+    # Load the saved facade through the public API and serve exactly that
+    # manifest over stdio MCP.
     manifest = build_manifest(targets=[GENERATED_FACADE_PATH], artifact_root=ARTIFACT_ROOT)
     serve_stdio(manifest)
 

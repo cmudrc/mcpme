@@ -14,12 +14,16 @@ GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
 
 def main() -> None:
     """Load the generated pyCycle facade and serve it over stdio."""
+    # The serve step only works from the persisted ingest artifact so readers
+    # can inspect what was generated before it is exposed.
     if not GENERATED_FACADE_PATH.exists():
         raise FileNotFoundError(
             f"Missing generated facade artifact: {GENERATED_FACADE_PATH}. "
             "Run case_studies/pycycle_mpcycle/ingest.py first."
         )
 
+    # Build a manifest from the saved facade and hand it to the public stdio
+    # server entry point unchanged.
     manifest = build_manifest(targets=[GENERATED_FACADE_PATH], artifact_root=ARTIFACT_ROOT)
     serve_stdio(manifest)
 

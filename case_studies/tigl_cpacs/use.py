@@ -86,6 +86,8 @@ def main() -> None:
     """Hit the served TiGL MCP runtime and print the stable JSON payload."""
     if not GENERATED_FACADE_PATH.exists():
         try:
+            # Mirror the ingest availability probe so a missing artifact reports
+            # a clean skip when the native TiGL stack is simply unavailable.
             importlib.import_module("tigl3.tigl3wrapper")
             importlib.import_module("tixi3.tixi3wrapper")
         except Exception as exc:
@@ -102,6 +104,7 @@ def main() -> None:
             "Run case_studies/tigl_cpacs/ingest.py first."
         )
 
+    # The use phase depends on the standard artifact pair produced by ingest.
     if not REPORT_PATH.exists():
         raise FileNotFoundError(
             f"Missing scaffold report artifact: {REPORT_PATH}. "
@@ -116,6 +119,8 @@ def main() -> None:
         pythonpath_entries.append(env["PYTHONPATH"])
     env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
 
+    # Spawn the MCP server as a separate process so the case study exercises
+    # the same stdio boundary a real client would use.
     server = subprocess.Popen(
         [sys.executable, str(SERVE_PATH)],
         cwd=REPO_ROOT,
@@ -129,17 +134,21 @@ def main() -> None:
         raise RuntimeError("Expected stdio pipes when launching the TiGL case-study MCP server.")
 
     try:
+        # Speak the JSON-RPC handshake directly so the protocol flow stays
+        # visible to readers instead of being hidden behind a helper client.
         server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}) + "\n")
         server.stdin.flush()
         initialize = json.loads(server.stdout.readline())
         if "error" in initialize:
             raise RuntimeError(f"TiGL MCP initialize failed: {initialize['error']}")
 
+        # Notify the server that the client accepted the advertised capabilities.
         server.stdin.write(
             json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n"
         )
         server.stdin.flush()
 
+        # Inspect the served tool surface before making any tool call.
         server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n")
         server.stdin.flush()
         tools_list = json.loads(server.stdout.readline())
@@ -157,6 +166,7 @@ def main() -> None:
                 f"got {tool_names!r}."
             )
 
+        # Call the wrapped helper through MCP using the checked-in CPACS input.
         server.stdin.write(
             json.dumps(
                 {
@@ -177,15 +187,21 @@ def main() -> None:
             raise RuntimeError(f"TiGL MCP tools/call failed: {summary_call['error']}")
         summary_record = json.loads(summary_call["result"]["content"][0]["text"])
     finally:
+        # Closing stdin lets the stdio server finish naturally once the client
+        # has sent all requests.
         if not server.stdin.closed:
             server.stdin.close()
         try:
             return_code = server.wait(timeout=5)
         except subprocess.TimeoutExpired:
+            # If the server hangs, kill it so the case study still terminates
+            # deterministically in CI.
             server.kill()
             return_code = server.wait(timeout=5)
         server_stderr = server.stderr.read()
 
+    # Surface server stderr on failure so contributors can inspect the exact
+    # wrapped-process behavior.
     if return_code != 0:
         raise RuntimeError(
             f"TiGL MCP server exited with code {return_code}.\nstderr:\n{server_stderr}"

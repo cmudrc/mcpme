@@ -14,12 +14,15 @@ GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
 
 def main() -> None:
     """Load the generated SU2 facade and serve it over stdio."""
+    # The serve phase consumes the saved artifact produced by ingest instead of
+    # rescaffolding the CLI on demand.
     if not GENERATED_FACADE_PATH.exists():
         raise FileNotFoundError(
             f"Missing generated facade artifact: {GENERATED_FACADE_PATH}. "
             "Run case_studies/su2_cli/ingest.py first."
         )
 
+    # Rehydrate the stored facade into a manifest and expose it over stdio MCP.
     manifest = build_manifest(targets=[GENERATED_FACADE_PATH], artifact_root=ARTIFACT_ROOT)
     serve_stdio(manifest)
 

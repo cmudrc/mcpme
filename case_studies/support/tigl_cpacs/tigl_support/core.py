@@ -11,6 +11,8 @@ from tixi3 import tixi3wrapper
 
 def _close_handles(tixi_handle: object, tigl_handle: object) -> None:
     """Close TiGL and TiXI handles when the runtime exposes cleanup methods."""
+    # The native wrappers expose slightly different cleanup methods across
+    # installs, so we probe defensively instead of assuming one exact API.
     close_tigl = getattr(tigl_handle, "close", None)
     if callable(close_tigl):
         close_tigl()
@@ -28,6 +30,8 @@ def open_cpacs_summary(cpacs_path: Path) -> dict[str, Any]:
     :param cpacs_path: Path to a CPACS XML file.
     :returns: JSON-friendly TiGL configuration summary.
     """
+    # TiXI owns CPACS XML parsing while TiGL derives the higher-level geometry
+    # queries from the opened TiXI document.
     tixi_handle = tixi3wrapper.Tixi3()
     tigl_handle = tigl3wrapper.Tigl3()
     tixi_handle.open(str(cpacs_path))
@@ -36,6 +40,8 @@ def open_cpacs_summary(cpacs_path: Path) -> dict[str, Any]:
         wing_count = int(tigl_handle.getWingCount())
         fuselage_count = int(tigl_handle.getFuselageCount())
         first_wing_uid = tigl_handle.wingGetUID(1) if wing_count else None
+        # Convert the native-handle results into plain JSON-friendly scalars so
+        # the generated facade can serialize them without custom adapters.
         return {
             "cpacs_path": str(cpacs_path),
             "first_wing_uid": first_wing_uid,
