@@ -6,7 +6,9 @@ Case Studies
 The case studies are a separate lane from the small core examples.
 They document richer real-upstream workflows while preserving the
 public-API-only contract and a stable `passed`/`skipped_unavailable`
-JSON output shape. Checked-in support inputs live under
+JSON output shape. Each case is split into `ingest.py` and `use.py`
+so the generated facade can be inspected after ingestion and before
+the wrapped capability is exercised. Checked-in support inputs live under
 `case_studies/support/`, while generated facades and run artifacts
 stay under `artifacts/case_studies/`.
 
@@ -20,6 +22,6 @@ stay under `artifacts/case_studies/`.
 Case Study Inventory
 --------------------
 
-- ``case_studies/pycycle_mpcycle.py``: This case study shows how `mcpme` can carve a useful session-oriented wrapper
-- ``case_studies/su2_cli.py``: This case study documents how `mcpme` can wrap a heavyweight engineering CLI
-- ``case_studies/tigl_cpacs.py``: This case study tackles a more awkward upstream than the small core examples:
+- ``case_studies/pycycle_mpcycle``: This case study shows how `mcpme` can carve a useful session-oriented wrapper
+- ``case_studies/su2_cli``: This case study models the shape of a real heavyweight CLI integration more
+- ``case_studies/tigl_cpacs``: This case study tackles a more awkward upstream than the small core examples:

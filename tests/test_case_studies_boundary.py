@@ -20,6 +20,19 @@ REQUIRED_DOC_SECTIONS = (
 )
 
 
+def _iter_case_study_dirs() -> list[Path]:
+    """Return checked-in case-study directories with ingest/use entrypoints."""
+    return [
+        path
+        for path in sorted(CASE_STUDIES_ROOT.iterdir())
+        if path.is_dir()
+        and not path.name.startswith("_")
+        and path.name != "support"
+        and (path / "ingest.py").exists()
+        and (path / "use.py").exists()
+    ]
+
+
 def _collect_violations(*, pattern: re.Pattern[str], root: Path) -> list[str]:
     """Collect text matches for one forbidden pattern under a root."""
     violations: list[str] = []
@@ -34,11 +47,10 @@ def _collect_violations(*, pattern: re.Pattern[str], root: Path) -> list[str]:
 
 
 def _iter_case_study_doc_lines() -> list[tuple[Path, list[str]]]:
-    """Yield case-study paths and their module docstring lines."""
+    """Yield case-study `use.py` paths and their module docstring lines."""
     docs: list[tuple[Path, list[str]]] = []
-    for path in sorted(CASE_STUDIES_ROOT.glob("*.py")):
-        if path.name.startswith("_"):
-            continue
+    for case_dir in _iter_case_study_dirs():
+        path = case_dir / "use.py"
         module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         docstring = ast.get_docstring(module, clean=False)
         docs.append(
@@ -63,51 +75,58 @@ def _extract_markdown_section_names(lines: list[str]) -> set[str]:
 def _expr_uses_artifact_root(expression: ast.AST) -> bool:
     """Return whether one AST expression clearly points at the artifact tree."""
     rendered = ast.unparse(expression)
-    return "ARTIFACT_ROOT" in rendered or "artifacts" in rendered
+    return any(
+        token in rendered
+        for token in ("ARTIFACT_ROOT", "STATE_PATH", "GENERATED_FACADE_PATH", "artifacts")
+    )
 
 
 def _iter_runtime_materialization_violations() -> list[str]:
     """Find case-study entrypoints that still materialize source inputs at runtime."""
     violations: list[str] = []
-    for path in sorted(CASE_STUDIES_ROOT.glob("*.py")):
-        if path.name.startswith("_"):
-            continue
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            if isinstance(node.func, ast.Attribute) and node.func.attr in {
-                "write_text",
-                "write_bytes",
-            }:
-                violations.append(
-                    f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file writes are not "
-                    "allowed in case-study entrypoints."
-                )
-                continue
-            if isinstance(node.func, ast.Attribute) and node.func.attr == "mkdir":
-                if not _expr_uses_artifact_root(node.func.value):
-                    violations.append(
-                        f"{path.relative_to(REPO_ROOT)}:{node.lineno}: mkdir is only allowed "
-                        "under ARTIFACT_ROOT in case-study entrypoints."
-                    )
-                continue
-            if isinstance(node.func, ast.Name) and node.func.id == "open":
-                mode_arg = node.args[1] if len(node.args) > 1 else None
-                if mode_arg is None:
+    for case_dir in _iter_case_study_dirs():
+        for path in (case_dir / "ingest.py", case_dir / "use.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                if isinstance(node.func, ast.Attribute) and node.func.attr in {
+                    "write_text",
+                    "write_bytes",
+                }:
+                    if not _expr_uses_artifact_root(node.func.value):
+                        violations.append(
+                            f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file writes are "
+                            "only allowed under ARTIFACT_ROOT in case-study entrypoints."
+                        )
+                    continue
+                if isinstance(node.func, ast.Attribute) and node.func.attr == "mkdir":
+                    if not _expr_uses_artifact_root(node.func.value):
+                        violations.append(
+                            f"{path.relative_to(REPO_ROOT)}:{node.lineno}: mkdir is only allowed "
+                            "under ARTIFACT_ROOT in case-study entrypoints."
+                        )
+                    continue
+                if isinstance(node.func, ast.Name) and node.func.id == "open":
+                    mode_arg = node.args[1] if len(node.args) > 1 else None
+                    path_arg = node.args[0] if node.args else None
                     for keyword in node.keywords:
-                        if keyword.arg == "mode":
+                        if keyword.arg == "mode" and mode_arg is None:
                             mode_arg = keyword.value
-                            break
-                if (
-                    isinstance(mode_arg, ast.Constant)
-                    and isinstance(mode_arg.value, str)
-                    and any(flag in mode_arg.value for flag in ("w", "a", "x", "+"))
-                ):
-                    violations.append(
-                        f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file opens in "
-                        "write mode are not allowed in case-study entrypoints."
-                    )
+                        if keyword.arg in {"file", "path"} and path_arg is None:
+                            path_arg = keyword.value
+                    if (
+                        isinstance(mode_arg, ast.Constant)
+                        and isinstance(mode_arg.value, str)
+                        and any(flag in mode_arg.value for flag in ("w", "a", "x", "+"))
+                        and path_arg is not None
+                        and not _expr_uses_artifact_root(path_arg)
+                    ):
+                        violations.append(
+                            f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file opens in "
+                            "write mode are only allowed under ARTIFACT_ROOT in case-study "
+                            "entrypoints."
+                        )
     return violations
 
 
@@ -128,6 +147,18 @@ def test_case_studies_include_canonical_module_doc_sections() -> None:
         missing = [section for section in REQUIRED_DOC_SECTIONS if section not in present]
         if missing:
             violations.append(f"{path.relative_to(REPO_ROOT)}: missing sections {missing}")
+    assert violations == [], "\n".join(violations)
+
+
+def test_case_study_entrypoints_include_module_docstrings() -> None:
+    """Every checked-in case-study entrypoint should have a module docstring."""
+    violations: list[str] = []
+    for case_dir in _iter_case_study_dirs():
+        for path in (case_dir / "ingest.py", case_dir / "use.py"):
+            module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            docstring = ast.get_docstring(module, clean=False)
+            if not isinstance(docstring, str) or not docstring.strip():
+                violations.append(f"{path.relative_to(REPO_ROOT)}: missing module docstring")
     assert violations == [], "\n".join(violations)
 
 

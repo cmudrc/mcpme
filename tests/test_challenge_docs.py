@@ -82,9 +82,11 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
     assert "demo_case/challenge.toml" in case_readme
     assert "demo_case/fixtures/demo.txt" in case_readme
     assert "Ingestion Breadth" in case_readme
+    assert "Why This Stays A Challenge" in case_readme
     assert "Prepared Inputs" in case_readme
     assert "fixtures/demo.in" in case_readme
     assert "Minimum generated tools" in case_readme
     assert "close_demo" in case_readme
     assert "Run the demo tool" in case_readme
+    assert "compressed into `challenge.toml`" in index_readme
     assert "[`demo_case`](cases/demo_case/README.md)" in index_readme

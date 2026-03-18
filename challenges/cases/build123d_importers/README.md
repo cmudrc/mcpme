@@ -23,6 +23,14 @@ Geometry importer families are great one-shot targets because they use concrete 
 - Minimum generated tools: `2`
 - Required generated tools: `import_stl`, `import_svg`
 
+## Why This Stays A Challenge
+
+This case keeps its ingestion recipe and workflow assertions in
+`challenge.toml` instead of checking in companion `ingest.py` and
+`use.py` scripts. That boundary is intentional: the challenge lane
+should stay a compact problem statement rather than turning into a
+worked answer key like the case-study lane.
+
 ## Run This Case
 
 Use the convenience target:

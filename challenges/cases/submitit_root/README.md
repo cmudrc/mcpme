@@ -23,6 +23,14 @@ Engineering workflows often end at job submission or orchestration, so the chall
 - Minimum generated tools: `12`
 - Required generated tools: `create_auto_executor`, `auto_executor_update_parameters`, `close_auto_executor`, `create_local_executor`, `local_executor_update_parameters`, `close_local_executor`
 
+## Why This Stays A Challenge
+
+This case keeps its ingestion recipe and workflow assertions in
+`challenge.toml` instead of checking in companion `ingest.py` and
+`use.py` scripts. That boundary is intentional: the challenge lane
+should stay a compact problem statement rather than turning into a
+worked answer key like the case-study lane.
+
 ## Run This Case
 
 Use the convenience target:

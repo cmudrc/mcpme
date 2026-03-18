@@ -12,6 +12,7 @@ case exists and how to run it in isolation.
 - They pressure-test one-shot ingestion against real engineering packages and CLIs.
 - Many cases assert scaffold breadth explicitly so the suite checks more than one route.
 - They stay separate from the public example contract so we can keep them brutally honest.
+- Unlike the case studies, they intentionally keep ingestion and workflow compressed into `challenge.toml` so contributors still have to solve the wrapping problem themselves.
 - They are still documented enough to serve as worked examples for contributors.
 
 ## Run The Suite

@@ -89,12 +89,16 @@ run-examples: check-python
 
 run-case-study: check-python
 	@if [ -z "$(CASE)" ]; then echo "Set CASE=<case_study_id>."; exit 1; fi
-	PYTHONPATH=src $(PYTHON) case_studies/$(CASE).py
+	PYTHONPATH=src $(PYTHON) case_studies/$(CASE)/ingest.py
+	PYTHONPATH=src $(PYTHON) case_studies/$(CASE)/use.py
 
 run-case-studies: check-python
-	PYTHONPATH=src $(PYTHON) case_studies/su2_cli.py
-	PYTHONPATH=src $(PYTHON) case_studies/pycycle_mpcycle.py
-	PYTHONPATH=src $(PYTHON) case_studies/tigl_cpacs.py
+	PYTHONPATH=src $(PYTHON) case_studies/su2_cli/ingest.py
+	PYTHONPATH=src $(PYTHON) case_studies/su2_cli/use.py
+	PYTHONPATH=src $(PYTHON) case_studies/pycycle_mpcycle/ingest.py
+	PYTHONPATH=src $(PYTHON) case_studies/pycycle_mpcycle/use.py
+	PYTHONPATH=src $(PYTHON) case_studies/tigl_cpacs/ingest.py
+	PYTHONPATH=src $(PYTHON) case_studies/tigl_cpacs/use.py
 
 challenge: check-python
 	@if [ -z "$(CASE)" ]; then echo "Set CASE=<challenge_id>."; exit 1; fi

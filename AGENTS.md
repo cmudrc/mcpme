@@ -70,10 +70,16 @@ merging.
   studies may depend on heavyweight optional upstream runtimes and may report
   `skipped_unavailable`, but they should still use only the public `mcpme`
   surface.
+- Keep each case-study directory readable as a real ingest/persist/use flow:
+  `case_studies/<id>/ingest.py` should persist the generated facade state under
+  `artifacts/case_studies/<id>/`, and `case_studies/<id>/use.py` should
+  demonstrate the saved capabilities from that persisted state.
 - Keep checked-in support inputs under `examples/support/<id>/` and
   `case_studies/support/<id>/`. Generated facades and retained execution
   artifacts belong under `artifacts/` and should not be promoted into the
   support trees.
+- Keep case-study `use.py` module docstrings authoritative. Generated
+  case-study docs should be refreshed whenever those walkthroughs change.
 - Keep example module docstrings authoritative. Generated example docs should be
   refreshed whenever examples change.
 - Keep `challenges/` out of the public API and example-doc contract unless

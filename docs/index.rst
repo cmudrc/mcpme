@@ -13,7 +13,9 @@ It is built for teams that want wrappers they can inspect and trust:
   batch-style subprocess tools
 
 The checked-in examples and case studies keep their preset support inputs in
-source control and reserve ``artifacts/`` for derived outputs only.
+source control and reserve ``artifacts/`` for derived outputs only. The case
+studies go a step further and split each walkthrough into an ingest phase and
+a use phase so the generated facade remains directly inspectable.
 
 Start Here
 ----------

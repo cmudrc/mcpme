@@ -159,6 +159,14 @@ def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
     parts.extend(
         [
             "",
+            _heading("Why This Stays A Challenge", 2),
+            "",
+            "This case keeps its ingestion recipe and workflow assertions in",
+            "`challenge.toml` instead of checking in companion `ingest.py` and",
+            "`use.py` scripts. That boundary is intentional: the challenge lane",
+            "should stay a compact problem statement rather than turning into a",
+            "worked answer key like the case-study lane.",
+            "",
             _heading("Run This Case", 2),
             "",
             "Use the convenience target:",
@@ -255,6 +263,11 @@ def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -
         (
             "- They stay separate from the public example contract so we can keep them "
             "brutally honest."
+        ),
+        (
+            "- Unlike the case studies, they intentionally keep ingestion and workflow "
+            "compressed into `challenge.toml` so contributors still have to solve the "
+            "wrapping problem themselves."
         ),
         "- They are still documented enough to serve as worked examples for contributors.",
         "",

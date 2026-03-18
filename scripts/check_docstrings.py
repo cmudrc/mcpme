@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_TARGETS = ("src", "examples", "scripts")
+DEFAULT_TARGETS = ("src", "examples", "case_studies", "scripts")
 SKIP_DIRS = {
     ".git",
     ".mypy_cache",

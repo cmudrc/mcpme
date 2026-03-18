@@ -22,10 +22,13 @@ def test_case_study_doc_renderer_produces_case_study_pages() -> None:
     script_path = Path(__file__).resolve().parents[1] / "scripts" / "generate_case_study_docs.py"
     module = _load_module(script_path)
     spec = module.CaseStudyDocSpec(
-        rel_path="case_studies/demo_case.py",
+        case_dir_rel_path="case_studies/demo_case",
         slug="demo_case",
         title="Demo Case",
-        source_start_line=21,
+        ingest_rel_path="case_studies/demo_case/ingest.py",
+        ingest_source_start_line=9,
+        use_rel_path="case_studies/demo_case/use.py",
+        use_source_start_line=21,
         sections={
             "Introduction": "Explain the real-upstream scenario.",
             "Preset Environment": "Show the checked-in source inputs.",
@@ -42,8 +45,10 @@ def test_case_study_doc_renderer_produces_case_study_pages() -> None:
     assert "Demo Case" in case_page
     assert "Preset Environment" in case_page
     assert "Availability" in case_page
-    assert "case_studies/demo_case.py" in case_page
-    assert ".. literalinclude:: ../../case_studies/demo_case.py" in case_page
+    assert "case_studies/demo_case/use.py" in case_page
+    assert "case_studies/demo_case/ingest.py" in case_page
+    assert ".. literalinclude:: ../../case_studies/demo_case/ingest.py" in case_page
+    assert ".. literalinclude:: ../../case_studies/demo_case/use.py" in case_page
     assert "Case Studies" in index_page
     assert "demo_case" in index_page
     assert "Explain the real-upstream scenario." in index_page

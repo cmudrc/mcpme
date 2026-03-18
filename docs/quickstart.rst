@@ -33,7 +33,9 @@ Run the separate case-study lane for richer real-upstream workflows:
 
 Case studies follow the same convention with checked-in support inputs under
 ``case_studies/support/<case_id>/`` and derived outputs under
-``artifacts/case_studies/<case_id>/``.
+``artifacts/case_studies/<case_id>/``. Each case directory contains an
+``ingest.py`` script that persists the generated facade and a ``use.py``
+script that demonstrates the ingested capabilities from that saved state.
 
 Inspect a target with the CLI:
 

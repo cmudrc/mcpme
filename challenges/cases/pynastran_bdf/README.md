@@ -23,6 +23,14 @@ Deck-oriented structural tools are common legacy integration points, and they ar
 - Minimum generated tools: `100`
 - Required generated tools: `create_bdf`, `bdf_add_grid`, `bdf_get_bdf_stats`, `bdf_write_bdf`, `close_bdf`
 
+## Why This Stays A Challenge
+
+This case keeps its ingestion recipe and workflow assertions in
+`challenge.toml` instead of checking in companion `ingest.py` and
+`use.py` scripts. That boundary is intentional: the challenge lane
+should stay a compact problem statement rather than turning into a
+worked answer key like the case-study lane.
+
 ## Run This Case
 
 Use the convenience target:

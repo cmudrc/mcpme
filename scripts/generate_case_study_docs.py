@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Sphinx case-study pages from canonical module docstrings."""
+"""Generate Sphinx case-study pages from canonical case-study docstrings."""
 
 from __future__ import annotations
 
@@ -25,6 +25,8 @@ HEADING_CHARS = {
     "Availability": "-",
     "References": "-",
     "Source Code": "-",
+    "Ingest Script": "~",
+    "Use Script": "~",
 }
 
 
@@ -32,10 +34,13 @@ HEADING_CHARS = {
 class CaseStudyDocSpec:
     """Represent one case study and its parsed canonical docs content."""
 
-    rel_path: str
+    case_dir_rel_path: str
     slug: str
     title: str
-    source_start_line: int
+    ingest_rel_path: str
+    ingest_source_start_line: int
+    use_rel_path: str
+    use_source_start_line: int
     sections: dict[str, str]
 
 
@@ -45,15 +50,19 @@ def _repo_root() -> Path:
 
 
 def _discover_case_studies(repo_root: Path) -> list[Path]:
-    """Discover runnable Python case-study scripts."""
+    """Discover runnable case-study directories with ingest/use entrypoints."""
     case_studies_root = repo_root / "case_studies"
-    return [
-        path for path in sorted(case_studies_root.glob("*.py")) if not path.name.startswith("_")
-    ]
+    case_dirs: list[Path] = []
+    for path in sorted(case_studies_root.iterdir()):
+        if path.name.startswith("_") or path.name == "support" or not path.is_dir():
+            continue
+        if (path / "ingest.py").exists() and (path / "use.py").exists():
+            case_dirs.append(path)
+    return case_dirs
 
 
 def _parse_module_doc_text(path: Path) -> tuple[str, int]:
-    """Parse module docstring text and source start line from one case study."""
+    """Parse module docstring text and source start line from one script."""
     source = path.read_text(encoding="utf-8")
     module = ast.parse(source, filename=str(path))
     docstring = ast.get_docstring(module, clean=False)
@@ -97,28 +106,34 @@ def _parse_sections(*, doc_text: str, source_path: Path) -> dict[str, str]:
     return {heading: "\n".join(body).strip() for heading, body in sections.items()}
 
 
-def _slug_for_case_study(path: Path, repo_root: Path) -> str:
-    """Build a deterministic slug from one case-study path."""
-    return path.relative_to(repo_root / "case_studies").with_suffix("").as_posix().replace("/", "_")
+def _slug_for_case_study(case_dir: Path) -> str:
+    """Build a deterministic slug from one case-study directory."""
+    return case_dir.name
 
 
-def _title_for_case_study(path: Path) -> str:
-    """Build a human-readable title from one case-study filename."""
-    return path.stem.replace("_", " ").title()
+def _title_for_case_study(case_dir: Path) -> str:
+    """Build a human-readable title from one case-study directory name."""
+    return case_dir.name.replace("_", " ").title()
 
 
 def _build_case_study_specs(repo_root: Path) -> list[CaseStudyDocSpec]:
     """Parse all case-study docstrings into documentation specs."""
     specs: list[CaseStudyDocSpec] = []
-    for path in _discover_case_studies(repo_root):
-        doc_text, source_start_line = _parse_module_doc_text(path)
+    for case_dir in _discover_case_studies(repo_root):
+        ingest_path = case_dir / "ingest.py"
+        use_path = case_dir / "use.py"
+        use_doc_text, use_source_start_line = _parse_module_doc_text(use_path)
+        _, ingest_source_start_line = _parse_module_doc_text(ingest_path)
         specs.append(
             CaseStudyDocSpec(
-                rel_path=path.relative_to(repo_root).as_posix(),
-                slug=_slug_for_case_study(path, repo_root),
-                title=_title_for_case_study(path),
-                source_start_line=source_start_line,
-                sections=_parse_sections(doc_text=doc_text, source_path=path),
+                case_dir_rel_path=case_dir.relative_to(repo_root).as_posix(),
+                slug=_slug_for_case_study(case_dir),
+                title=_title_for_case_study(case_dir),
+                ingest_rel_path=ingest_path.relative_to(repo_root).as_posix(),
+                ingest_source_start_line=ingest_source_start_line,
+                use_rel_path=use_path.relative_to(repo_root).as_posix(),
+                use_source_start_line=use_source_start_line,
+                sections=_parse_sections(doc_text=use_doc_text, source_path=use_path),
             )
         )
     return specs
@@ -136,7 +151,7 @@ def _render_case_study_page(spec: CaseStudyDocSpec) -> str:
         "",
         _heading(spec.title),
         "",
-        f"Source: ``{spec.rel_path}``",
+        f"Source: ``{spec.use_rel_path}`` with companion ``{spec.ingest_rel_path}``",
         "",
     ]
     for section in REQUIRED_SECTIONS:
@@ -153,10 +168,19 @@ def _render_case_study_page(spec: CaseStudyDocSpec) -> str:
         [
             _heading("Source Code", HEADING_CHARS["Source Code"]),
             "",
-            f".. literalinclude:: ../../{spec.rel_path}",
+            _heading("Ingest Script", HEADING_CHARS["Ingest Script"]),
+            "",
+            f".. literalinclude:: ../../{spec.ingest_rel_path}",
             "   :language: python",
             "   :linenos:",
-            f"   :lines: {spec.source_start_line}-",
+            f"   :lines: {spec.ingest_source_start_line}-",
+            "",
+            _heading("Use Script", HEADING_CHARS["Use Script"]),
+            "",
+            f".. literalinclude:: ../../{spec.use_rel_path}",
+            "   :language: python",
+            "   :linenos:",
+            f"   :lines: {spec.use_source_start_line}-",
             "",
         ]
     )
@@ -173,7 +197,9 @@ def _render_case_studies_index(specs: list[CaseStudyDocSpec]) -> str:
         "The case studies are a separate lane from the small core examples.",
         "They document richer real-upstream workflows while preserving the",
         "public-API-only contract and a stable `passed`/`skipped_unavailable`",
-        "JSON output shape. Checked-in support inputs live under",
+        "JSON output shape. Each case is split into `ingest.py` and `use.py`",
+        "so the generated facade can be inspected after ingestion and before",
+        "the wrapped capability is exercised. Checked-in support inputs live under",
         "`case_studies/support/`, while generated facades and run artifacts",
         "stay under `artifacts/case_studies/`.",
         "",
@@ -192,7 +218,7 @@ def _render_case_studies_index(specs: list[CaseStudyDocSpec]) -> str:
     )
     for spec in specs:
         first_line = spec.sections["Introduction"].splitlines()[0].strip()
-        lines.append(f"- ``{spec.rel_path}``: {first_line}")
+        lines.append(f"- ``{spec.case_dir_rel_path}``: {first_line}")
     lines.append("")
     return "\n".join(lines)
 
@@ -267,9 +293,7 @@ def main() -> int:
     repo_root = _repo_root()
     specs = _build_case_study_specs(repo_root)
     outputs = _expected_outputs(repo_root, specs)
-    if args.check:
-        return _check(outputs)
-    return _write(outputs)
+    return _check(outputs) if args.check else _write(outputs)
 
 
 if __name__ == "__main__":

@@ -23,6 +23,14 @@ Some engineering tools expose both a CLI and a Python module, and a wrapper syst
 - Minimum generated tools: `4`
 - Required generated tools: `clear`, `finalize`, `initialize`, `is_initialized`
 
+## Why This Stays A Challenge
+
+This case keeps its ingestion recipe and workflow assertions in
+`challenge.toml` instead of checking in companion `ingest.py` and
+`use.py` scripts. That boundary is intentional: the challenge lane
+should stay a compact problem statement rather than turning into a
+worked answer key like the case-study lane.
+
 ## Run This Case
 
 Use the convenience target:

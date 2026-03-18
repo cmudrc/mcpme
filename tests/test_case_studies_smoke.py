@@ -13,11 +13,11 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SUPPORT_REQUIREMENTS = {
-    "su2_cli.py": (
+    "su2_cli": (
         REPO_ROOT / "case_studies" / "support" / "su2_cli" / "commands" / "su2_cfd.sh",
         REPO_ROOT / "case_studies" / "support" / "su2_cli" / "commands" / "scaffold_su2_cli.sh",
     ),
-    "pycycle_mpcycle.py": (
+    "pycycle_mpcycle": (
         REPO_ROOT
         / "case_studies"
         / "support"
@@ -25,7 +25,7 @@ SUPPORT_REQUIREMENTS = {
         / "commands"
         / "scaffold_pycycle_mpcycle.sh",
     ),
-    "tigl_cpacs.py": (
+    "tigl_cpacs": (
         REPO_ROOT
         / "case_studies"
         / "support"
@@ -34,51 +34,78 @@ SUPPORT_REQUIREMENTS = {
         / "scaffold_tigl_cpacs.sh",
         REPO_ROOT / "case_studies" / "support" / "tigl_cpacs" / "tigl_support" / "__init__.py",
         REPO_ROOT / "case_studies" / "support" / "tigl_cpacs" / "tigl_support" / "core.py",
-        REPO_ROOT / "case_studies" / "fixtures" / "CPACS_30_D150.xml",
+        REPO_ROOT / "case_studies" / "support" / "tigl_cpacs" / "fixtures" / "CPACS_30_D150.xml",
     ),
 }
 
 
 @pytest.mark.parametrize(
-    ("script_name", "expected_pass_fragment", "expected_skip_fragment"),
+    ("case_id", "expected_pass_fragment", "expected_skip_fragment"),
     [
-        ("su2_cli.py", "run_su2_cfd", "SU2_CFD"),
-        ("pycycle_mpcycle.py", "create_mpcycle", "pycycle.api"),
-        ("tigl_cpacs.py", "open_cpacs_summary", "TiGL/TiXI"),
+        ("su2_cli", "run_su2_cfd", "SU2_CFD"),
+        ("pycycle_mpcycle", "pyc_add_cycle_param", "pycycle.api"),
+        ("tigl_cpacs", "open_cpacs_summary", "TiGL/TiXI"),
     ],
 )
 def test_case_study_scripts_run_successfully(
-    script_name: str,
+    case_id: str,
     expected_pass_fragment: str,
     expected_skip_fragment: str,
 ) -> None:
-    """Each checked-in case study should emit a stable passed/skip payload."""
-    for required_path in SUPPORT_REQUIREMENTS[script_name]:
+    """Each case study should ingest first and then use the persisted facade."""
+    for required_path in SUPPORT_REQUIREMENTS[case_id]:
         assert required_path.exists(), f"Missing checked-in support input: {required_path}"
-    shutil.rmtree(
-        REPO_ROOT / "artifacts" / "case_studies" / Path(script_name).stem, ignore_errors=True
-    )
+
+    artifact_root = REPO_ROOT / "artifacts" / "case_studies" / case_id
+    shutil.rmtree(artifact_root, ignore_errors=True)
+
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO_ROOT / "src")
-    completed = subprocess.run(
-        [sys.executable, f"case_studies/{script_name}"],
+
+    ingest_completed = subprocess.run(
+        [sys.executable, f"case_studies/{case_id}/ingest.py"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
         env=env,
         check=False,
     )
-    assert completed.returncode == 0, completed.stderr
-    parsed = json.loads(completed.stdout)
-    assert parsed["case_study"] == Path(script_name).stem
-    assert parsed["status"] in {"passed", "skipped_unavailable"}
-    rendered = json.dumps(parsed, sort_keys=True)
-    if parsed["status"] == "passed":
+    assert ingest_completed.returncode == 0, ingest_completed.stderr
+
+    ingest_payload = json.loads(ingest_completed.stdout)
+    assert ingest_payload["case_study"] == case_id
+    assert ingest_payload["phase"] == "ingest"
+    assert ingest_payload["status"] in {"passed", "skipped_unavailable"}
+
+    state_path = Path(str(ingest_payload["state_path"]))
+    assert state_path.exists(), f"Missing persisted ingest state: {state_path}"
+
+    use_completed = subprocess.run(
+        [sys.executable, f"case_studies/{case_id}/use.py"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert use_completed.returncode == 0, use_completed.stderr
+
+    use_payload = json.loads(use_completed.stdout)
+    assert use_payload["case_study"] == case_id
+    assert use_payload["phase"] == "use"
+    assert use_payload["status"] == ingest_payload["status"]
+
+    if ingest_payload["status"] == "passed":
+        assert "report" in ingest_payload
+        assert "reason" not in ingest_payload
+        rendered = json.dumps(use_payload, sort_keys=True)
         assert expected_pass_fragment in rendered
-        assert "report" in parsed
-        assert "result" in parsed
-        assert "reason" not in parsed
+        assert "report" in use_payload
+        assert "result" in use_payload
+        assert "reason" not in use_payload
         return
-    assert expected_skip_fragment in parsed["reason"]
-    assert "report" not in parsed
-    assert "result" not in parsed
+
+    assert expected_skip_fragment in ingest_payload["reason"]
+    assert expected_skip_fragment in use_payload["reason"]
+    assert "report" not in use_payload
+    assert "result" not in use_payload

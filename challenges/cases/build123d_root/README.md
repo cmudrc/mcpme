@@ -23,6 +23,14 @@ Real users often point a one-shot ingester at a broad package root, so the filte
 - Minimum generated tools: `2`
 - Required generated tools: `importers__import_stl`, `importers__import_svg`
 
+## Why This Stays A Challenge
+
+This case keeps its ingestion recipe and workflow assertions in
+`challenge.toml` instead of checking in companion `ingest.py` and
+`use.py` scripts. That boundary is intentional: the challenge lane
+should stay a compact problem statement rather than turning into a
+worked answer key like the case-study lane.
+
 ## Run This Case
 
 Use the convenience target:

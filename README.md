@@ -64,8 +64,9 @@ make run-case-studies
 make run-case-study CASE=pycycle_mpcycle
 ```
 
-The separate case-study lane follows the same pattern with support inputs under
-`case_studies/support/` and derived outputs under `artifacts/case_studies/`.
+Each case-study directory now follows a more realistic `ingest.py` then
+`use.py` flow, with support inputs under `case_studies/support/` and derived
+outputs under `artifacts/case_studies/`.
 
 Run the live raw-upstream challenge cases:
 

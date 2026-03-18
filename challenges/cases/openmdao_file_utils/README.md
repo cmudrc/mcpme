@@ -23,6 +23,14 @@ Utility modules are often the safest first foothold when wrapping a large engine
 - Minimum generated tools: `4`
 - Required generated tools: `fname2mod_name`, `get_module_path`, `get_tempdir`, `is_python_file`
 
+## Why This Stays A Challenge
+
+This case keeps its ingestion recipe and workflow assertions in
+`challenge.toml` instead of checking in companion `ingest.py` and
+`use.py` scripts. That boundary is intentional: the challenge lane
+should stay a compact problem statement rather than turning into a
+worked answer key like the case-study lane.
+
 ## Run This Case
 
 Use the convenience target:
