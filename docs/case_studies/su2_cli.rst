@@ -10,44 +10,44 @@ Introduction
 
 This case study models the shape of a real heavyweight CLI integration more
 closely than the smaller examples: first ingest the upstream surface into a
-generated facade, persist that generated artifact, serve it over stdio MCP,
-and only then use it through a client request. The split is deliberate so
-contributors can inspect the generated wrapper before the wrapped command is
-executed.
+generated facade, persist that generated artifact with a standard scaffold
+report, serve it over stdio MCP, and only then use it through a client
+request. The split is deliberate so contributors can inspect the generated
+wrapper before the wrapped command is executed.
 
 Preset Environment
 ------------------
 
 The checked-in command surface for this case study lives under
 `case_studies/support/su2_cli/commands/`. Run `case_studies/su2_cli/ingest.py`
-to scaffold and persist the facade under `artifacts/case_studies/su2_cli/`,
-`case_studies/su2_cli/serve.py` to expose that persisted facade as an MCP
-server, and `case_studies/su2_cli/use.py` to hit that MCP server and exercise
-the wrapped CLI.
+to write `generated_facade.py` and `scaffold_report.json` under
+`artifacts/case_studies/su2_cli/`, `case_studies/su2_cli/serve.py` to expose
+that generated facade as an MCP server, and `case_studies/su2_cli/use.py` to
+hit that MCP server and exercise the wrapped CLI.
 
 Technical Implementation
 ------------------------
 
 - `ingest.py` probes for `SU2_CFD`, runs the public scaffold CLI through the
-  checked-in shell wrapper, and writes `ingest_state.json` under the case-study
-  artifact directory.
+  checked-in shell wrapper, and writes the deterministic artifact pair
+  `generated_facade.py` and `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpme.serve_stdio`.
-- `use.py` reads the persisted ingest state, starts `serve.py` as a
+- `use.py` reads the standard artifact paths, starts `serve.py` as a
   subprocess, sends `initialize`, `tools/list`, and `tools/call` requests, and
   captures the JSON-RPC responses.
-- The result payload retains both the scaffold report and the wrapped help-path
-  execution evidence returned by the served MCP runtime.
+- The result payload retains both the raw scaffold report and the wrapped
+  help-path execution evidence returned by the served MCP runtime.
 
 Expected Results
 ----------------
 
 When SU2 is available, `ingest.py` prints a `passed` payload with the scaffold
-report, `serve.py` can expose the persisted facade over stdio MCP, and
+report, `serve.py` can expose the generated facade over stdio MCP, and
 `use.py` prints a `passed` payload with the served tool names and the wrapped
-help-path result. On machines without SU2 installed, the ingest step persists
-a `skipped_unavailable` state and the use step reports the same skip reason
-without failing.
+help-path result. On machines without SU2 installed, the ingest step reports
+`skipped_unavailable` and the use step reports the same skip reason without
+requiring any bespoke handoff file.
 
 Availability
 ------------
@@ -77,7 +77,7 @@ Ingest Script
 .. literalinclude:: ../../case_studies/su2_cli/ingest.py
    :language: python
    :linenos:
-   :lines: 12-
+   :lines: 11-
 
 Serve Script
 ~~~~~~~~~~~~

@@ -12,17 +12,18 @@ This case study tackles a more awkward upstream than the small core examples:
 TiGL workflows revolve around native bindings, CPACS files, and handles that
 are not themselves JSON-friendly. Instead of baking that complexity into
 `mcpme`, the case study keeps a tiny helper package checked in, ingests that
-helper through the public CLI, persists the generated facade, serves that
-facade over stdio MCP, and then uses it through a real MCP client request.
+helper through the public CLI, persists the generated facade with a standard
+scaffold report, serves that facade over stdio MCP, and then uses it through a
+real MCP client request.
 
 Preset Environment
 ------------------
 
 The helper package, the public scaffold wrapper, and the real D150 CPACS XML
 fixture all live under `case_studies/support/tigl_cpacs/`. Run
-`case_studies/tigl_cpacs/ingest.py` first to scaffold and persist the helper
-facade under `artifacts/case_studies/tigl_cpacs/`,
-`case_studies/tigl_cpacs/serve.py` to expose that persisted facade over stdio
+`case_studies/tigl_cpacs/ingest.py` first to write `generated_facade.py` and
+`scaffold_report.json` under `artifacts/case_studies/tigl_cpacs/`,
+`case_studies/tigl_cpacs/serve.py` to expose that generated facade over stdio
 MCP, and `case_studies/tigl_cpacs/use.py` to hit that MCP server and execute
 the helper against the checked-in CPACS input.
 
@@ -32,7 +33,8 @@ Technical Implementation
 - `ingest.py` verifies that the real `tigl3` and `tixi3` Python bindings are
   importable before attempting any scaffold work.
 - The ingest step runs the public package scaffold CLI through a checked-in
-  shell wrapper against the checked-in `tigl_support` helper package.
+  shell wrapper and writes the deterministic artifact pair
+  `generated_facade.py` and `scaffold_report.json`.
 - `serve.py` adds the checked-in helper package parent to `sys.path`, loads the
   saved generated facade through the public API, and serves it over stdio with
   `mcpme.serve_stdio`.
@@ -44,11 +46,11 @@ Expected Results
 ----------------
 
 When the TiGL and TiXI bindings are available, `ingest.py` prints a `passed`
-payload with the scaffold report and persisted facade location, `serve.py` can
-expose the persisted facade over stdio MCP, and `use.py` prints a `passed`
-payload with the CPACS summary produced through the real bindings. On machines
-without those bindings, the ingest step persists a `skipped_unavailable` state
-and the use step reports the same skip reason without failing.
+payload with the scaffold report, `serve.py` can expose the generated facade
+over stdio MCP, and `use.py` prints a `passed` payload with the CPACS summary
+produced through the real bindings. On machines without those bindings, the
+ingest step reports `skipped_unavailable` and the use step reports the same
+skip reason without requiring any bespoke handoff file.
 
 Availability
 ------------
@@ -96,4 +98,4 @@ Use Script
 .. literalinclude:: ../../case_studies/tigl_cpacs/use.py
    :language: python
    :linenos:
-   :lines: 64-
+   :lines: 66-

@@ -67,6 +67,8 @@ make run-case-study CASE=pycycle_mpcycle
 Each case-study directory now follows a more realistic `ingest.py` then
 `serve.py` then `use.py` flow, with support inputs under
 `case_studies/support/` and derived outputs under `artifacts/case_studies/`.
+The handoff is standardized around `generated_facade.py` plus
+`scaffold_report.json` rather than a bespoke state blob.
 
 Run the live raw-upstream challenge cases:
 

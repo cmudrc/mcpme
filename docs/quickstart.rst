@@ -34,9 +34,10 @@ Run the separate case-study lane for richer real-upstream workflows:
 Case studies follow the same convention with checked-in support inputs under
 ``case_studies/support/<case_id>/`` and derived outputs under
 ``artifacts/case_studies/<case_id>/``. Each case directory contains an
-``ingest.py`` script that persists the generated facade, a ``serve.py`` script
-that exposes it over stdio MCP, and a ``use.py`` script that demonstrates the
-ingested capabilities through MCP requests.
+``ingest.py`` script that writes ``generated_facade.py`` and
+``scaffold_report.json``, a ``serve.py`` script that exposes the generated
+facade over stdio MCP, and a ``use.py`` script that demonstrates the ingested
+capabilities through MCP requests.
 
 Inspect a target with the CLI:
 

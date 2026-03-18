@@ -12,8 +12,9 @@ Each case study:
 
 Each case lives in its own directory with three companion scripts:
 
-- `ingest.py` performs the one-shot scaffold step and persists `ingest_state.json`.
-- `serve.py` loads that persisted facade and serves it over stdio MCP.
+- `ingest.py` performs the one-shot scaffold step and writes the standard
+  artifact pair: `generated_facade.py` and `scaffold_report.json`.
+- `serve.py` loads that saved generated facade and serves it over stdio MCP.
 - `use.py` starts the served MCP and demonstrates the ingested capability
   through client requests instead of calling the manifest directly.
 

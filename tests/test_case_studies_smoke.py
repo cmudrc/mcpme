@@ -52,7 +52,7 @@ def test_case_study_scripts_run_successfully(
     expected_pass_fragment: str,
     expected_skip_fragment: str,
 ) -> None:
-    """Each case study should ingest first and then use the persisted facade."""
+    """Each case study should ingest first and then use the deterministic artifacts."""
     for required_path in SUPPORT_REQUIREMENTS[case_id]:
         assert required_path.exists(), f"Missing checked-in support input: {required_path}"
 
@@ -77,8 +77,11 @@ def test_case_study_scripts_run_successfully(
     assert ingest_payload["phase"] == "ingest"
     assert ingest_payload["status"] in {"passed", "skipped_unavailable"}
 
-    state_path = Path(str(ingest_payload["state_path"]))
-    assert state_path.exists(), f"Missing persisted ingest state: {state_path}"
+    if ingest_payload["status"] == "passed":
+        generated_facade = Path(str(ingest_payload["artifacts"]["generated_facade"]))
+        scaffold_report = Path(str(ingest_payload["artifacts"]["scaffold_report"]))
+        assert generated_facade.exists(), f"Missing generated facade artifact: {generated_facade}"
+        assert scaffold_report.exists(), f"Missing scaffold report artifact: {scaffold_report}"
 
     use_completed = subprocess.run(
         [sys.executable, f"case_studies/{case_id}/use.py"],
@@ -97,9 +100,11 @@ def test_case_study_scripts_run_successfully(
 
     if ingest_payload["status"] == "passed":
         assert "report" in ingest_payload
+        assert "artifacts" in ingest_payload
         assert "reason" not in ingest_payload
         rendered = json.dumps(use_payload, sort_keys=True)
         assert expected_pass_fragment in rendered
+        assert "artifacts" in use_payload
         assert "report" in use_payload
         assert "result" in use_payload
         assert "reason" not in use_payload

@@ -1,11 +1,11 @@
-"""Ingest the TiGL helper package wrapper and persist the generated facade.
+"""Ingest the TiGL helper package into standard case-study artifacts.
 
-This script keeps the TiGL case-study ingest path transparent:
+This script keeps the handoff deliberately simple:
 
 1. verify the checked-in helper package, fixture, and scaffold wrapper exist,
 2. probe for the real TiGL and TiXI Python bindings,
-3. run the public package scaffold flow against the helper package, and
-4. persist the scaffold report for the follow-on use step.
+3. write the generated facade to `generated_facade.py`, and
+4. write the raw scaffold report to `scaffold_report.json`.
 """
 
 from __future__ import annotations
@@ -21,15 +21,15 @@ CASE_STUDY_ID = "tigl_cpacs"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOT = REPO_ROOT / "case_studies" / "support" / CASE_STUDY_ID
 ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "case_studies" / CASE_STUDY_ID
-STATE_PATH = ARTIFACT_ROOT / "ingest_state.json"
-GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_tigl_facade.py"
+GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
+REPORT_PATH = ARTIFACT_ROOT / "scaffold_report.json"
 SCAFFOLD_PATH = SOURCE_ROOT / "commands" / "scaffold_tigl_cpacs.sh"
 PACKAGE_ROOT = SOURCE_ROOT / "tigl_support"
 FIXTURE_PATH = SOURCE_ROOT / "fixtures" / "CPACS_30_D150.xml"
 
 
 def main() -> None:
-    """Run the TiGL ingest step and print the persisted state payload."""
+    """Run the TiGL ingest step and print the stable JSON payload."""
     for required_path in (
         SCAFFOLD_PATH,
         PACKAGE_ROOT / "__init__.py",
@@ -40,14 +40,19 @@ def main() -> None:
             raise FileNotFoundError(f"Missing checked-in case-study support file: {required_path}")
 
     ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    for stale_path in (GENERATED_FACADE_PATH, REPORT_PATH):
+        if stale_path.exists():
+            stale_path.unlink()
 
     payload: dict[str, object] = {
+        "artifacts": {
+            "generated_facade": str(GENERATED_FACADE_PATH),
+            "scaffold_report": str(REPORT_PATH),
+        },
         "case_study": CASE_STUDY_ID,
         "fixture_path": str(FIXTURE_PATH),
-        "generated_facade": str(GENERATED_FACADE_PATH),
         "phase": "ingest",
         "source_root": str(SOURCE_ROOT),
-        "state_path": str(STATE_PATH),
     }
 
     try:
@@ -56,9 +61,6 @@ def main() -> None:
     except Exception as exc:
         payload["reason"] = f"Import probe failed for TiGL/TiXI bindings: {exc}"
         payload["status"] = "skipped_unavailable"
-        STATE_PATH.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
         print(json.dumps(payload, indent=2, sort_keys=True))
         return
 
@@ -81,13 +83,11 @@ def main() -> None:
         check=True,
     )
 
-    payload["report"] = json.loads(completed.stdout)
-    payload["status"] = "passed"
+    report = json.loads(completed.stdout)
+    REPORT_PATH.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    STATE_PATH.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    payload["report"] = report
+    payload["status"] = "passed"
     print(json.dumps(payload, indent=2, sort_keys=True))
 
 

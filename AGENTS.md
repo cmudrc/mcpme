@@ -71,10 +71,11 @@ merging.
   `skipped_unavailable`, but they should still use only the public `mcpme`
   surface.
 - Keep each case-study directory readable as a real ingest/persist/use flow:
-  `case_studies/<id>/ingest.py` should persist the generated facade state under
+  `case_studies/<id>/ingest.py` should write the deterministic artifact pair
+  `generated_facade.py` and `scaffold_report.json` under
   `artifacts/case_studies/<id>/`, `case_studies/<id>/serve.py` should expose
-  that saved facade over stdio MCP, and `case_studies/<id>/use.py` should
-  demonstrate the saved capabilities through MCP requests.
+  that saved generated facade over stdio MCP, and `case_studies/<id>/use.py`
+  should demonstrate the saved capabilities through MCP requests.
 - Keep checked-in support inputs under `examples/support/<id>/` and
   `case_studies/support/<id>/`. Generated facades and retained execution
   artifacts belong under `artifacts/` and should not be promoted into the

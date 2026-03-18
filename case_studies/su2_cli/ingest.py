@@ -1,12 +1,11 @@
-"""Ingest the SU2 command surface and persist the generated facade.
+"""Ingest the SU2 command surface into standard case-study artifacts.
 
-This script is intentionally linear so contributors can read the real
-ingestion path top to bottom:
+This script keeps the handoff deliberately simple:
 
-1. verify the checked-in support wrappers are present,
+1. verify the checked-in command wrappers are present,
 2. probe whether `SU2_CFD` is available on this machine,
-3. run the public scaffold CLI through the checked-in shell wrapper, and
-4. persist the scaffold report and generated facade location for `use.py`.
+3. write the generated facade to `generated_facade.py`, and
+4. write the raw scaffold report to `scaffold_report.json`.
 """
 
 from __future__ import annotations
@@ -22,35 +21,37 @@ CASE_STUDY_ID = "su2_cli"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOT = REPO_ROOT / "case_studies" / "support" / CASE_STUDY_ID
 ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "case_studies" / CASE_STUDY_ID
-STATE_PATH = ARTIFACT_ROOT / "ingest_state.json"
-GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_su2_facade.py"
+GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
+REPORT_PATH = ARTIFACT_ROOT / "scaffold_report.json"
 SCAFFOLD_PATH = SOURCE_ROOT / "commands" / "scaffold_su2_cli.sh"
 PROBE_WRAPPER_PATH = SOURCE_ROOT / "commands" / "su2_cfd.sh"
 
 
 def main() -> None:
-    """Run the SU2 ingest step and print the persisted state payload."""
+    """Run the SU2 ingest step and print the stable JSON payload."""
     if not SCAFFOLD_PATH.exists():
         raise FileNotFoundError(f"Missing checked-in case-study support file: {SCAFFOLD_PATH}")
     if not PROBE_WRAPPER_PATH.exists():
         raise FileNotFoundError(f"Missing checked-in case-study support file: {PROBE_WRAPPER_PATH}")
 
     ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
+    for stale_path in (GENERATED_FACADE_PATH, REPORT_PATH):
+        if stale_path.exists():
+            stale_path.unlink()
 
     payload: dict[str, object] = {
+        "artifacts": {
+            "generated_facade": str(GENERATED_FACADE_PATH),
+            "scaffold_report": str(REPORT_PATH),
+        },
         "case_study": CASE_STUDY_ID,
-        "generated_facade": str(GENERATED_FACADE_PATH),
         "phase": "ingest",
         "source_root": str(SOURCE_ROOT),
-        "state_path": str(STATE_PATH),
     }
 
     if shutil.which("SU2_CFD") is None:
         payload["reason"] = "Availability probe command is unavailable on PATH: 'SU2_CFD'"
         payload["status"] = "skipped_unavailable"
-        STATE_PATH.write_text(
-            json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
         print(json.dumps(payload, indent=2, sort_keys=True))
         return
 
@@ -70,13 +71,11 @@ def main() -> None:
         check=True,
     )
 
-    payload["report"] = json.loads(completed.stdout)
-    payload["status"] = "passed"
+    report = json.loads(completed.stdout)
+    REPORT_PATH.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    STATE_PATH.write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    payload["report"] = report
+    payload["status"] = "passed"
     print(json.dumps(payload, indent=2, sort_keys=True))
 
 

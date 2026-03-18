@@ -11,17 +11,18 @@ Introduction
 This case study shows how `mcpme` can carve a useful session-oriented wrapper
 out of a real engineering Python package without teaching the library
 anything pyCycle-specific. The workflow mirrors a more realistic integration
-path: ingest the package once, persist the generated facade, serve that facade
-over stdio MCP, and then drive the wrapped session lifecycle through MCP.
+path: ingest the package once, persist the generated facade with a standard
+scaffold report, serve that facade over stdio MCP, and then drive the wrapped
+session lifecycle through MCP.
 
 Preset Environment
 ------------------
 
 The case-study-specific public scaffold command is checked in under
 `case_studies/support/pycycle_mpcycle/commands/`. Run
-`case_studies/pycycle_mpcycle/ingest.py` first to generate and persist the
-facade under `artifacts/case_studies/pycycle_mpcycle/`,
-`case_studies/pycycle_mpcycle/serve.py` to expose that persisted facade over
+`case_studies/pycycle_mpcycle/ingest.py` first to write `generated_facade.py`
+and `scaffold_report.json` under `artifacts/case_studies/pycycle_mpcycle/`,
+`case_studies/pycycle_mpcycle/serve.py` to expose that generated facade over
 stdio MCP, and `case_studies/pycycle_mpcycle/use.py` to hit that MCP server
 and exercise the generated tools.
 
@@ -31,7 +32,8 @@ Technical Implementation
 - `ingest.py` requires `import pycycle.api` to succeed so the case study only
   runs against the engineering `om-pycycle` distribution.
 - The ingest step runs the public scaffold CLI through a checked-in shell
-  wrapper and persists the discovered tool names for the `MPCycle` lifecycle.
+  wrapper and writes the deterministic artifact pair `generated_facade.py` and
+  `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpme.serve_stdio`.
 - `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
@@ -42,11 +44,11 @@ Expected Results
 ----------------
 
 When the engineering pyCycle package is available, `ingest.py` prints a
-`passed` payload with the scaffold report and persisted tool names, `serve.py`
-can expose the persisted facade over stdio MCP, and `use.py` prints a
-`passed` payload with the session lifecycle outputs. On machines without
-`pycycle.api`, the ingest step persists a `skipped_unavailable` state and the
-use step reports the same skip reason without failing.
+`passed` payload with the scaffold report, `serve.py` can expose the generated
+facade over stdio MCP, and `use.py` prints a `passed` payload with the session
+lifecycle outputs. On machines without `pycycle.api`, the ingest step reports
+`skipped_unavailable` and the use step reports the same skip reason without
+requiring any bespoke handoff file.
 
 Availability
 ------------
@@ -91,4 +93,4 @@ Use Script
 .. literalinclude:: ../../case_studies/pycycle_mpcycle/use.py
    :language: python
    :linenos:
-   :lines: 59-
+   :lines: 61-

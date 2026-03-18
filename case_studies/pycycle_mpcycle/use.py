@@ -5,16 +5,17 @@
 This case study shows how `mcpme` can carve a useful session-oriented wrapper
 out of a real engineering Python package without teaching the library
 anything pyCycle-specific. The workflow mirrors a more realistic integration
-path: ingest the package once, persist the generated facade, serve that facade
-over stdio MCP, and then drive the wrapped session lifecycle through MCP.
+path: ingest the package once, persist the generated facade with a standard
+scaffold report, serve that facade over stdio MCP, and then drive the wrapped
+session lifecycle through MCP.
 
 ## Preset Environment
 
 The case-study-specific public scaffold command is checked in under
 `case_studies/support/pycycle_mpcycle/commands/`. Run
-`case_studies/pycycle_mpcycle/ingest.py` first to generate and persist the
-facade under `artifacts/case_studies/pycycle_mpcycle/`,
-`case_studies/pycycle_mpcycle/serve.py` to expose that persisted facade over
+`case_studies/pycycle_mpcycle/ingest.py` first to write `generated_facade.py`
+and `scaffold_report.json` under `artifacts/case_studies/pycycle_mpcycle/`,
+`case_studies/pycycle_mpcycle/serve.py` to expose that generated facade over
 stdio MCP, and `case_studies/pycycle_mpcycle/use.py` to hit that MCP server
 and exercise the generated tools.
 
@@ -23,7 +24,8 @@ and exercise the generated tools.
 - `ingest.py` requires `import pycycle.api` to succeed so the case study only
   runs against the engineering `om-pycycle` distribution.
 - The ingest step runs the public scaffold CLI through a checked-in shell
-  wrapper and persists the discovered tool names for the `MPCycle` lifecycle.
+  wrapper and writes the deterministic artifact pair `generated_facade.py` and
+  `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpme.serve_stdio`.
 - `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
@@ -33,11 +35,11 @@ and exercise the generated tools.
 ## Expected Results
 
 When the engineering pyCycle package is available, `ingest.py` prints a
-`passed` payload with the scaffold report and persisted tool names, `serve.py`
-can expose the persisted facade over stdio MCP, and `use.py` prints a
-`passed` payload with the session lifecycle outputs. On machines without
-`pycycle.api`, the ingest step persists a `skipped_unavailable` state and the
-use step reports the same skip reason without failing.
+`passed` payload with the scaffold report, `serve.py` can expose the generated
+facade over stdio MCP, and `use.py` prints a `passed` payload with the session
+lifecycle outputs. On machines without `pycycle.api`, the ingest step reports
+`skipped_unavailable` and the use step reports the same skip reason without
+requiring any bespoke handoff file.
 
 ## Availability
 
@@ -58,6 +60,7 @@ cannot be imported, the case study skips cleanly.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import subprocess
@@ -66,29 +69,38 @@ from pathlib import Path
 
 CASE_STUDY_ID = "pycycle_mpcycle"
 REPO_ROOT = Path(__file__).resolve().parents[2]
+ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "case_studies" / CASE_STUDY_ID
+GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
+REPORT_PATH = ARTIFACT_ROOT / "scaffold_report.json"
 SERVE_PATH = REPO_ROOT / "case_studies" / CASE_STUDY_ID / "serve.py"
-STATE_PATH = REPO_ROOT / "artifacts" / "case_studies" / CASE_STUDY_ID / "ingest_state.json"
 
 
 def main() -> None:
     """Hit the served pyCycle MCP runtime and print the stable JSON payload."""
-    if not STATE_PATH.exists():
+    if not GENERATED_FACADE_PATH.exists():
+        try:
+            importlib.import_module("pycycle.api")
+        except Exception as exc:
+            payload = {
+                "case_study": CASE_STUDY_ID,
+                "phase": "use",
+                "reason": f"Import probe failed for 'pycycle.api': {exc}",
+                "status": "skipped_unavailable",
+            }
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return
         raise FileNotFoundError(
-            f"Missing persisted ingest state: {STATE_PATH}. "
+            f"Missing generated facade artifact: {GENERATED_FACADE_PATH}. "
             "Run case_studies/pycycle_mpcycle/ingest.py first."
         )
 
-    ingest_state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+    if not REPORT_PATH.exists():
+        raise FileNotFoundError(
+            f"Missing scaffold report artifact: {REPORT_PATH}. "
+            "Run case_studies/pycycle_mpcycle/ingest.py first."
+        )
 
-    if ingest_state["status"] == "skipped_unavailable":
-        payload = {
-            "case_study": CASE_STUDY_ID,
-            "phase": "use",
-            "reason": ingest_state["reason"],
-            "status": "skipped_unavailable",
-        }
-        print(json.dumps(payload, indent=2, sort_keys=True))
-        return
+    report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
 
     env = dict(os.environ)
     pythonpath_entries = [str((REPO_ROOT / "src").resolve())]
@@ -131,7 +143,11 @@ def main() -> None:
             for tool in tools_list["result"]["tools"]
             if isinstance(tool, dict) and isinstance(tool.get("name"), str)
         ]
-        for expected_name in ingest_state["tool_names"].values():
+        for expected_name in (
+            "create_mpcycle",
+            "mpcycle_pyc_add_cycle_param",
+            "close_mpcycle",
+        ):
             if expected_name not in tool_names:
                 raise ValueError(
                     "Expected the served tool list to include "
@@ -144,7 +160,7 @@ def main() -> None:
                     "jsonrpc": "2.0",
                     "id": 3,
                     "method": "tools/call",
-                    "params": {"arguments": {}, "name": ingest_state["tool_names"]["create"]},
+                    "params": {"arguments": {}, "name": "create_mpcycle"},
                 }
             )
             + "\n"
@@ -164,7 +180,7 @@ def main() -> None:
                     "method": "tools/call",
                     "params": {
                         "arguments": {"name": "FAR", "session_id": session_id, "val": 0.02},
-                        "name": ingest_state["tool_names"]["add_cycle_param"],
+                        "name": "mpcycle_pyc_add_cycle_param",
                     },
                 }
             )
@@ -186,7 +202,7 @@ def main() -> None:
                     "method": "tools/call",
                     "params": {
                         "arguments": {"session_id": session_id},
-                        "name": ingest_state["tool_names"]["close"],
+                        "name": "close_mpcycle",
                     },
                 }
             )
@@ -216,18 +232,17 @@ def main() -> None:
         raise ValueError("Expected the served close wrapper to report success.")
 
     payload = {
-        "case_study": CASE_STUDY_ID,
-        "ingest_state": {
-            "generated_facade": ingest_state["generated_facade"],
-            "state_path": str(STATE_PATH),
-            "tool_names": ingest_state["tool_names"],
+        "artifacts": {
+            "generated_facade": str(GENERATED_FACADE_PATH),
+            "scaffold_report": str(REPORT_PATH),
         },
+        "case_study": CASE_STUDY_ID,
         "mcp_session": {
             "server_info": initialize["result"]["serverInfo"],
             "tool_names": tool_names,
         },
         "phase": "use",
-        "report": ingest_state["report"],
+        "report": report,
         "result": {
             "close": close_record,
             "create": create_record,

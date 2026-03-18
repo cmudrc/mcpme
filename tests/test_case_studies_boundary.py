@@ -78,7 +78,7 @@ def _expr_uses_artifact_root(expression: ast.AST) -> bool:
     rendered = ast.unparse(expression)
     return any(
         token in rendered
-        for token in ("ARTIFACT_ROOT", "STATE_PATH", "GENERATED_FACADE_PATH", "artifacts")
+        for token in ("ARTIFACT_ROOT", "GENERATED_FACADE_PATH", "REPORT_PATH", "artifacts")
     )
 
 
