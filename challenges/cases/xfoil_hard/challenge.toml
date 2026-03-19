@@ -41,6 +41,9 @@ cwd = "{challenge_artifact_dir}"
 stdin_text = """
 NACA 0012
 PANE
+PLOP
+G
+
 OPER
 VISC 200000
 ALFA -2
@@ -57,6 +60,7 @@ polar_re150k.txt
 
 ASEQ -2 8 0.5
 PACC
+
 QUIT
 """
 

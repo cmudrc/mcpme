@@ -65,7 +65,7 @@ Arguments:
 ```json
 {
   "cwd": "{challenge_artifact_dir}",
-  "stdin_text": "NACA 0012\nPANE\nOPER\nVISC 200000\nALFA -2\nPACC\n\n\nASEQ -2 8 0.5\nPACC\nRE 150000\nINIT\nALFA -2\nPACC\n\n\nASEQ -2 8 0.5\nPACC\nPWRT\n1\npolar_saved_1.txt\nPWRT\n2\npolar_saved_2.txt\nQUIT\n"
+  "stdin_text": "NACA 0012\nPANE\nPLOP\nG\n\nOPER\nVISC 200000\nALFA -2\nPACC\n\n\nASEQ -2 8 0.5\nPACC\nRE 150000\nINIT\nALFA -2\nPACC\n\n\nASEQ -2 8 0.5\nPACC\nPWRT\n1\npolar_saved_1.txt\nPWRT\n2\npolar_saved_2.txt\n\nQUIT\n"
 }
 ```
 
@@ -126,6 +126,9 @@ cwd = "{challenge_artifact_dir}"
 stdin_text = """
 NACA 0012
 PANE
+PLOP
+G
+
 OPER
 VISC 200000
 ALFA -2
@@ -148,6 +151,7 @@ polar_saved_1.txt
 PWRT
 2
 polar_saved_2.txt
+
 QUIT
 """
 

@@ -72,7 +72,7 @@ Arguments:
 }
 ```
 
-Expectations: json fields {'exit_code': 0}; files are non-empty ['{challenge_artifact_dir}/history.csv', '{challenge_artifact_dir}/surface_flow.csv', '{challenge_artifact_dir}/restart_flow.dat', '{challenge_artifact_dir}/flow.vtu'].
+Expectations: json fields {'exit_code': 0}; files are non-empty ['{challenge_artifact_dir}/history.csv', '{challenge_artifact_dir}/surface_flow.csv', '{challenge_artifact_dir}/restart_flow.dat', '{challenge_artifact_dir}/vol_solution.vtu'].
 
 ## What This Case Proves
 
@@ -136,6 +136,6 @@ files_nonempty = [
   "{challenge_artifact_dir}/history.csv",
   "{challenge_artifact_dir}/surface_flow.csv",
   "{challenge_artifact_dir}/restart_flow.dat",
-  "{challenge_artifact_dir}/flow.vtu",
+  "{challenge_artifact_dir}/vol_solution.vtu",
 ]
 ```

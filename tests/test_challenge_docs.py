@@ -96,3 +96,5 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
     assert "| `demo` | [`demo_case`](cases/demo_case/README.md) | - | - | - |" in index_readme
     assert "compressed into `challenge.toml`" in index_readme
     assert "[`demo_case`](cases/demo_case/README.md)" in index_readme
+    assert "make challenge-deps" in index_readme
+    assert ".challenge-tools/bin" in index_readme

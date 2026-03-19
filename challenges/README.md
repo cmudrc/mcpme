@@ -18,10 +18,23 @@ case exists and how to run it in isolation.
 ## Run The Suite
 
 ```bash
+make challenge-deps
 make challenges-subset
 make challenges-full
 make challenge CASE=openmdao_file_utils
 PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --tier all --family avl
+```
+
+## Install Optional Runtimes
+
+The broader challenge lane expects its extra CLI tools under the repo-local
+`.challenge-tools/` prefix. The `challenge`, `challenges-subset`,
+`challenges-full`, and `run-case-studies` targets prepend
+`.challenge-tools/bin` to `PATH` automatically.
+
+```bash
+make challenge-deps
+make challenge-deps PROFILE=subset
 ```
 
 ## Family Ladders

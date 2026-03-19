@@ -41,6 +41,9 @@ cwd = "{challenge_artifact_dir}"
 stdin_text = """
 NACA 0012
 PANE
+PLOP
+G
+
 OPER
 VISC 200000
 ALFA -2
@@ -63,6 +66,7 @@ polar_saved_1.txt
 PWRT
 2
 polar_saved_2.txt
+
 QUIT
 """
 

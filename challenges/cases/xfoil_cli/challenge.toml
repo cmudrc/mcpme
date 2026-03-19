@@ -41,12 +41,16 @@ cwd = "{challenge_artifact_dir}"
 stdin_text = """
 NACA 0012
 PANE
+PLOP
+G
+
 OPER
 PACC
 polar.txt
 
 ASEQ -2 4 2
 PACC
+
 QUIT
 """
 

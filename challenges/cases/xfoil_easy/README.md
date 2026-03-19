@@ -65,7 +65,7 @@ Arguments:
 ```json
 {
   "cwd": "{challenge_artifact_dir}",
-  "stdin_text": "NACA 0012\nPANE\nOPER\nPACC\npolar.txt\n\nALFA 4\nPACC\nQUIT\n"
+  "stdin_text": "NACA 0012\nPANE\nPLOP\nG\n\nOPER\nPACC\npolar.txt\n\nALFA 4\nPACC\n\nQUIT\n"
 }
 ```
 
@@ -126,12 +126,16 @@ cwd = "{challenge_artifact_dir}"
 stdin_text = """
 NACA 0012
 PANE
+PLOP
+G
+
 OPER
 PACC
 polar.txt
 
 ALFA 4
 PACC
+
 QUIT
 """
 

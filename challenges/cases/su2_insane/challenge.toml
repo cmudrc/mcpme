@@ -48,6 +48,6 @@ files_nonempty = [
   "{challenge_artifact_dir}/history.csv",
   "{challenge_artifact_dir}/surface_flow.csv",
   "{challenge_artifact_dir}/restart_flow.dat",
-  "{challenge_artifact_dir}/flow.vtu",
+  "{challenge_artifact_dir}/vol_solution.vtu",
   "{challenge_artifact_dir}/surface_flow.vtu",
 ]

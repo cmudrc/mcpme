@@ -18,6 +18,13 @@ source .venv/bin/activate
 make dev
 ```
 
+Install the optional live-challenge runtimes into the repo-local
+`.challenge-tools/` prefix when you want the broader raw-upstream lane:
+
+```bash
+make challenge-deps
+```
+
 ## Killer Usage Examples
 
 Turn a normal Python module into an MCP manifest without importing user code
@@ -73,6 +80,7 @@ The handoff is standardized around `generated_facade.py` plus
 Run the live raw-upstream challenge cases:
 
 ```bash
+make challenge-deps
 make challenges-subset
 make challenge CASE=openmdao_file_utils
 ```
