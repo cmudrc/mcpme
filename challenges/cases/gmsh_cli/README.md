@@ -11,6 +11,8 @@ A lot of engineering tooling is still command-driven, so one-shot CLI ingestion 
 ## Case Shape
 
 - ID: `gmsh_cli`
+- Family: `gmsh`
+- Difficulty: `medium`
 - Tier: `gha_subset`
 - Style: `command`
 - Workflow Slice: `aerodynamics`

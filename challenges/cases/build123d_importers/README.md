@@ -11,6 +11,8 @@ Geometry importer families are great one-shot targets because they use concrete 
 ## Case Shape
 
 - ID: `build123d_importers`
+- Family: `build123d`
+- Difficulty: `medium`
 - Tier: `gha_subset`
 - Style: `package`
 - Workflow Slice: `manufacturing`

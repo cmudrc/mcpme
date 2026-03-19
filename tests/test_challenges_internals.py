@@ -399,4 +399,5 @@ def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(
     junit_text = junit_path.read_text(encoding="utf-8")
     assert "<failure" in junit_text
     assert "<skipped" in junit_text
+    assert "challenge.gha_subset.pass.medium" in junit_text
     assert "skip" in summary_path.read_text(encoding="utf-8")

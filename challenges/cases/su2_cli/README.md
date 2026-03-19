@@ -11,6 +11,8 @@ Some important engineering tools are too heavyweight for default CI runners, but
 ## Case Shape
 
 - ID: `su2_cli`
+- Family: `su2`
+- Difficulty: `medium`
 - Tier: `local_full`
 - Style: `command`
 - Workflow Slice: `aerodynamics`

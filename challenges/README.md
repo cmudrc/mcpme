@@ -21,20 +21,39 @@ case exists and how to run it in isolation.
 make challenges-subset
 make challenges-full
 make challenge CASE=openmdao_file_utils
+PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --tier all --family avl
 ```
+
+## Family Ladders
+
+| Family | easy | medium | hard | insane |
+| --- | --- | --- | --- | --- |
+| `aerosandbox` | - | [`aerosandbox_root`](cases/aerosandbox_root/README.md) | - | - |
+| `avl` | [`avl_easy`](cases/avl_easy/README.md) | [`avl_medium`](cases/avl_medium/README.md) | [`avl_hard`](cases/avl_hard/README.md) | [`avl_insane`](cases/avl_insane/README.md) |
+| `build123d` | - | [`build123d_importers`](cases/build123d_importers/README.md), [`build123d_root`](cases/build123d_root/README.md) | - | - |
+| `gmsh` | - | [`gmsh_cli`](cases/gmsh_cli/README.md), [`gmsh_module_root`](cases/gmsh_module_root/README.md) | - | - |
+| `openmdao` | - | [`openmdao_api_problem`](cases/openmdao_api_problem/README.md), [`openmdao_file_utils`](cases/openmdao_file_utils/README.md) | - | - |
+| `pynastran` | - | [`pynastran_bdf`](cases/pynastran_bdf/README.md) | - | - |
+| `su2` | - | [`su2_cli`](cases/su2_cli/README.md) | - | - |
+| `submitit` | - | [`submitit_root`](cases/submitit_root/README.md) | - | - |
+| `xfoil` | - | [`xfoil_cli`](cases/xfoil_cli/README.md) | - | - |
 
 ## Case Inventory
 
-| Case | Tier | Slice | Target | Summary |
-| --- | --- | --- | --- | --- |
-| [`aerosandbox_root`](cases/aerosandbox_root/README.md) | `local_full` | `mission` | `aerosandbox` | Wrap AeroSandbox's `Atmosphere` class in one shot and call several real instance methods. |
-| [`build123d_importers`](cases/build123d_importers/README.md) | `gha_subset` | `manufacturing` | `build123d.importers` | Wrap `build123d.importers` and exercise both STL and SVG import routes with tiny checked-in fixtures. |
-| [`build123d_root`](cases/build123d_root/README.md) | `local_full` | `manufacturing` | `build123d` | Wrap the `build123d` package root while filtering down to both STL and SVG importer workflows. |
-| [`gmsh_cli`](cases/gmsh_cli/README.md) | `gha_subset` | `aerodynamics` | `gmsh` | Wrap the `gmsh` CLI, feed it a tiny `.geo` model, and verify a mesh file is produced. |
-| [`gmsh_module_root`](cases/gmsh_module_root/README.md) | `local_full` | `aerodynamics` | `gmsh` | Wrap the Python `gmsh` module root and exercise a fuller initialize/check/clear/finalize lifecycle. |
-| [`openmdao_api_problem`](cases/openmdao_api_problem/README.md) | `local_full` | `systems` | `openmdao.api` | Wrap `openmdao.api.Problem` from the package root and drive a broader setup-and-inspection lifecycle. |
-| [`openmdao_file_utils`](cases/openmdao_file_utils/README.md) | `gha_subset` | `systems` | `openmdao.utils.file_utils` | Wrap concrete `openmdao.utils.file_utils` helpers and inspect a checked-in demo package like a real utility workflow. |
-| [`pynastran_bdf`](cases/pynastran_bdf/README.md) | `gha_subset` | `structures` | `pyNastran.bdf.bdf` | Wrap `pyNastran`'s `BDF` class, create a node, inspect model stats, and write a non-empty deck file. |
-| [`su2_cli`](cases/su2_cli/README.md) | `local_full` | `aerodynamics` | `SU2_CFD` | Wrap the `SU2_CFD` executable and run a tiny adapted official tutorial case when it is available. |
-| [`submitit_root`](cases/submitit_root/README.md) | `local_full` | `hpc` | `submitit` | Wrap `submitit.LocalExecutor` and `submitit.AutoExecutor`, then exercise both executor lifecycles. |
-| [`xfoil_cli`](cases/xfoil_cli/README.md) | `local_full` | `aerodynamics` | `xfoil` | Wrap the `xfoil` executable and run a tiny batch polar-generation workflow when it is installed. |
+| Case | Family | Difficulty | Tier | Slice | Target | Summary |
+| --- | --- | --- | --- | --- | --- | --- |
+| [`aerosandbox_root`](cases/aerosandbox_root/README.md) | `aerosandbox` | `medium` | `local_full` | `mission` | `aerosandbox` | Wrap AeroSandbox's `Atmosphere` class in one shot and call several real instance methods. |
+| [`avl_easy`](cases/avl_easy/README.md) | `avl` | `easy` | `local_full` | `aerodynamics` | `avl` | Wrap the `avl` executable, solve one tiny wing operating point, and retain a total-forces report. |
+| [`avl_hard`](cases/avl_hard/README.md) | `avl` | `hard` | `local_full` | `aerodynamics` | `avl` | Wrap the `avl` executable, load stored geometry/mass/run inputs, execute a saved run case, and retain forces plus stability reports. |
+| [`avl_insane`](cases/avl_insane/README.md) | `avl` | `insane` | `local_full` | `aerodynamics` | `avl` | Wrap the `avl` executable, execute a stored run case, retain forces plus stability reports, and then write AVL eigenvalue and system-matrix outputs. |
+| [`avl_medium`](cases/avl_medium/README.md) | `avl` | `medium` | `local_full` | `aerodynamics` | `avl` | Wrap the `avl` executable, solve one tiny wing operating point, and retain both total-forces and stability-derivative reports. |
+| [`build123d_importers`](cases/build123d_importers/README.md) | `build123d` | `medium` | `gha_subset` | `manufacturing` | `build123d.importers` | Wrap `build123d.importers` and exercise both STL and SVG import routes with tiny checked-in fixtures. |
+| [`build123d_root`](cases/build123d_root/README.md) | `build123d` | `medium` | `local_full` | `manufacturing` | `build123d` | Wrap the `build123d` package root while filtering down to both STL and SVG importer workflows. |
+| [`gmsh_cli`](cases/gmsh_cli/README.md) | `gmsh` | `medium` | `gha_subset` | `aerodynamics` | `gmsh` | Wrap the `gmsh` CLI, feed it a tiny `.geo` model, and verify a mesh file is produced. |
+| [`gmsh_module_root`](cases/gmsh_module_root/README.md) | `gmsh` | `medium` | `local_full` | `aerodynamics` | `gmsh` | Wrap the Python `gmsh` module root and exercise a fuller initialize/check/clear/finalize lifecycle. |
+| [`openmdao_api_problem`](cases/openmdao_api_problem/README.md) | `openmdao` | `medium` | `local_full` | `systems` | `openmdao.api` | Wrap `openmdao.api.Problem` from the package root and drive a broader setup-and-inspection lifecycle. |
+| [`openmdao_file_utils`](cases/openmdao_file_utils/README.md) | `openmdao` | `medium` | `gha_subset` | `systems` | `openmdao.utils.file_utils` | Wrap concrete `openmdao.utils.file_utils` helpers and inspect a checked-in demo package like a real utility workflow. |
+| [`pynastran_bdf`](cases/pynastran_bdf/README.md) | `pynastran` | `medium` | `gha_subset` | `structures` | `pyNastran.bdf.bdf` | Wrap `pyNastran`'s `BDF` class, create a node, inspect model stats, and write a non-empty deck file. |
+| [`su2_cli`](cases/su2_cli/README.md) | `su2` | `medium` | `local_full` | `aerodynamics` | `SU2_CFD` | Wrap the `SU2_CFD` executable and run a tiny adapted official tutorial case when it is available. |
+| [`submitit_root`](cases/submitit_root/README.md) | `submitit` | `medium` | `local_full` | `hpc` | `submitit` | Wrap `submitit.LocalExecutor` and `submitit.AutoExecutor`, then exercise both executor lifecycles. |
+| [`xfoil_cli`](cases/xfoil_cli/README.md) | `xfoil` | `medium` | `local_full` | `aerodynamics` | `xfoil` | Wrap the `xfoil` executable and run a tiny batch polar-generation workflow when it is installed. |

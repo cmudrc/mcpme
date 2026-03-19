@@ -11,6 +11,8 @@ Deck-oriented structural tools are common legacy integration points, and they ar
 ## Case Shape
 
 - ID: `pynastran_bdf`
+- Family: `pynastran`
+- Difficulty: `medium`
 - Tier: `gha_subset`
 - Style: `package`
 - Workflow Slice: `structures`

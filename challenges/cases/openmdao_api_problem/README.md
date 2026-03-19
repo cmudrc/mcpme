@@ -11,6 +11,8 @@ Large engineering platforms usually revolve around stateful top-level objects, s
 ## Case Shape
 
 - ID: `openmdao_api_problem`
+- Family: `openmdao`
+- Difficulty: `medium`
 - Tier: `local_full`
 - Style: `package`
 - Workflow Slice: `systems`

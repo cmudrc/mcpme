@@ -1,0 +1,77 @@
+# Self-contained case: step up to AVL's stored run-case machinery.
+# This uses checked-in geometry, mass, and run files from the official sample flow.
+id = "avl_hard"
+title = "AVL hard: stored run case"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "avl"
+difficulty = "hard"
+
+[example]
+summary = "Wrap the `avl` executable, load stored geometry/mass/run inputs, execute a saved run case, and retain forces plus stability reports."
+motivation = "A harder AVL challenge should move beyond a toy single-angle solve and prove that the wrapper can drive AVL's checked-in run-case workflow with real persisted inputs."
+proves = [
+  "The challenge harness can preload multiple AVL input files and run a saved operating case deterministically.",
+  "A command wrapper can drive a more realistic AVL workflow with control surfaces, mass properties, and stored run-state.",
+  "The retained artifacts remain inspectable enough to show what AVL actually solved.",
+]
+limitations = [
+  "This case still stops at operating-point analysis rather than AVL's eigenmode tools.",
+  "This case intentionally reports `skipped_unavailable` when `avl` is not installed.",
+]
+
+[target]
+kind = "command"
+value = ["avl"]
+
+[probe]
+commands = [["avl"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_avl"
+help_probe_args = ["-h"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/plane.avl"
+destination = "{challenge_artifact_dir}/plane.avl"
+
+[[setup.rendered_files]]
+source = "fixtures/plane.mass"
+destination = "{challenge_artifact_dir}/plane.mass"
+
+[[setup.rendered_files]]
+source = "fixtures/plane.run"
+destination = "{challenge_artifact_dir}/plane.run"
+
+[workflow]
+[[workflow.steps]]
+label = "Execute the stored Plane Vanilla AVL run case and retain forces plus stability reports"
+tool = "run_avl"
+
+[workflow.steps.arguments]
+cwd = "{challenge_artifact_dir}"
+extra_argv = ["plane.avl", "plane.run", "plane.mass"]
+stdin_text = """
+PLOP
+G
+
+OPER
+1
+X
+FT
+plane_forces.txt
+ST
+plane_stability.txt
+
+QUIT
+"""
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = [
+  "{challenge_artifact_dir}/plane_forces.txt",
+  "{challenge_artifact_dir}/plane_stability.txt",
+]

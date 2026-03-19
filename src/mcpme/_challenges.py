@@ -39,6 +39,7 @@ from .discovery import build_manifest
 from .execution import ToolExecutionResult, execute_tool
 
 _VALID_TIERS = frozenset({"gha_subset", "local_full"})
+_VALID_DIFFICULTIES = frozenset({"easy", "medium", "hard", "insane"})
 _VALID_TARGET_KINDS = frozenset({"package", "command"})
 _VALID_STATUSES = frozenset({"passed", "failed", "skipped_unavailable"})
 _PATH_TOKEN_PATTERN = re.compile(r"([^\.\[\]]+)|\[(\d+)\]")
@@ -161,6 +162,10 @@ class ChallengeSpec:
         is local only.
     :param style: Short style label such as ``"package"`` or ``"command"``.
     :param slice: Workflow slice such as ``"aerodynamics"`` or ``"systems"``.
+    :param family: Stable challenge family, used to group related difficulty
+        ladders such as ``"avl"`` or ``"openmdao"``.
+    :param difficulty: Challenge difficulty rung. Canonical values are
+        ``"easy"``, ``"medium"``, ``"hard"``, and ``"insane"``.
     :param target: Raw upstream target definition.
     :param probe: Availability probe configuration.
     :param scaffold_kind: Scaffold entry point used for the target.
@@ -188,6 +193,8 @@ class ChallengeSpec:
     probe: ChallengeProbe
     scaffold_kind: str
     scaffold_options: dict[str, Any]
+    family: str = ""
+    difficulty: str = ""
     rendered_files: tuple[ChallengeRenderedFile, ...] = ()
     workflow_steps: tuple[ChallengeWorkflowStep, ...] = ()
     ingestion: ChallengeIngestion = field(default_factory=ChallengeIngestion)
@@ -201,6 +208,13 @@ class ChallengeSpec:
     catalog_path: Path = Path("challenge.toml")
     case_dir: Path = Path(".")
     notes: str | None = None
+
+    def __post_init__(self) -> None:
+        """Normalize derived metadata defaults for ad hoc challenge specs."""
+        if not self.family:
+            object.__setattr__(self, "family", _default_family(self.id))
+        if not self.difficulty:
+            object.__setattr__(self, "difficulty", "medium")
 
     @property
     def smoke_steps(self) -> tuple[ChallengeWorkflowStep, ...]:
@@ -249,6 +263,8 @@ class ChallengeResult:
     :param tier: Execution tier.
     :param style: Challenge style label.
     :param slice: Workflow slice label.
+    :param family: Stable challenge family.
+    :param difficulty: Challenge difficulty rung.
     :param status: Overall status.
     :param message: Summary message.
     :param generated_tools: Generated facade tool names.
@@ -264,10 +280,19 @@ class ChallengeResult:
     slice: str
     status: str
     message: str
+    family: str = ""
+    difficulty: str = ""
     generated_tools: tuple[str, ...] = ()
     steps: tuple[ChallengeStepResult, ...] = ()
     scaffold_path: str | None = None
     notes: str | None = None
+
+    def __post_init__(self) -> None:
+        """Normalize derived metadata defaults for ad hoc challenge results."""
+        if not self.family:
+            object.__setattr__(self, "family", _default_family(self.id))
+        if not self.difficulty:
+            object.__setattr__(self, "difficulty", "medium")
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible representation."""
@@ -277,6 +302,8 @@ class ChallengeResult:
             "tier": self.tier,
             "style": self.style,
             "slice": self.slice,
+            "family": self.family,
+            "difficulty": self.difficulty,
             "status": self.status,
             "message": self.message,
             "generatedTools": list(self.generated_tools),
@@ -380,6 +407,8 @@ def run_challenge_suite(
     artifact_root: Path,
     selected_tier: str,
     selected_ids: tuple[str, ...] = (),
+    selected_families: tuple[str, ...] = (),
+    selected_difficulty: str = "all",
 ) -> ChallengeAggregate:
     """Run one live challenge suite and return aggregate results.
 
@@ -388,22 +417,33 @@ def run_challenge_suite(
     :param artifact_root: Directory receiving challenge artifacts.
     :param selected_tier: Requested tier selector. ``"all"`` runs both tiers.
     :param selected_ids: Optional explicit challenge ids to run.
+    :param selected_families: Optional explicit challenge families to run.
+    :param selected_difficulty: Optional difficulty selector. ``"all"``
+        keeps every difficulty.
     :returns: Aggregate challenge results.
     """
     requested_ids = frozenset(selected_ids)
+    requested_families = frozenset(selected_families)
     available_ids = frozenset(spec.id for spec in specs)
     missing_ids = sorted(requested_ids - available_ids)
     if missing_ids:
         raise ChallengeCatalogError(f"Unknown challenge id(s): {missing_ids!r}.")
+    if selected_difficulty != "all" and selected_difficulty not in _VALID_DIFFICULTIES:
+        raise ChallengeCatalogError(
+            "selected_difficulty must be 'all' or one of "
+            f"{sorted(_VALID_DIFFICULTIES)!r}, got {selected_difficulty!r}."
+        )
     filtered_specs = tuple(
         spec
         for spec in specs
         if (selected_tier == "all" or spec.tier == selected_tier)
+        and (not requested_families or spec.family in requested_families)
+        and (selected_difficulty == "all" or spec.difficulty == selected_difficulty)
         and (not requested_ids or spec.id in requested_ids)
     )
-    if requested_ids and not filtered_specs:
+    if (requested_ids or requested_families or selected_difficulty != "all") and not filtered_specs:
         raise ChallengeCatalogError(
-            "Requested challenge ids do not match the selected tier filter."
+            "Requested challenge filters do not match the selected tier filter."
         )
     results = tuple(
         _run_single_challenge(
@@ -447,7 +487,7 @@ def write_junit_xml(aggregate: ChallengeAggregate, output_path: Path) -> None:
             testsuite,
             "testcase",
             {
-                "classname": f"challenge.{result.tier}",
+                "classname": f"challenge.{result.tier}.{result.family}.{result.difficulty}",
                 "name": result.id,
                 "file": f"challenges/cases/{result.id}/challenge.toml",
             },
@@ -476,11 +516,14 @@ def render_summary_markdown(aggregate: ChallengeAggregate) -> str:
             f"`{aggregate.skipped_unavailable}` skipped as unavailable."
         ),
         "",
-        "| Challenge | Tier | Status | Details |",
-        "| --- | --- | --- | --- |",
+        "| Challenge | Family | Difficulty | Tier | Status | Details |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for result in aggregate.results:
-        lines.append(f"| `{result.id}` | `{result.tier}` | `{result.status}` | {result.message} |")
+        lines.append(
+            f"| `{result.id}` | `{result.family}` | `{result.difficulty}` | "
+            f"`{result.tier}` | `{result.status}` | {result.message} |"
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -509,6 +552,22 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
         )
     style = _require_string(data, "style", path)
     workflow_slice = _require_string(data, "slice", path)
+    family_value = data.get("family")
+    if family_value is None:
+        family = _default_family(challenge_id)
+    elif isinstance(family_value, str) and family_value.strip():
+        family = family_value.strip()
+    else:
+        raise ChallengeCatalogError(f"{path}: family must be a non-empty string when provided.")
+    difficulty_value = data.get("difficulty", "medium")
+    if not isinstance(difficulty_value, str) or not difficulty_value.strip():
+        raise ChallengeCatalogError(f"{path}: difficulty must be a non-empty string.")
+    difficulty = difficulty_value.strip()
+    if difficulty not in _VALID_DIFFICULTIES:
+        raise ChallengeCatalogError(
+            f"{path}: difficulty must be one of {sorted(_VALID_DIFFICULTIES)!r}, got "
+            f"{difficulty!r}."
+        )
     target_data = _require_table(data, "target", path)
     target_kind = _require_string(target_data, "kind", path)
     if target_kind not in _VALID_TARGET_KINDS:
@@ -561,6 +620,8 @@ def _load_challenge_spec(path: Path) -> ChallengeSpec:
         tier=tier,
         style=style,
         slice=workflow_slice,
+        family=family,
+        difficulty=difficulty,
         target=target,
         probe=probe,
         scaffold_kind=scaffold_kind,
@@ -589,6 +650,11 @@ def _parse_example(example_data: dict[str, Any], path: Path) -> ChallengeExample
         proves=proves,
         limitations=limitations,
     )
+
+
+def _default_family(challenge_id: str) -> str:
+    """Derive a stable challenge family label from one challenge id."""
+    return challenge_id.split("_", 1)[0] or challenge_id
 
 
 def _parse_rendered_files(value: Any, path: Path) -> tuple[ChallengeRenderedFile, ...]:
@@ -672,6 +738,8 @@ def _run_single_challenge(
 ) -> ChallengeResult:
     """Execute one challenge and capture it as a result object."""
     challenge_dir = suite_artifact_root / spec.id
+    if challenge_dir.exists():
+        shutil.rmtree(challenge_dir)
     challenge_dir.mkdir(parents=True, exist_ok=True)
     # Each case owns its own fixtures so the challenge directory reads like a
     # compact example rather than a detached catalog entry plus shared assets.
@@ -689,6 +757,8 @@ def _run_single_challenge(
             tier=spec.tier,
             style=spec.style,
             slice=spec.slice,
+            family=spec.family,
+            difficulty=spec.difficulty,
             status="skipped_unavailable",
             message=availability_message,
             notes=spec.notes,
@@ -719,6 +789,8 @@ def _run_single_challenge(
                     tier=spec.tier,
                     style=spec.style,
                     slice=spec.slice,
+                    family=spec.family,
+                    difficulty=spec.difficulty,
                     status="failed",
                     message=ingestion_message,
                     generated_tools=generated_tools,
@@ -747,6 +819,8 @@ def _run_single_challenge(
                         tier=spec.tier,
                         style=spec.style,
                         slice=spec.slice,
+                        family=spec.family,
+                        difficulty=spec.difficulty,
                         status="failed",
                         message=step_result.message,
                         generated_tools=generated_tools,
@@ -762,6 +836,8 @@ def _run_single_challenge(
             tier=spec.tier,
             style=spec.style,
             slice=spec.slice,
+            family=spec.family,
+            difficulty=spec.difficulty,
             status="passed",
             message="All scaffold and workflow steps passed.",
             generated_tools=generated_tools,
@@ -781,6 +857,8 @@ def _run_single_challenge(
             tier=spec.tier,
             style=spec.style,
             slice=spec.slice,
+            family=spec.family,
+            difficulty=spec.difficulty,
             status="failed",
             message=detail,
             notes=spec.notes,

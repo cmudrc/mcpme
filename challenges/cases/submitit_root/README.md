@@ -11,6 +11,8 @@ Engineering workflows often end at job submission or orchestration, so the chall
 ## Case Shape
 
 - ID: `submitit_root`
+- Family: `submitit`
+- Difficulty: `medium`
 - Tier: `local_full`
 - Style: `package`
 - Workflow Slice: `hpc`

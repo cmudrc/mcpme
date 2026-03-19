@@ -11,6 +11,8 @@ Utility modules are often the safest first foothold when wrapping a large engine
 ## Case Shape
 
 - ID: `openmdao_file_utils`
+- Family: `openmdao`
+- Difficulty: `medium`
 - Tier: `gha_subset`
 - Style: `package`
 - Workflow Slice: `systems`

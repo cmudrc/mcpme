@@ -11,6 +11,8 @@ Some engineering tools expose both a CLI and a Python module, and a wrapper syst
 ## Case Shape
 
 - ID: `gmsh_module_root`
+- Family: `gmsh`
+- Difficulty: `medium`
 - Tier: `local_full`
 - Style: `package`
 - Workflow Slice: `aerodynamics`

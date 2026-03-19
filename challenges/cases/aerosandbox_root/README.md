@@ -11,6 +11,8 @@ Many engineering libraries are object-oriented, so a realistic wrapper system ha
 ## Case Shape
 
 - ID: `aerosandbox_root`
+- Family: `aerosandbox`
+- Difficulty: `medium`
 - Tier: `local_full`
 - Style: `package`
 - Workflow Slice: `mission`

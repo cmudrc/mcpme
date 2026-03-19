@@ -11,6 +11,8 @@ Real users often point a one-shot ingester at a broad package root, so the filte
 ## Case Shape
 
 - ID: `build123d_root`
+- Family: `build123d`
+- Difficulty: `medium`
 - Tier: `local_full`
 - Style: `package`
 - Workflow Slice: `manufacturing`

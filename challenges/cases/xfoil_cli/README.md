@@ -11,6 +11,8 @@ Long-lived engineering CLIs matter, even when they are not universally available
 ## Case Shape
 
 - ID: `xfoil_cli`
+- Family: `xfoil`
+- Difficulty: `medium`
 - Tier: `local_full`
 - Style: `command`
 - Workflow Slice: `aerodynamics`
