@@ -1,0 +1,116 @@
+# Self-contained case: push the OpenMDAO family from the full package root down into file utilities.
+# This top rung keeps the workflow deterministic while using the broadest wrapper entry point in the family.
+id = "openmdao_insane"
+title = "OpenMDAO insane: full root utility slice"
+tier = "local_full"
+style = "package"
+slice = "systems"
+family = "openmdao"
+difficulty = "insane"
+
+[example]
+summary = "Wrap the full `openmdao` package root while filtering down to `utils.file_utils`, then verify module-path helpers, HTML rendering, tempdir lookup, and real output-directory cleanup."
+motivation = "The top OpenMDAO rung should start from the broad package root and still retain a small but genuinely useful utility slice with real filesystem side effects."
+proves = [
+  "Package-root ingestion can be constrained to a deep OpenMDAO utility submodule without handwritten cleanup.",
+  "The generated facade can execute several real utility workflows from the filtered root view.",
+  "The challenge suite can verify a real cleanup side effect through the broadest OpenMDAO wrapper entry point.",
+]
+
+[target]
+kind = "package"
+value = "openmdao"
+
+[probe]
+imports = ["openmdao"]
+
+[scaffold]
+kind = "package"
+include_submodules = true
+module_include_patterns = ["^openmdao\\.utils\\.file_utils$"]
+symbol_include_patterns = [
+  "^clean_outputs$",
+  "^fname2mod_name$",
+  "^get_module_path$",
+  "^get_tempdir$",
+  "^is_python_file$",
+  "^text2html$",
+]
+max_generated_tools = 12
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/demo_pkg/__init__.py"
+destination = "{challenge_artifact_dir}/demo_pkg/__init__.py"
+
+[[setup.rendered_files]]
+source = "fixtures/demo_pkg/core.py"
+destination = "{challenge_artifact_dir}/demo_pkg/core.py"
+
+[[setup.rendered_files]]
+source = "fixtures/case_out/.openmdao_out"
+destination = "{challenge_artifact_dir}/case_out/.openmdao_out"
+
+[[setup.rendered_files]]
+source = "fixtures/case_out/trace.txt"
+destination = "{challenge_artifact_dir}/case_out/trace.txt"
+
+[ingestion]
+min_generated_tools = 6
+required_tools = [
+  "utils_file_utils__clean_outputs",
+  "utils_file_utils__fname2mod_name",
+  "utils_file_utils__get_module_path",
+  "utils_file_utils__get_tempdir",
+  "utils_file_utils__is_python_file",
+  "utils_file_utils__text2html",
+]
+
+[workflow]
+[[workflow.steps]]
+label = "Confirm the rendered demo module is a Python file through the full root facade"
+tool = "utils_file_utils__is_python_file"
+arguments = { file_path = "{challenge_artifact_dir}/demo_pkg/core.py" }
+
+[workflow.steps.expect]
+text_contains = ["true"]
+
+[[workflow.steps]]
+label = "Resolve the rendered demo module path through the full root facade"
+tool = "utils_file_utils__get_module_path"
+arguments = { fpath = "{challenge_artifact_dir}/demo_pkg/core.py" }
+
+[workflow.steps.expect]
+text_contains = ["demo_pkg.core"]
+
+[[workflow.steps]]
+label = "Render a tiny HTML snippet through the full root facade"
+tool = "utils_file_utils__text2html"
+arguments = { text = "Root cleanup trace", title = "OpenMDAO Root Demo" }
+
+[workflow.steps.expect]
+text_contains = ["<!DOCTYPE html>", "<html"]
+
+[[workflow.steps]]
+label = "Return the active temporary directory from the full root facade"
+tool = "utils_file_utils__get_tempdir"
+arguments = {}
+
+[workflow.steps.expect]
+text_contains = ["tmp"]
+
+[[workflow.steps]]
+label = "Remove the marked OpenMDAO output directory through the full root facade"
+tool = "utils_file_utils__clean_outputs"
+arguments = { obj = "{challenge_artifact_dir}", recurse = true, prompt = false, dryrun = false }
+
+[workflow.steps.expect]
+files_missing = ["{challenge_artifact_dir}/case_out"]
+
+[[workflow.steps]]
+label = "Derive the rendered module basename through the full root facade"
+tool = "utils_file_utils__fname2mod_name"
+arguments = { fname = "{challenge_artifact_dir}/demo_pkg/core.py" }
+
+[workflow.steps.expect]
+text_contains = ["core"]

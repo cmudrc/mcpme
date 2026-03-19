@@ -1,0 +1,50 @@
+# Self-contained case: step up from a shell snippet to a real DebugExecutor workflow.
+# This medium rung still wraps the helper layer, but the launched script uses submitit's scheduler API.
+id = "submitit_medium"
+title = "submitit medium: DebugExecutor script"
+tier = "local_full"
+style = "package"
+slice = "hpc"
+family = "submitit"
+difficulty = "medium"
+
+[example]
+summary = "Wrap `submitit.helpers.run_cmd`, launch a checked-in helper script, and verify that `DebugExecutor` creates real job logs."
+motivation = "A medium submitit challenge should prove more than a shell snippet by using the helper layer to drive a real submitit executor workflow."
+proves = [
+  "The generated wrapper can drive a checked-in helper script through submitit's public helper layer.",
+  "The launched workflow performs a real `DebugExecutor` submission and retains its logs.",
+]
+
+[target]
+kind = "package"
+value = "submitit.helpers"
+
+[probe]
+imports = ["submitit.helpers"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^run_cmd$"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/run_debug_job.py"
+destination = "{challenge_artifact_dir}/run_debug_job.py"
+
+[ingestion]
+min_generated_tools = 1
+required_tools = ["run_cmd"]
+
+[workflow]
+[[workflow.steps]]
+label = "Launch the checked-in DebugExecutor helper script through submitit"
+tool = "run_cmd"
+arguments = { args = [["{python_executable}", "{challenge_artifact_dir}/run_debug_job.py", "{challenge_artifact_dir}"]], kwargs = { cwd = "{challenge_artifact_dir}" } }
+
+[workflow.steps.expect]
+text_contains = ["HELLO"]
+files_nonempty = [
+  "{challenge_artifact_dir}/debug_summary.json",
+  "{challenge_artifact_dir}/debug_files.txt",
+]

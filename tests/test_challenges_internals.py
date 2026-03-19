@@ -20,6 +20,7 @@ from mcpme._challenges import (
     ChallengeTarget,
     ChallengeWorkflowStep,
     _badge_color,
+    _base_context,
     _coerce_capture_name,
     _coerce_json_path,
     _extract_path_value,
@@ -232,6 +233,15 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     )
     assert (
         _validate_step_result(
+            result=json_result,
+            step=ChallengeWorkflowStep(tool="tool", expect_files_missing=(str(empty_file),)),
+            context={},
+            challenge_dir=tmp_path,
+        ).status
+        == "failed"
+    )
+    assert (
+        _validate_step_result(
             result=plain_result,
             step=ChallengeWorkflowStep(tool="tool", capture_json={"session_id": "session_id"}),
             context={},
@@ -290,6 +300,17 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert "expected at least 2 generated tools, got 1" in message
     assert "missing required generated tools ['beta']" in message
     assert _validate_ingestion(ChallengeIngestion(required_tools=("alpha",)), ("alpha",)) is None
+
+
+def test_base_context_preserves_active_python_executable_path(tmp_path: Path) -> None:
+    """The challenge template context should preserve the active interpreter path."""
+    context = _base_context(
+        repo_root=tmp_path,
+        challenge_dir=tmp_path / "artifacts",
+        fixture_dir=tmp_path / "fixtures",
+    )
+
+    assert context["python_executable"] == sys.executable
 
 
 def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(

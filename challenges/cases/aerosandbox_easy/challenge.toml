@@ -1,0 +1,69 @@
+# Self-contained case: the shallowest useful AeroSandbox object workflow.
+# This keeps the easy rung focused on one saved atmosphere state plus one physics query.
+id = "aerosandbox_easy"
+title = "AeroSandbox easy: saved Atmosphere"
+tier = "local_full"
+style = "package"
+slice = "mission"
+family = "aerosandbox"
+difficulty = "easy"
+
+[example]
+summary = "Wrap AeroSandbox's `Atmosphere` class, query density, and save a serialized atmosphere state."
+motivation = "The easiest AeroSandbox challenge should still do more than constructor smoke by retaining a real serialized object artifact after one meaningful physics calculation."
+proves = [
+  "One-shot package ingestion can discover and wrap a useful class out of a larger aerospace package.",
+  "The generated session facade can execute a real atmosphere query and persist the upstream object state.",
+]
+limitations = [
+  "This case stays within one lightweight object instead of a broader AeroSandbox workflow.",
+]
+
+[target]
+kind = "package"
+value = "aerosandbox"
+
+[probe]
+imports = ["aerosandbox"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^Atmosphere$"]
+max_generated_tools = 16
+
+[ingestion]
+min_generated_tools = 10
+required_tools = [
+  "create_atmosphere",
+  "atmosphere_density",
+  "atmosphere_save",
+  "close_atmosphere",
+]
+
+[workflow]
+[[workflow.steps]]
+label = "Create an Atmosphere session"
+tool = "create_atmosphere"
+arguments = { altitude = 1000.0 }
+capture_json = { atmosphere_session_id = "session_id" }
+
+[[workflow.steps]]
+label = "Compute density from the saved atmosphere state"
+tool = "atmosphere_density"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Serialize the Atmosphere session to a checked artifact"
+tool = "atmosphere_save"
+arguments = { session_id = "{atmosphere_session_id}", filename = "{challenge_artifact_dir}/atmosphere.asb", verbose = false, automatically_add_extension = false }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/atmosphere.asb"]
+
+[[workflow.steps]]
+label = "Close the Atmosphere session"
+tool = "close_atmosphere"
+arguments = { session_id = "{atmosphere_session_id}" }

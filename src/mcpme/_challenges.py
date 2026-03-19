@@ -91,6 +91,8 @@ class ChallengeWorkflowStep:
         ``structuredContent``.
     :param expect_files_exist: Files that must exist after the step finishes.
     :param expect_files_nonempty: Files that must exist and be non-empty.
+    :param expect_files_missing: Files or directories that must not exist after
+        the step finishes.
     :param capture_json: Values captured from parsed JSON content for later
         steps.
     """
@@ -104,6 +106,7 @@ class ChallengeWorkflowStep:
     expect_structured_fields: dict[str, Any] = field(default_factory=dict)
     expect_files_exist: tuple[str, ...] = ()
     expect_files_nonempty: tuple[str, ...] = ()
+    expect_files_missing: tuple[str, ...] = ()
     capture_json: dict[str, str] = field(default_factory=dict)
 
 
@@ -726,6 +729,7 @@ def _parse_workflow_step(step_data: Any, path: Path) -> ChallengeWorkflowStep:
         ),
         expect_files_exist=_parse_string_tuple(expect_data.get("files_exist", ()), path),
         expect_files_nonempty=_parse_string_tuple(expect_data.get("files_nonempty", ()), path),
+        expect_files_missing=_parse_string_tuple(expect_data.get("files_missing", ()), path),
         capture_json=normalized_capture,
     )
 
@@ -1067,6 +1071,17 @@ def _validate_step_result(
                 artifact_dir=_artifact_dir_string(result),
             )
 
+    for raw_path in step.expect_files_missing:
+        path = _resolve_expected_path(_render_string(raw_path, context), challenge_dir)
+        if path.exists():
+            return ChallengeStepResult(
+                tool=step.tool,
+                label=label,
+                status="failed",
+                message=f"Expected file or directory {str(path)!r} to be missing.",
+                artifact_dir=_artifact_dir_string(result),
+            )
+
     for capture_name, json_path in sorted(step.capture_json.items()):
         if parsed_json is None:
             return ChallengeStepResult(
@@ -1147,7 +1162,9 @@ def _base_context(
     fixture_dir: Path,
 ) -> dict[str, Any]:
     """Build the base template context shared by one challenge run."""
-    python_executable = Path(sys.executable).resolve()
+    # Keep the active interpreter path intact so symlinked venv shims preserve
+    # their environment semantics when helper scripts are launched later.
+    python_executable = Path(sys.executable)
     venv_bin_dir = Path(sys.prefix).resolve() / ("Scripts" if os.name == "nt" else "bin")
     return {
         "repo_root": str(repo_root.resolve()),

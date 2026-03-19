@@ -81,6 +81,8 @@ def _render_step(step: ChallengeWorkflowStep, index: int) -> str:
         expectations.append(f"files exist {list(step.expect_files_exist)!r}")
     if step.expect_files_nonempty:
         expectations.append(f"files are non-empty {list(step.expect_files_nonempty)!r}")
+    if step.expect_files_missing:
+        expectations.append(f"files are missing {list(step.expect_files_missing)!r}")
     if expectations:
         lines.append("")
         lines.append(f"Expectations: {'; '.join(expectations)}.")

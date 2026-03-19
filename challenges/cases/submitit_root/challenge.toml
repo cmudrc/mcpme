@@ -1,18 +1,20 @@
 # Self-contained case: wrap an HPC-oriented executor object from a scheduler helper library.
 # This keeps the challenge close to real orchestration work without requiring a cluster.
 id = "submitit_root"
-title = "submitit root oneshot"
+title = "submitit insane: mixed executor workflow"
 tier = "local_full"
 style = "package"
 slice = "hpc"
+family = "submitit"
+difficulty = "insane"
 
 [example]
-summary = "Wrap `submitit.LocalExecutor` and `submitit.AutoExecutor`, then exercise both executor lifecycles."
-motivation = "Engineering workflows often end at job submission or orchestration, so the challenge suite needs at least one scheduler-oriented object case."
+summary = "Wrap the `submitit` package root, retain executor entry points plus `helpers.run_cmd`, and use a checked-in script to run DebugExecutor, LocalExecutor, and AutoExecutor jobs."
+motivation = "The top submitit rung should prove that the suite can retain a broad scheduling-oriented wrapper surface while still doing real queued work through several executor flavors."
 proves = [
   "One-shot package ingestion can wrap an HPC-adjacent executor family instead of a single class.",
-  "The generated session facades can call parameter-update methods with keyword arguments on both concrete and auto-selecting executors.",
-  "The deterministic wrapper path can reach beyond solvers into orchestration tooling.",
+  "The generated facade can launch a helper script that performs real DebugExecutor, LocalExecutor, and AutoExecutor submissions.",
+  "The deterministic wrapper path can reach beyond solvers into orchestration tooling while retaining inspectable artifacts.",
 ]
 
 [target]
@@ -24,49 +26,38 @@ imports = ["submitit"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^AutoExecutor$", "^LocalExecutor$"]
-max_generated_tools = 20
+include_submodules = true
+symbol_include_patterns = ["^AutoExecutor$", "^DebugExecutor$", "^LocalExecutor$", "^run_cmd$"]
+max_generated_tools = 24
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/run_mixed_jobs.py"
+destination = "{challenge_artifact_dir}/run_mixed_jobs.py"
 
 [ingestion]
-min_generated_tools = 12
+min_generated_tools = 20
 required_tools = [
+  "helpers__run_cmd",
   "create_auto_executor",
+  "create_debug_executor",
   "auto_executor_update_parameters",
-  "close_auto_executor",
   "create_local_executor",
   "local_executor_update_parameters",
-  "close_local_executor",
+  "debug_executor_update_parameters",
 ]
 
 [workflow]
 [[workflow.steps]]
-label = "Create a LocalExecutor session"
-tool = "create_local_executor"
-arguments = { folder = "{challenge_artifact_dir}/submitit" }
-capture_json = { local_executor_session_id = "session_id" }
+label = "Launch the checked-in mixed submitit helper script through the root facade"
+tool = "helpers__run_cmd"
+arguments = { args = [["{python_executable}", "{challenge_artifact_dir}/run_mixed_jobs.py", "{challenge_artifact_dir}"]], kwargs = { cwd = "{challenge_artifact_dir}" } }
 
-[[workflow.steps]]
-label = "Update executor parameters"
-tool = "local_executor_update_parameters"
-arguments = { session_id = "{local_executor_session_id}", args = [], kwargs = { timeout_min = 1 } }
-
-[[workflow.steps]]
-label = "Close the LocalExecutor session"
-tool = "close_local_executor"
-arguments = { session_id = "{local_executor_session_id}" }
-
-[[workflow.steps]]
-label = "Create an AutoExecutor session"
-tool = "create_auto_executor"
-arguments = { args = ["{challenge_artifact_dir}/submitit_auto"], kwargs = {} }
-capture_json = { auto_executor_session_id = "session_id" }
-
-[[workflow.steps]]
-label = "Update auto executor parameters"
-tool = "auto_executor_update_parameters"
-arguments = { session_id = "{auto_executor_session_id}", args = [], kwargs = { timeout_min = 1 } }
-
-[[workflow.steps]]
-label = "Close the AutoExecutor session"
-tool = "close_auto_executor"
-arguments = { session_id = "{auto_executor_session_id}" }
+[workflow.steps.expect]
+text_contains = ["HELLO", "6", "8"]
+files_nonempty = [
+  "{challenge_artifact_dir}/mixed_summary.json",
+  "{challenge_artifact_dir}/debug_files.txt",
+  "{challenge_artifact_dir}/local_files.txt",
+  "{challenge_artifact_dir}/auto_files.txt",
+]

@@ -1,0 +1,39 @@
+# Self-contained case: the shallowest useful Gmsh batch run.
+# This easy rung generates a real 2D mesh from a tiny checked-in geometry script.
+id = "gmsh_easy"
+title = "Gmsh easy: 2D mesh generation"
+tier = "gha_subset"
+style = "command"
+slice = "aerodynamics"
+family = "gmsh"
+difficulty = "easy"
+
+[example]
+summary = "Wrap the `gmsh` CLI, mesh a tiny checked-in box geometry in 2D, and retain the resulting mesh file."
+motivation = "The easiest Gmsh challenge should still produce a real mesh artifact instead of stopping at help text or lifecycle smoke."
+proves = [
+  "A standalone meshing CLI can be scaffolded and exercised deterministically from live help output.",
+  "The generated wrapper can drive a real geometry-to-mesh workflow and retain the resulting artifact.",
+]
+
+[target]
+kind = "command"
+value = ["gmsh"]
+
+[probe]
+commands = [["gmsh"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_gmsh"
+help_probe_args = ["-help"]
+
+[workflow]
+[[workflow.steps]]
+label = "Generate a 2D mesh from the tiny Gmsh fixture"
+tool = "run_gmsh"
+arguments = { extra_argv = ["{challenge_fixture_dir}/box.geo", "-2", "-o", "{challenge_artifact_dir}/box2d.msh"] }
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = ["{challenge_artifact_dir}/box2d.msh"]

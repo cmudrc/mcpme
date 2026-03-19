@@ -1,21 +1,23 @@
 # Self-contained case: pull a small physics object out of a larger aerospace package.
 # This case shows class/session wrapping on a real upstream engineering library.
 id = "aerosandbox_root"
-title = "AeroSandbox root oneshot"
+title = "AeroSandbox medium: richer Atmosphere session"
 tier = "local_full"
 style = "package"
 slice = "mission"
+family = "aerosandbox"
+difficulty = "medium"
 
 [example]
-summary = "Wrap AeroSandbox's `Atmosphere` class in one shot and call several real instance methods."
-motivation = "Many engineering libraries are object-oriented, so a realistic wrapper system has to create, use, and close sessions without hand-written package adapters."
+summary = "Wrap AeroSandbox's `Atmosphere` class in one shot, query several real instance methods, and retain a saved state file."
+motivation = "A medium AeroSandbox challenge should go beyond one scalar query and prove that the generated wrapper can keep a useful slice of a real aerospace object's physics surface alive."
 proves = [
   "One-shot package ingestion can discover a useful class from a broad upstream namespace and keep a meaningful slice of its method surface.",
   "Session-style wrapping works for a real aerospace object lifecycle across multiple physics queries.",
-  "The generated facade can execute meaningful physics methods deterministically.",
+  "The generated facade can execute meaningful physics methods deterministically and retain a serialized upstream object.",
 ]
 limitations = [
-  "This case exercises a lightweight object interaction, not a full multi-component workflow.",
+  "This case still focuses on one lightweight object instead of a broader AeroSandbox workflow.",
 ]
 
 [target]
@@ -28,13 +30,16 @@ imports = ["aerosandbox"]
 [scaffold]
 kind = "package"
 symbol_include_patterns = ["^Atmosphere$"]
-max_generated_tools = 16
+max_generated_tools = 20
 
 [ingestion]
-min_generated_tools = 10
+min_generated_tools = 12
 required_tools = [
   "create_atmosphere",
   "atmosphere_density",
+  "atmosphere_speed_of_sound",
+  "atmosphere_mean_free_path",
+  "atmosphere_save",
   "atmosphere_pressure",
   "atmosphere_temperature",
   "close_atmosphere",
@@ -44,7 +49,7 @@ required_tools = [
 [[workflow.steps]]
 label = "Create an Atmosphere session"
 tool = "create_atmosphere"
-arguments = { altitude = 1000.0 }
+arguments = { altitude = 3000.0 }
 capture_json = { atmosphere_session_id = "session_id" }
 
 [[workflow.steps]]
@@ -70,6 +75,30 @@ arguments = { session_id = "{atmosphere_session_id}" }
 
 [workflow.steps.expect]
 text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute the local speed of sound"
+tool = "atmosphere_speed_of_sound"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute the atmospheric mean free path"
+tool = "atmosphere_mean_free_path"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["e-"]
+
+[[workflow.steps]]
+label = "Save the Atmosphere session"
+tool = "atmosphere_save"
+arguments = { session_id = "{atmosphere_session_id}", filename = "{challenge_artifact_dir}/atmosphere_medium.asb", verbose = false, automatically_add_extension = false }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/atmosphere_medium.asb"]
 
 [[workflow.steps]]
 label = "Close the Atmosphere session"
