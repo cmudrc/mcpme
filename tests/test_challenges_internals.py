@@ -26,7 +26,6 @@ from mcpme._challenges import (
     _extract_path_value,
     _normalize_command_scaffold_options,
     _normalize_package_scaffold_options,
-    _normalize_step_arguments_for_tool,
     _optional_table,
     _parse_command_sequence_list,
     _parse_command_tokens,
@@ -53,24 +52,6 @@ from mcpme._challenges import (
     write_summary_markdown,
 )
 from mcpme.execution import ToolExecutionResult
-
-
-class _DummyTool:
-    """Simple manifest tool stub for argument-normalization tests."""
-
-    def __init__(self, properties: dict[str, object]) -> None:
-        self.input_schema = {"properties": properties}
-
-
-class _DummyManifest:
-    """Simple manifest stub exposing only ``get_tool``."""
-
-    def __init__(self, properties: dict[str, object]) -> None:
-        self.tool = _DummyTool(properties)
-
-    def get_tool(self, name: str) -> _DummyTool:
-        assert name == "tool"
-        return self.tool
 
 
 def test_challenge_parser_and_rendering_helpers_cover_error_paths(tmp_path: Path) -> None:
@@ -317,7 +298,7 @@ def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Command scaffolding, argument normalization, and report writers should work together."""
+    """Command scaffolding helpers and report writers should work together."""
     script_path = tmp_path / "echo_cli.py"
     script_path.write_text(
         "import json\n"
@@ -369,16 +350,6 @@ def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(
         "symbol_include_patterns": ("^tool$",),
         "module_exclude_patterns": ("^internal$",),
     }
-    assert _normalize_step_arguments_for_tool(
-        manifest=_DummyManifest({"argv": {}}),
-        tool_name="tool",
-        arguments={"extra_argv": ["-h"]},
-    ) == {"argv": ["-h"]}
-    assert _normalize_step_arguments_for_tool(
-        manifest=_DummyManifest({"extra_argv": {}}),
-        tool_name="tool",
-        arguments={"argv": ["-h"]},
-    ) == {"extra_argv": ["-h"]}
 
     aggregate = ChallengeAggregate(
         suite_name="suite",

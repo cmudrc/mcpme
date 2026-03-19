@@ -945,12 +945,7 @@ def _execute_workflow_step(
     rendered_arguments = _render_value(step.arguments, context)
     if not isinstance(rendered_arguments, dict):
         raise ChallengeCatalogError("Rendered step arguments must be a mapping.")
-    normalized_arguments = _normalize_step_arguments_for_tool(
-        manifest=manifest,
-        tool_name=step.tool,
-        arguments=rendered_arguments,
-    )
-    result = execute_tool(manifest, step.tool, normalized_arguments)
+    result = execute_tool(manifest, step.tool, rendered_arguments)
     return _validate_step_result(
         result=result,
         step=step,
@@ -1294,23 +1289,6 @@ def _resolve_expected_path(value: str, challenge_dir: Path) -> Path:
 def _artifact_dir_string(result: ToolExecutionResult) -> str | None:
     """Return the artifact directory path for one tool execution result."""
     return None if result.artifact_dir is None else str(result.artifact_dir)
-
-
-def _normalize_step_arguments_for_tool(
-    *,
-    manifest: Any,
-    tool_name: str,
-    arguments: dict[str, Any],
-) -> dict[str, Any]:
-    """Adapt common command-wrapper argument names to the discovered tool schema."""
-    tool = manifest.get_tool(tool_name)
-    properties = tool.input_schema.get("properties", {})
-    normalized = dict(arguments)
-    if "extra_argv" in normalized and "extra_argv" not in properties and "argv" in properties:
-        normalized["argv"] = normalized.pop("extra_argv")
-    elif "argv" in normalized and "argv" not in properties and "extra_argv" in properties:
-        normalized["extra_argv"] = normalized.pop("argv")
-    return normalized
 
 
 def _parse_target_value(kind: str, value: Any, path: Path) -> str | tuple[str, ...]:

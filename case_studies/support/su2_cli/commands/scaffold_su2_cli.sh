@@ -11,5 +11,5 @@ SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 # study keeps an inspectable, repository-local command surface.
 exec "${PYTHON_BIN:-python3}" -m mcpme.cli scaffold-command "$1" \
   --name run_su2_cfd \
-  --help-probe-arg -h \
+  --help-probe-arg=-h \
   -- sh "$SCRIPT_DIR/su2_cfd.sh"
