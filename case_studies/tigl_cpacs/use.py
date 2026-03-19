@@ -7,8 +7,7 @@ TiGL workflows revolve around native bindings, CPACS files, and handles that
 are not themselves JSON-friendly. Instead of baking that complexity into
 `mcpme`, the case study keeps a tiny helper package checked in, ingests that
 helper through the public CLI, persists the generated facade with a standard
-scaffold report, serves that facade over stdio MCP, and then uses it through a
-real MCP client request.
+scaffold report, and then exercises that saved facade through MCP requests.
 
 ## Preset Environment
 
@@ -17,8 +16,8 @@ fixture all live under `case_studies/support/tigl_cpacs/`. Run
 `case_studies/tigl_cpacs/ingest.py` first to write `generated_facade.py` and
 `scaffold_report.json` under `artifacts/case_studies/tigl_cpacs/`,
 `case_studies/tigl_cpacs/serve.py` to expose that generated facade over stdio
-MCP, and `case_studies/tigl_cpacs/use.py` to hit that MCP server and execute
-the helper against the checked-in CPACS input.
+MCP, and `case_studies/tigl_cpacs/use.py` separately to exercise the helper
+against the checked-in CPACS input without launching `serve.py`.
 
 ## Technical Implementation
 
@@ -30,9 +29,10 @@ the helper against the checked-in CPACS input.
 - `serve.py` adds the checked-in helper package parent to `sys.path`, loads the
   saved generated facade through the public API, and serves it over stdio with
   `mcpme.serve_stdio`.
-- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
-  `tools/call` requests, and captures the TiGL summary through the served MCP
-  interface.
+- `use.py` adds the checked-in helper package parent to `sys.path`, builds an
+  in-process `mcpme.McpServer` from the saved facade, sends `initialize`,
+  `tools/list`, and `tools/call` requests, and captures the TiGL summary
+  through the MCP runtime.
 
 ## Expected Results
 
@@ -67,10 +67,10 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
-import subprocess
 import sys
 from pathlib import Path
+
+from mcpme import McpServer, build_manifest
 
 CASE_STUDY_ID = "tigl_cpacs"
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -78,12 +78,21 @@ SOURCE_ROOT = REPO_ROOT / "case_studies" / "support" / CASE_STUDY_ID
 ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "case_studies" / CASE_STUDY_ID
 GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
 REPORT_PATH = ARTIFACT_ROOT / "scaffold_report.json"
-SERVE_PATH = REPO_ROOT / "case_studies" / CASE_STUDY_ID / "serve.py"
 FIXTURE_PATH = SOURCE_ROOT / "fixtures" / "CPACS_30_D150.xml"
+PACKAGE_ROOT = SOURCE_ROOT / "tigl_support"
+
+
+def _load_server() -> McpServer:
+    """Build an MCP server from the saved generated facade."""
+    package_parent = str(PACKAGE_ROOT.parent.resolve())
+    if package_parent not in sys.path:
+        sys.path.insert(0, package_parent)
+    manifest = build_manifest(targets=[GENERATED_FACADE_PATH], artifact_root=ARTIFACT_ROOT)
+    return McpServer(manifest)
 
 
 def main() -> None:
-    """Hit the served TiGL MCP runtime and print the stable JSON payload."""
+    """Exercise the generated TiGL facade through in-process MCP requests."""
     if not GENERATED_FACADE_PATH.exists():
         try:
             # Mirror the ingest availability probe so a missing artifact reports
@@ -112,100 +121,45 @@ def main() -> None:
         )
 
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    server = _load_server()
 
-    env = dict(os.environ)
-    pythonpath_entries = [str((REPO_ROOT / "src").resolve())]
-    if env.get("PYTHONPATH"):
-        pythonpath_entries.append(env["PYTHONPATH"])
-    env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
+    # Keep the MCP exchange visible while letting `serve.py` stand alone as
+    # the stdio-serving demo entrypoint.
+    initialize = server.handle_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
+    if initialize is None or "error" in initialize:
+        raise RuntimeError(f"TiGL MCP initialize failed: {initialize}")
 
-    # Spawn the MCP server as a separate process so the case study exercises
-    # the same stdio boundary a real client would use.
-    server = subprocess.Popen(
-        [sys.executable, str(SERVE_PATH)],
-        cwd=REPO_ROOT,
-        env=env,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
+    server.handle_request({"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+    tools_list = server.handle_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+    if tools_list is None or "error" in tools_list:
+        raise RuntimeError(f"TiGL MCP tools/list failed: {tools_list}")
+
+    tool_names = [
+        tool["name"]
+        for tool in tools_list["result"]["tools"]
+        if isinstance(tool, dict) and isinstance(tool.get("name"), str)
+    ]
+    if "open_cpacs_summary" not in tool_names:
+        raise ValueError(
+            f"Expected the served tool list to include 'open_cpacs_summary'; got {tool_names!r}."
+        )
+
+    # Call the wrapped helper through MCP using the checked-in CPACS input.
+    summary_call = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "arguments": {"cpacs_path": str(FIXTURE_PATH)},
+                "name": "open_cpacs_summary",
+            },
+        }
     )
-    if server.stdin is None or server.stdout is None or server.stderr is None:
-        raise RuntimeError("Expected stdio pipes when launching the TiGL case-study MCP server.")
-
-    try:
-        # Speak the JSON-RPC handshake directly so the protocol flow stays
-        # visible to readers instead of being hidden behind a helper client.
-        server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}) + "\n")
-        server.stdin.flush()
-        initialize = json.loads(server.stdout.readline())
-        if "error" in initialize:
-            raise RuntimeError(f"TiGL MCP initialize failed: {initialize['error']}")
-
-        # Notify the server that the client accepted the advertised capabilities.
-        server.stdin.write(
-            json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n"
-        )
-        server.stdin.flush()
-
-        # Inspect the served tool surface before making any tool call.
-        server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n")
-        server.stdin.flush()
-        tools_list = json.loads(server.stdout.readline())
-        if "error" in tools_list:
-            raise RuntimeError(f"TiGL MCP tools/list failed: {tools_list['error']}")
-
-        tool_names = [
-            tool["name"]
-            for tool in tools_list["result"]["tools"]
-            if isinstance(tool, dict) and isinstance(tool.get("name"), str)
-        ]
-        if "open_cpacs_summary" not in tool_names:
-            raise ValueError(
-                "Expected the served tool list to include 'open_cpacs_summary'; "
-                f"got {tool_names!r}."
-            )
-
-        # Call the wrapped helper through MCP using the checked-in CPACS input.
-        server.stdin.write(
-            json.dumps(
-                {
-                    "jsonrpc": "2.0",
-                    "id": 3,
-                    "method": "tools/call",
-                    "params": {
-                        "arguments": {"cpacs_path": str(FIXTURE_PATH)},
-                        "name": "open_cpacs_summary",
-                    },
-                }
-            )
-            + "\n"
-        )
-        server.stdin.flush()
-        summary_call = json.loads(server.stdout.readline())
-        if "error" in summary_call:
-            raise RuntimeError(f"TiGL MCP tools/call failed: {summary_call['error']}")
-        summary_record = json.loads(summary_call["result"]["content"][0]["text"])
-    finally:
-        # Closing stdin lets the stdio server finish naturally once the client
-        # has sent all requests.
-        if not server.stdin.closed:
-            server.stdin.close()
-        try:
-            return_code = server.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            # If the server hangs, kill it so the case study still terminates
-            # deterministically in CI.
-            server.kill()
-            return_code = server.wait(timeout=5)
-        server_stderr = server.stderr.read()
-
-    # Surface server stderr on failure so contributors can inspect the exact
-    # wrapped-process behavior.
-    if return_code != 0:
-        raise RuntimeError(
-            f"TiGL MCP server exited with code {return_code}.\nstderr:\n{server_stderr}"
-        )
+    if summary_call is None or "error" in summary_call:
+        raise RuntimeError(f"TiGL MCP tools/call failed: {summary_call}")
+    summary_record = json.loads(summary_call["result"]["content"][0]["text"])
 
     payload = {
         "artifacts": {

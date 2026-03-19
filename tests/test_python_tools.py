@@ -193,6 +193,7 @@ def test_static_python_resolver_supports_reexported_class_annotations_and_new_co
     monkeypatch.syspath_prepend(str(tmp_path))
     resolver = StaticPythonResolver()
     discovered = resolver.discover_module("source_types_pkg")
+    assert find_module_source_path("source_types_pkg.api") == (package_dir / "api.py").resolve()
 
     input_schema = discovered[0].tool.input_schema["properties"]
     assert input_schema["config"]["type"] == "object"
