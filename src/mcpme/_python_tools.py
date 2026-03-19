@@ -12,6 +12,7 @@ import ast
 import contextlib
 import hashlib
 import importlib
+import importlib.machinery
 import importlib.util
 import sys
 from collections.abc import Iterator
@@ -809,13 +810,25 @@ def _optional_str(value: object) -> str | None:
 
 def find_module_source_path(module_name: str) -> Path | None:
     """Resolve the source path for an importable Python module without importing it."""
-    spec = importlib.util.find_spec(module_name)
+    spec = _find_spec_without_imports(module_name)
     if spec is None or spec.origin is None:
         return None
     origin = Path(spec.origin)
     if origin.suffix != ".py":
         return None
     return origin.resolve()
+
+
+def _find_spec_without_imports(module_name: str) -> importlib.machinery.ModuleSpec | None:
+    """Resolve a module spec without importing parent packages."""
+    search_locations: list[str] | None = None
+    if "." in module_name:
+        parent_name = module_name.rsplit(".", 1)[0]
+        parent_spec = _find_spec_without_imports(parent_name)
+        if parent_spec is None or parent_spec.submodule_search_locations is None:
+            return None
+        search_locations = list(parent_spec.submodule_search_locations)
+    return importlib.machinery.PathFinder.find_spec(module_name, search_locations)
 
 
 def load_module_from_path(path: Path, *, fresh: bool = False) -> ModuleType:
