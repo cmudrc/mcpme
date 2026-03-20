@@ -1,0 +1,69 @@
+# Self-contained case: step up to two saved viscous XFOIL polars.
+# This hard rung follows the official batch-session pattern for multiple Reynolds numbers.
+id = "xfoil_hard"
+title = "XFOIL hard: two viscous polars"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "xfoil"
+difficulty = "hard"
+
+[example]
+summary = "Wrap the `xfoil` executable and save two viscous polar files at different Reynolds numbers when XFOIL is installed."
+motivation = "A harder XFOIL challenge should prove more than one polar sweep by crossing Reynolds numbers and retaining both saved outputs."
+proves = [
+  "A deterministic wrapper can drive more than one XFOIL polar-generation sequence in one batch session.",
+  "The challenge harness can retain multiple real aerodynamic outputs from a classic interactive CLI.",
+]
+limitations = [
+  "This case intentionally reports `skipped_unavailable` when `xfoil` is not installed.",
+]
+
+[target]
+kind = "command"
+value = ["xfoil"]
+
+[probe]
+commands = [["xfoil"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_xfoil"
+help_probe_args = ["-h"]
+
+[workflow]
+[[workflow.steps]]
+label = "Generate two viscous polar files at two Reynolds numbers"
+tool = "run_xfoil"
+
+[workflow.steps.arguments]
+cwd = "{challenge_artifact_dir}"
+stdin_text = """
+NACA 0012
+PANE
+PLOP
+G
+
+OPER
+VISC 200000
+ALFA -2
+PACC
+polar_re200k.txt
+
+ASEQ -2 8 0.5
+PACC
+RE 150000
+INIT
+ALFA -2
+PACC
+polar_re150k.txt
+
+ASEQ -2 8 0.5
+PACC
+
+QUIT
+"""
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = ["polar_re200k.txt", "polar_re150k.txt"]

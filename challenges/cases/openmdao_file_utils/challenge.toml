@@ -1,18 +1,20 @@
 # Self-contained case: start with a stable utility function from a large engineering package.
 # This is the cleanest "hello world" for one-shot package ingestion against OpenMDAO.
 id = "openmdao_file_utils"
-title = "OpenMDAO file_utils oneshot"
+title = "OpenMDAO medium: file_utils workflow"
 tier = "gha_subset"
 style = "package"
 slice = "systems"
+family = "openmdao"
+difficulty = "medium"
 
 [example]
 summary = "Wrap concrete `openmdao.utils.file_utils` helpers and inspect a checked-in demo package like a real utility workflow."
-motivation = "Utility modules are often the safest first foothold when wrapping a large engineering package, but the challenge should still do recognizable work on real files instead of stopping at a generator repr or a single toy call."
+motivation = "A medium OpenMDAO challenge should go beyond one or two filename helpers and prove that several stable utility routes survive deterministic wrapping."
 proves = [
   "Installed engineering utility modules can be scaffolded deterministically in one shot without narrowing to a single function.",
   "Simple path- and module-oriented helpers survive the generated wrapper path cleanly.",
-  "The generated facade can inspect real checked-in files without hand-written glue code.",
+  "The generated facade can inspect real checked-in files and render simple HTML output without hand-written glue code.",
 ]
 
 [target]
@@ -24,11 +26,11 @@ imports = ["openmdao.utils.file_utils"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^fname2mod_name$", "^get_module_path$", "^get_tempdir$", "^is_python_file$"]
+symbol_include_patterns = ["^fname2mod_name$", "^get_module_path$", "^get_tempdir$", "^is_python_file$", "^text2html$"]
 
 [ingestion]
-min_generated_tools = 4
-required_tools = ["fname2mod_name", "get_module_path", "get_tempdir", "is_python_file"]
+min_generated_tools = 5
+required_tools = ["fname2mod_name", "get_module_path", "get_tempdir", "is_python_file", "text2html"]
 
 [workflow]
 [[workflow.steps]]
@@ -62,3 +64,11 @@ arguments = {}
 
 [workflow.steps.expect]
 text_contains = ["tmp"]
+
+[[workflow.steps]]
+label = "Render a tiny HTML snippet through OpenMDAO utilities"
+tool = "text2html"
+arguments = { text = "OpenMDAO utilities", title = "Demo" }
+
+[workflow.steps.expect]
+text_contains = ["<!DOCTYPE html>", "<html"]

@@ -81,6 +81,8 @@ def _render_step(step: ChallengeWorkflowStep, index: int) -> str:
         expectations.append(f"files exist {list(step.expect_files_exist)!r}")
     if step.expect_files_nonempty:
         expectations.append(f"files are non-empty {list(step.expect_files_nonempty)!r}")
+    if step.expect_files_missing:
+        expectations.append(f"files are missing {list(step.expect_files_missing)!r}")
     if expectations:
         lines.append("")
         lines.append(f"Expectations: {'; '.join(expectations)}.")
@@ -145,6 +147,8 @@ def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
         _heading("Case Shape", 2),
         "",
         f"- ID: `{spec.id}`",
+        f"- Family: `{spec.family}`",
+        f"- Difficulty: `{spec.difficulty}`",
         f"- Tier: `{spec.tier}`",
         f"- Style: `{spec.style}`",
         f"- Workflow Slice: `{spec.slice}`",
@@ -244,6 +248,30 @@ def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
     return "\n".join(parts)
 
 
+def _render_family_ladders(specs: tuple[ChallengeSpec, ...], repo_root: Path) -> list[str]:
+    """Render one family-by-difficulty matrix for the challenge catalog."""
+    del repo_root
+    families = sorted({spec.family for spec in specs})
+    index: dict[tuple[str, str], list[ChallengeSpec]] = {}
+    for spec in specs:
+        index.setdefault((spec.family, spec.difficulty), []).append(spec)
+    lines = [
+        "| Family | easy | medium | hard | insane |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for family in families:
+        cells = [f"`{family}`"]
+        for difficulty in ("easy", "medium", "hard", "insane"):
+            matched = sorted(index.get((family, difficulty), ()), key=lambda spec: spec.id)
+            if not matched:
+                cells.append("-")
+                continue
+            links = ", ".join(f"[`{spec.id}`](cases/{spec.id}/README.md)" for spec in matched)
+            cells.append(links)
+        lines.append("| " + " | ".join(cells) + " |")
+    return lines
+
+
 def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -> str:
     """Render the top-level challenge README overview."""
     lines = [
@@ -274,22 +302,46 @@ def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -
         _heading("Run The Suite", 2),
         "",
         "```bash",
+        "make challenge-deps",
         "make challenges-subset",
         "make challenges-full",
         "make challenge CASE=openmdao_file_utils",
+        "PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --tier all --family avl",
         "```",
         "",
-        _heading("Case Inventory", 2),
+        _heading("Install Optional Runtimes", 2),
         "",
-        "| Case | Tier | Slice | Target | Summary |",
-        "| --- | --- | --- | --- | --- |",
+        "The broader challenge lane expects its extra CLI tools under the repo-local",
+        "`.challenge-tools/` prefix. The `challenge`, `challenges-subset`,",
+        "`challenges-full`, and `run-case-studies` targets prepend",
+        "`.challenge-tools/bin` to `PATH` automatically.",
+        "",
+        "```bash",
+        "make challenge-deps",
+        "make challenge-deps PROFILE=subset",
+        "```",
+        "",
+        _heading("Family Ladders", 2),
+        "",
     ]
+    lines.extend(_render_family_ladders(specs, repo_root))
+    lines.extend(
+        [
+            "",
+            _heading("Case Inventory", 2),
+            "",
+            "| Case | Family | Difficulty | Tier | Slice | Target | Summary |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
     for spec in specs:
         case_readme = spec.case_dir / "README.md"
         case_link = case_readme.relative_to(repo_root / "challenges").as_posix()
         lines.append(
             "| "
             f"[`{spec.id}`]({case_link}) | "
+            f"`{spec.family}` | "
+            f"`{spec.difficulty}` | "
             f"`{spec.tier}` | "
             f"`{spec.slice}` | "
             f"{_format_target_value(spec.target.value)} | "

@@ -1,0 +1,86 @@
+# Self-contained case: push AVL through operating-point and eigenmode workflows in one batch session.
+# This is the top rung because it reaches both report-style and matrix/eigenvalue outputs.
+id = "avl_insane"
+title = "AVL insane: operating point and modes"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "avl"
+difficulty = "insane"
+
+[example]
+summary = "Wrap the `avl` executable, execute a stored run case, retain forces plus stability reports, and then write AVL eigenvalue and system-matrix outputs."
+motivation = "The top AVL challenge should prove that the suite can drive more than a single analysis menu and can retain the richer dynamic-analysis artifacts that make AVL useful beyond static force estimates."
+proves = [
+  "A deterministic wrapper can cross AVL menu boundaries from operating-point analysis into eigenmode analysis.",
+  "The challenge harness can retain both report-style outputs and matrix/eigenvalue artifacts from one legacy solver session.",
+  "A sparse interactive CLI can still support a deep, inspectable challenge ladder when the batch recipe is explicit.",
+]
+limitations = [
+  "This case is intentionally more brittle than the lower rungs because it reaches farther into AVL's interactive menu tree.",
+  "This case intentionally reports `skipped_unavailable` when `avl` is not installed.",
+]
+
+[target]
+kind = "command"
+value = ["avl"]
+
+[probe]
+commands = [["avl"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_avl"
+help_probe_args = ["-h"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/plane.avl"
+destination = "{challenge_artifact_dir}/plane.avl"
+
+[[setup.rendered_files]]
+source = "fixtures/plane.mass"
+destination = "{challenge_artifact_dir}/plane.mass"
+
+[[setup.rendered_files]]
+source = "fixtures/plane.run"
+destination = "{challenge_artifact_dir}/plane.run"
+
+[workflow]
+[[workflow.steps]]
+label = "Execute a stored Plane Vanilla run case, then write AVL mode roots and the linearized system matrix"
+tool = "run_avl"
+
+[workflow.steps.arguments]
+cwd = "{challenge_artifact_dir}"
+extra_argv = ["plane.avl", "plane.run", "plane.mass"]
+stdin_text = """
+PLOP
+G
+
+OPER
+1
+X
+FT
+plane_forces.txt
+ST
+plane_stability.txt
+
+MODE
+N
+S
+plane_system.txt
+W
+plane_roots.txt
+
+QUIT
+"""
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = [
+  "{challenge_artifact_dir}/plane_forces.txt",
+  "{challenge_artifact_dir}/plane_stability.txt",
+  "{challenge_artifact_dir}/plane_system.txt",
+  "{challenge_artifact_dir}/plane_roots.txt",
+]

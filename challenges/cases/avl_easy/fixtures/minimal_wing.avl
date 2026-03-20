@@ -1,0 +1,28 @@
+! Tiny AVL geometry fixture for the live challenge suite.
+! It keeps the case readable while still producing a real aerodynamic report.
+Minimal Wing
+!Mach
+0.0
+!IYsym   IZsym   Zsym
+1        0       0.0
+!Sref    Cref    Bref
+8.0      0.8     10.0
+!Xref    Yref    Zref
+0.25     0.0     0.0
+
+SURFACE
+WING
+!Nchordwise  Cspace
+6            1.0
+
+SECTION
+!Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace
+0.0     0.0    0.0     1.0     0.0   8          1.0
+NACA
+0012
+
+SECTION
+!Xle    Yle    Zle     Chord   Ainc  Nspanwise  Sspace
+0.2     5.0    0.3     0.6     0.0   0          0
+NACA
+0012

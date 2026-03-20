@@ -18,6 +18,13 @@ source .venv/bin/activate
 make dev
 ```
 
+Install the optional live-challenge runtimes into the repo-local
+`.challenge-tools/` prefix when you want the broader raw-upstream lane:
+
+```bash
+make challenge-deps
+```
+
 ## Usage Examples
 
 For wrapped targets that need a generated facade, the CLI flow stays explicit:
@@ -107,6 +114,7 @@ the challenge spec so the wrapping problem remains explicit.
 Run the reduced suite, the broader local suite, or one case in isolation:
 
 ```bash
+make challenge-deps
 make challenges-subset
 make challenges-full
 make challenge CASE=openmdao_file_utils

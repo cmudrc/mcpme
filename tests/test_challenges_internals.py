@@ -20,12 +20,12 @@ from mcpme._challenges import (
     ChallengeTarget,
     ChallengeWorkflowStep,
     _badge_color,
+    _base_context,
     _coerce_capture_name,
     _coerce_json_path,
     _extract_path_value,
     _normalize_command_scaffold_options,
     _normalize_package_scaffold_options,
-    _normalize_step_arguments_for_tool,
     _optional_table,
     _parse_command_sequence_list,
     _parse_command_tokens,
@@ -52,24 +52,6 @@ from mcpme._challenges import (
     write_summary_markdown,
 )
 from mcpme.execution import ToolExecutionResult
-
-
-class _DummyTool:
-    """Simple manifest tool stub for argument-normalization tests."""
-
-    def __init__(self, properties: dict[str, object]) -> None:
-        self.input_schema = {"properties": properties}
-
-
-class _DummyManifest:
-    """Simple manifest stub exposing only ``get_tool``."""
-
-    def __init__(self, properties: dict[str, object]) -> None:
-        self.tool = _DummyTool(properties)
-
-    def get_tool(self, name: str) -> _DummyTool:
-        assert name == "tool"
-        return self.tool
 
 
 def test_challenge_parser_and_rendering_helpers_cover_error_paths(tmp_path: Path) -> None:
@@ -232,6 +214,15 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     )
     assert (
         _validate_step_result(
+            result=json_result,
+            step=ChallengeWorkflowStep(tool="tool", expect_files_missing=(str(empty_file),)),
+            context={},
+            challenge_dir=tmp_path,
+        ).status
+        == "failed"
+    )
+    assert (
+        _validate_step_result(
             result=plain_result,
             step=ChallengeWorkflowStep(tool="tool", capture_json={"session_id": "session_id"}),
             context={},
@@ -292,11 +283,22 @@ def test_challenge_validation_helpers_cover_failure_modes(tmp_path: Path) -> Non
     assert _validate_ingestion(ChallengeIngestion(required_tools=("alpha",)), ("alpha",)) is None
 
 
+def test_base_context_preserves_active_python_executable_path(tmp_path: Path) -> None:
+    """The challenge template context should preserve the active interpreter path."""
+    context = _base_context(
+        repo_root=tmp_path,
+        challenge_dir=tmp_path / "artifacts",
+        fixture_dir=tmp_path / "fixtures",
+    )
+
+    assert context["python_executable"] == sys.executable
+
+
 def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Command scaffolding, argument normalization, and report writers should work together."""
+    """Command scaffolding helpers and report writers should work together."""
     script_path = tmp_path / "echo_cli.py"
     script_path.write_text(
         "import json\n"
@@ -348,16 +350,6 @@ def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(
         "symbol_include_patterns": ("^tool$",),
         "module_exclude_patterns": ("^internal$",),
     }
-    assert _normalize_step_arguments_for_tool(
-        manifest=_DummyManifest({"argv": {}}),
-        tool_name="tool",
-        arguments={"extra_argv": ["-h"]},
-    ) == {"argv": ["-h"]}
-    assert _normalize_step_arguments_for_tool(
-        manifest=_DummyManifest({"extra_argv": {}}),
-        tool_name="tool",
-        arguments={"argv": ["-h"]},
-    ) == {"extra_argv": ["-h"]}
 
     aggregate = ChallengeAggregate(
         suite_name="suite",
@@ -399,4 +391,5 @@ def test_challenge_scaffold_helpers_and_report_writers_cover_remaining_branches(
     junit_text = junit_path.read_text(encoding="utf-8")
     assert "<failure" in junit_text
     assert "<skipped" in junit_text
+    assert "challenge.gha_subset.pass.medium" in junit_text
     assert "skip" in summary_path.read_text(encoding="utf-8")

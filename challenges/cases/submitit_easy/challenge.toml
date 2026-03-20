@@ -1,0 +1,42 @@
+# Self-contained case: the shallowest useful submitit helper workflow.
+# This easy rung exercises the public helper that runs a real subprocess under submitit's utility layer.
+id = "submitit_easy"
+title = "submitit easy: run_cmd shell helper"
+tier = "gha_subset"
+style = "package"
+slice = "hpc"
+family = "submitit"
+difficulty = "easy"
+
+[example]
+summary = "Wrap `submitit.helpers.run_cmd`, execute a tiny shell command, and retain the file it creates."
+motivation = "The easiest submitit challenge should still do real work by driving a concrete subprocess through the public helper layer."
+proves = [
+  "One-shot ingestion can wrap a concrete submitit helper instead of a package-specific adapter.",
+  "The generated facade can run a real subprocess and retain the resulting artifact.",
+]
+
+[target]
+kind = "package"
+value = "submitit.helpers"
+
+[probe]
+imports = ["submitit.helpers"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^run_cmd$"]
+
+[ingestion]
+min_generated_tools = 1
+required_tools = ["run_cmd"]
+
+[workflow]
+[[workflow.steps]]
+label = "Run a tiny shell command through submitit's helper layer"
+tool = "run_cmd"
+arguments = { args = [["sh", "-lc", "printf 42 > value.txt; cat value.txt"]], kwargs = { cwd = "{challenge_artifact_dir}" } }
+
+[workflow.steps.expect]
+text_contains = ["42"]
+files_nonempty = ["{challenge_artifact_dir}/value.txt"]

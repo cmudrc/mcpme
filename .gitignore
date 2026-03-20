@@ -196,6 +196,7 @@ cython_debug/
 # under `artifacts/`.
 artifacts/
 .mcpme-artifacts/
+.challenge-tools/
 
 # PyPI configuration file
 .pypirc

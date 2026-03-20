@@ -62,6 +62,18 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="Optional challenge id to run. Repeat for multiple ids.",
     )
+    parser.add_argument(
+        "--family",
+        action="append",
+        default=[],
+        help="Optional challenge family to run. Repeat for multiple families.",
+    )
+    parser.add_argument(
+        "--difficulty",
+        choices=("easy", "medium", "hard", "insane", "all"),
+        default="all",
+        help="Optional difficulty selector.",
+    )
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -76,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
             artifact_root=(repo_root / args.artifact_root).resolve(),
             selected_tier=args.tier,
             selected_ids=tuple(args.only),
+            selected_families=tuple(args.family),
+            selected_difficulty=args.difficulty,
         )
         write_metrics_json(aggregate, (repo_root / args.metrics_json).resolve())
         write_junit_xml(aggregate, (repo_root / args.junit_xml).resolve())

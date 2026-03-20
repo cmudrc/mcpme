@@ -14,6 +14,8 @@ third-party dependency clearly improves the maintenance story.
   - `source .venv/bin/activate`
 - The preferred interpreter target lives in `.python-version` (`3.12.12`).
 - Install local tooling with `make dev`.
+- Install the optional live challenge runtimes with `make challenge-deps`
+  before running the broader raw-upstream lanes.
 
 ## Testing And Validation
 
@@ -36,6 +38,7 @@ merging.
   - `make run-examples`
   - `python scripts/generate_example_docs.py`
 - If the live challenge track changed:
+  - `make challenge-deps`
   - `python scripts/generate_challenge_docs.py`
   - `make challenge-docs-check`
   - `make challenge CASE=openmdao_file_utils`
