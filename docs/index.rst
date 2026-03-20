@@ -1,5 +1,5 @@
 mcpcraft
-=====
+========
 
 `mcpcraft` is a deterministic Python library for exposing engineering tools as
 MCP servers. It focuses on manifest-driven wrappers, predictable discovery, and
