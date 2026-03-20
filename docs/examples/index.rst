@@ -3,13 +3,11 @@
 Examples
 ========
 
-The examples documentation is split into two maintained lanes:
-
-- ``examples/core`` for the curated public-API teaching contract.
-- ``examples/real_world`` for richer optional upstream walkthroughs.
-
-Both lanes keep checked-in support inputs under ``examples/support`` and
-write only derived outputs under ``artifacts/examples``.
+The examples are part of the maintained public contract for `mcpcraft`.
+Each page below is generated from the example module docstring and the
+checked-in source file, so the code and prose stay aligned. Examples
+that need local helper inputs keep them under `examples/support/`,
+while derived outputs stay under `artifacts/examples/`.
 
 .. toctree::
    :maxdepth: 1
@@ -17,8 +15,22 @@ write only derived outputs under ``artifacts/examples``.
    core/index
    real_world/index
 
-Lane Inventory
---------------
+Example Lanes
+-------------
 
-- ``examples/core``: 7 runnable teaching example(s).
-- ``examples/real_world``: 3 richer optional walkthrough(s).
+- ``examples/core/``: 7 maintained small examples.
+- ``examples/real_world/``: 3 richer optional workflows with persisted ingest artifacts.
+
+Highlighted Examples
+--------------------
+
+- ``examples/core/argparse_cli_wrapper.py``: This example wraps a small command-line engineering helper that already exposes
+- ``examples/core/basic_usage.py``: This example shows the simplest useful `mcpcraft` workflow: expose a typed Python
+- ``examples/core/command_scaffold.py``: This example shows how to ingest a standalone command-line tool whose public
+- ``examples/core/openapi_scaffold.py``: This example shows how to ingest an OpenAPI specification without adding any
+- ``examples/core/package_scaffold.py``: This example shows how to ingest an installed-style Python package that mixes
+- ``examples/core/runtime_server.py``: This example demonstrates the smallest practical MCP runtime loop you can build
+- ``examples/core/subprocess_wrapper.py``: This example wraps a legacy-style batch solver that communicates through input
+- ``examples/real_world/pycycle_mpcycle``: This real-world example shows how `mcpcraft` can carve a useful session-oriented wrapper
+- ``examples/real_world/su2_cli``: This real-world example models the shape of a real heavyweight CLI integration more
+- ``examples/real_world/tigl_cpacs``: This real-world example tackles a more awkward upstream than the small core examples:

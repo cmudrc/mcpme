@@ -14,6 +14,8 @@ third-party dependency clearly improves the maintenance story.
   - `source .venv/bin/activate`
 - The preferred interpreter target lives in `.python-version` (`3.12.12`).
 - Install local tooling with `make dev`.
+- Install the optional live challenge runtimes with `make challenge-deps`
+  before running the broader raw-upstream lanes.
 
 ## Testing And Validation
 
@@ -35,6 +37,7 @@ merging.
   - `make run-real-world-examples`
   - `python scripts/generate_example_docs.py`
 - If the live challenge track changed:
+  - `make challenge-deps`
   - `python scripts/generate_challenge_docs.py`
   - `make challenge-docs-check`
   - `make challenge CASE=openmdao_file_utils`
@@ -70,8 +73,8 @@ merging.
   optional upstream runtimes and may report `skipped_unavailable`, but they
   should still use only the public `mcpcraft` surface.
 - Keep each real-world example directory readable as a real ingest/persist/use
-  flow: `examples/real_world/<id>/ingest.py` should write the deterministic artifact pair
-  `generated_facade.py` and `scaffold_report.json` under
+  flow: `examples/real_world/<id>/ingest.py` should write the deterministic
+  artifact pair `generated_facade.py` and `scaffold_report.json` under
   `artifacts/examples/real_world/<id>/`, `examples/real_world/<id>/serve.py`
   should expose that saved generated facade over stdio MCP, and
   `examples/real_world/<id>/use.py` should demonstrate the saved capabilities

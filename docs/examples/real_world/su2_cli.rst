@@ -11,9 +11,9 @@ Introduction
 This real-world example models the shape of a real heavyweight CLI integration more
 closely than the smaller examples: first ingest the upstream surface into a
 generated facade, persist that generated artifact with a standard scaffold
-report, serve it over stdio MCP, and only then use it through a client
-request. The split is deliberate so contributors can inspect the generated
-wrapper before the wrapped command is executed.
+report, and then exercise that saved facade through MCP requests. The split is
+deliberate so contributors can inspect the generated wrapper before the wrapped
+command is executed.
 
 Preset Environment
 ------------------
@@ -21,9 +21,10 @@ Preset Environment
 The checked-in command surface for this real-world example lives under
 `examples/support/real_world/su2_cli/commands/`. Run `examples/real_world/su2_cli/ingest.py`
 to write `generated_facade.py` and `scaffold_report.json` under
-`artifacts/examples/real_world/su2_cli/`, `examples/real_world/su2_cli/serve.py` to expose
-that generated facade as an MCP server, and `examples/real_world/su2_cli/use.py` to
-hit that MCP server and exercise the wrapped CLI.
+`artifacts/case_studies/su2_cli/`, `case_studies/su2_cli/serve.py` to expose
+that generated facade as an MCP server over stdio, and
+`case_studies/su2_cli/use.py` separately to exercise the same generated
+facade through MCP requests without launching `serve.py`.
 
 Technical Implementation
 ------------------------
@@ -33,11 +34,11 @@ Technical Implementation
   `generated_facade.py` and `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpcraft.serve_stdio`.
-- `use.py` reads the standard artifact paths, starts `serve.py` as a
-  subprocess, sends `initialize`, `tools/list`, and `tools/call` requests, and
-  captures the JSON-RPC responses.
+- `use.py` reads the standard artifact paths, builds an in-process
+  `mcpcraft.McpServer` from the saved facade, sends `initialize`, `tools/list`,
+  and `tools/call` requests, and captures the JSON-RPC responses.
 - The result payload retains both the raw scaffold report and the wrapped
-  help-path execution evidence returned by the served MCP runtime.
+  help-path execution evidence returned by the MCP runtime.
 
 Expected Results
 ----------------
@@ -93,4 +94,4 @@ Use Script
 .. literalinclude:: ../../../examples/real_world/su2_cli/use.py
    :language: python
    :linenos:
-   :lines: 61-
+   :lines: 62-

@@ -6,18 +6,19 @@ This real-world example shows how `mcpcraft` can carve a useful session-oriented
 out of a real engineering Python package without teaching the library
 anything pyCycle-specific. The workflow mirrors a more realistic integration
 path: ingest the package once, persist the generated facade with a standard
-scaffold report, serve that facade over stdio MCP, and then drive the wrapped
-session lifecycle through MCP.
+scaffold report, and then drive the wrapped session lifecycle through MCP.
 
 ## Preset Environment
 
-The real-world example-specific public scaffold command is checked in under
+The real-world-example-specific public scaffold command is checked in under
 `examples/support/real_world/pycycle_mpcycle/commands/`. Run
-`examples/real_world/pycycle_mpcycle/ingest.py` first to write `generated_facade.py`
-and `scaffold_report.json` under `artifacts/examples/real_world/pycycle_mpcycle/`,
-`examples/real_world/pycycle_mpcycle/serve.py` to expose that generated facade over
-stdio MCP, and `examples/real_world/pycycle_mpcycle/use.py` to hit that MCP server
-and exercise the generated tools.
+`examples/real_world/pycycle_mpcycle/ingest.py` first to write
+`generated_facade.py` and `scaffold_report.json` under
+`artifacts/examples/real_world/pycycle_mpcycle/`,
+`examples/real_world/pycycle_mpcycle/serve.py` to expose that generated
+facade over stdio MCP, and `examples/real_world/pycycle_mpcycle/use.py`
+separately to exercise the same generated tools through MCP requests without
+launching `serve.py`.
 
 ## Technical Implementation
 
@@ -28,9 +29,9 @@ and exercise the generated tools.
   `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpcraft.serve_stdio`.
-- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
-  `tools/call` requests, then exercises the create/add-parameter/close
-  lifecycle entirely through the served MCP interface.
+- `use.py` builds an in-process `mcpcraft.McpServer` from the saved facade, sends
+  `initialize`, `tools/list`, and `tools/call` requests, then exercises the
+  create/add-parameter/close lifecycle through the MCP runtime.
 
 ## Expected Results
 
@@ -62,21 +63,25 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
-import subprocess
-import sys
 from pathlib import Path
+
+from mcpcraft import McpServer, build_manifest
 
 CASE_STUDY_ID = "pycycle_mpcycle"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "real_world" / CASE_STUDY_ID
 GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
 REPORT_PATH = ARTIFACT_ROOT / "scaffold_report.json"
-SERVE_PATH = REPO_ROOT / "examples" / "real_world" / CASE_STUDY_ID / "serve.py"
+
+
+def _load_server() -> McpServer:
+    """Build an MCP server from the saved generated facade."""
+    manifest = build_manifest(targets=[GENERATED_FACADE_PATH], artifact_root=ARTIFACT_ROOT)
+    return McpServer(manifest)
 
 
 def main() -> None:
-    """Hit the served pyCycle MCP runtime and print the stable JSON payload."""
+    """Exercise the generated pyCycle facade through in-process MCP requests."""
     if not GENERATED_FACADE_PATH.exists():
         try:
             # Reuse the ingest availability probe so a machine without pyCycle
@@ -104,151 +109,78 @@ def main() -> None:
         )
 
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    server = _load_server()
 
-    env = dict(os.environ)
-    pythonpath_entries = [str((REPO_ROOT / "src").resolve())]
-    if env.get("PYTHONPATH"):
-        pythonpath_entries.append(env["PYTHONPATH"])
-    env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
+    # Keep the MCP sequence explicit while leaving `serve.py` as a separate
+    # stdio demo entrypoint.
+    initialize = server.handle_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
+    if initialize is None or "error" in initialize:
+        raise RuntimeError(f"pyCycle MCP initialize failed: {initialize}")
 
-    # Launch the MCP server as an external process so the tutorial shows the
-    # actual boundary between client and served facade.
-    server = subprocess.Popen(
-        [sys.executable, str(SERVE_PATH)],
-        cwd=REPO_ROOT,
-        env=env,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
+    server.handle_request({"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+    tools_list = server.handle_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+    if tools_list is None or "error" in tools_list:
+        raise RuntimeError(f"pyCycle MCP tools/list failed: {tools_list}")
+
+    tool_names = [
+        tool["name"]
+        for tool in tools_list["result"]["tools"]
+        if isinstance(tool, dict) and isinstance(tool.get("name"), str)
+    ]
+    for expected_name in ("create_mpcycle", "mpcycle_pyc_add_cycle_param", "close_mpcycle"):
+        if expected_name not in tool_names:
+            raise ValueError(
+                f"Expected the served tool list to include {expected_name!r}; got {tool_names!r}."
+            )
+
+    # Create a server-side session first; subsequent tool calls thread that
+    # session identifier through the generated wrappers.
+    create_call = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"arguments": {}, "name": "create_mpcycle"},
+        }
     )
-    if server.stdin is None or server.stdout is None or server.stderr is None:
-        raise RuntimeError(
-            "Expected stdio pipes when launching the pyCycle real-world example MCP server."
-        )
+    if create_call is None or "error" in create_call:
+        raise RuntimeError(f"pyCycle MCP create call failed: {create_call}")
+    create_record = json.loads(create_call["result"]["content"][0]["text"])
+    session_id = create_record["session_id"]
 
-    try:
-        # Perform the MCP handshake manually to make the protocol sequence
-        # visible in the teaching example.
-        server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}) + "\n")
-        server.stdin.flush()
-        initialize = json.loads(server.stdout.readline())
-        if "error" in initialize:
-            raise RuntimeError(f"pyCycle MCP initialize failed: {initialize['error']}")
+    # Exercise a representative mutating tool against that saved session.
+    add_param_call = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "arguments": {"name": "FAR", "session_id": session_id, "val": 0.02},
+                "name": "mpcycle_pyc_add_cycle_param",
+            },
+        }
+    )
+    if add_param_call is None or "error" in add_param_call:
+        raise RuntimeError(f"pyCycle MCP add-cycle-param call failed: {add_param_call}")
+    add_param_record = json.loads(add_param_call["result"]["content"][0]["text"])
 
-        # `initialized` tells the server it can start handling normal traffic.
-        server.stdin.write(
-            json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n"
-        )
-        server.stdin.flush()
-
-        # List tools first so the real-world example proves which wrapper names were
-        # actually generated and served.
-        server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n")
-        server.stdin.flush()
-        tools_list = json.loads(server.stdout.readline())
-        if "error" in tools_list:
-            raise RuntimeError(f"pyCycle MCP tools/list failed: {tools_list['error']}")
-
-        tool_names = [
-            tool["name"]
-            for tool in tools_list["result"]["tools"]
-            if isinstance(tool, dict) and isinstance(tool.get("name"), str)
-        ]
-        for expected_name in (
-            "create_mpcycle",
-            "mpcycle_pyc_add_cycle_param",
-            "close_mpcycle",
-        ):
-            if expected_name not in tool_names:
-                raise ValueError(
-                    "Expected the served tool list to include "
-                    f"{expected_name!r}; got {tool_names!r}."
-                )
-
-        # Create a server-side session first; subsequent tool calls thread that
-        # session identifier through the generated wrappers.
-        server.stdin.write(
-            json.dumps(
-                {
-                    "jsonrpc": "2.0",
-                    "id": 3,
-                    "method": "tools/call",
-                    "params": {"arguments": {}, "name": "create_mpcycle"},
-                }
-            )
-            + "\n"
-        )
-        server.stdin.flush()
-        create_call = json.loads(server.stdout.readline())
-        if "error" in create_call:
-            raise RuntimeError(f"pyCycle MCP create call failed: {create_call['error']}")
-        create_record = json.loads(create_call["result"]["content"][0]["text"])
-        session_id = create_record["session_id"]
-
-        # Exercise a representative mutating tool against that saved session.
-        server.stdin.write(
-            json.dumps(
-                {
-                    "jsonrpc": "2.0",
-                    "id": 4,
-                    "method": "tools/call",
-                    "params": {
-                        "arguments": {"name": "FAR", "session_id": session_id, "val": 0.02},
-                        "name": "mpcycle_pyc_add_cycle_param",
-                    },
-                }
-            )
-            + "\n"
-        )
-        server.stdin.flush()
-        add_param_call = json.loads(server.stdout.readline())
-        if "error" in add_param_call:
-            raise RuntimeError(
-                f"pyCycle MCP add-cycle-param call failed: {add_param_call['error']}"
-            )
-        add_param_record = json.loads(add_param_call["result"]["content"][0]["text"])
-
-        # Close the session explicitly to demonstrate the full lifecycle that
-        # the generated facade exposes.
-        server.stdin.write(
-            json.dumps(
-                {
-                    "jsonrpc": "2.0",
-                    "id": 5,
-                    "method": "tools/call",
-                    "params": {
-                        "arguments": {"session_id": session_id},
-                        "name": "close_mpcycle",
-                    },
-                }
-            )
-            + "\n"
-        )
-        server.stdin.flush()
-        close_call = json.loads(server.stdout.readline())
-        if "error" in close_call:
-            raise RuntimeError(f"pyCycle MCP close call failed: {close_call['error']}")
-        close_record = json.loads(close_call["result"]["content"][0]["text"])
-    finally:
-        # Closing stdin gives the stdio server permission to stop once we are
-        # done sending requests.
-        if not server.stdin.closed:
-            server.stdin.close()
-        try:
-            return_code = server.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            # Force termination on timeout so the example remains deterministic.
-            server.kill()
-            return_code = server.wait(timeout=5)
-        server_stderr = server.stderr.read()
-
-    # Bubble up stderr verbatim when the served runtime fails so contributors
-    # can inspect the wrapped pyCycle behavior.
-    if return_code != 0:
-        raise RuntimeError(
-            f"pyCycle MCP server exited with code {return_code}.\nstderr:\n{server_stderr}"
-        )
+    # Close the session explicitly to demonstrate the full lifecycle that the
+    # generated facade exposes.
+    close_call = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "arguments": {"session_id": session_id},
+                "name": "close_mpcycle",
+            },
+        }
+    )
+    if close_call is None or "error" in close_call:
+        raise RuntimeError(f"pyCycle MCP close call failed: {close_call}")
+    close_record = json.loads(close_call["result"]["content"][0]["text"])
 
     # A successful close call is our simplest proof that the lifecycle stayed
     # coherent all the way through teardown.

@@ -1,0 +1,86 @@
+# Self-contained case: broaden the focused importer workflow to multiple CAD interchange formats.
+# This hard rung stays on the importers submodule while proving richer routes than STL+SVG alone.
+id = "build123d_hard"
+title = "build123d hard: multi-format importers"
+tier = "local_full"
+style = "package"
+slice = "manufacturing"
+family = "build123d"
+difficulty = "hard"
+
+[example]
+summary = "Wrap `build123d.importers` and exercise STL, SVG, STEP, BREP, and SVG-to-code import routes with tiny checked-in fixtures."
+motivation = "A harder build123d challenge should show that one-shot ingestion can keep several useful interchange routes alive, not just one lucky file-format path."
+proves = [
+  "One focused importer submodule can expose a real cluster of CAD interchange functions through deterministic wrapping.",
+  "The generated facade can handle both geometry-returning importers and importers that return structured code output.",
+  "Tiny checked-in fixtures are enough to validate multiple real import routes.",
+]
+
+[target]
+kind = "package"
+value = "build123d.importers"
+
+[probe]
+imports = ["build123d.importers"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = [
+  "^import_brep$",
+  "^import_step$",
+  "^import_stl$",
+  "^import_svg$",
+  "^import_svg_as_buildline_code$",
+]
+
+[ingestion]
+min_generated_tools = 5
+required_tools = [
+  "import_brep",
+  "import_step",
+  "import_stl",
+  "import_svg",
+  "import_svg_as_buildline_code",
+]
+
+[workflow]
+[[workflow.steps]]
+label = "Import the STL fixture"
+tool = "import_stl"
+arguments = { file_name = "{challenge_fixture_dir}/tri.stl" }
+
+[workflow.steps.expect]
+text_contains = ["Face object"]
+
+[[workflow.steps]]
+label = "Import the SVG fixture"
+tool = "import_svg"
+arguments = { svg_file = "{challenge_fixture_dir}/tri.svg" }
+
+[workflow.steps.expect]
+text_contains = ["Face object"]
+
+[[workflow.steps]]
+label = "Convert the SVG fixture into build123d BuildLine code"
+tool = "import_svg_as_buildline_code"
+arguments = { file_name = "{challenge_fixture_dir}/tri.svg" }
+
+[workflow.steps.expect]
+text_contains = ["BuildLine", "Line("]
+
+[[workflow.steps]]
+label = "Import the tiny STEP fixture"
+tool = "import_step"
+arguments = { filename = "{challenge_fixture_dir}/rect.step" }
+
+[workflow.steps.expect]
+text_contains = ["Shell object"]
+
+[[workflow.steps]]
+label = "Import the tiny BREP fixture"
+tool = "import_brep"
+arguments = { file_name = "{challenge_fixture_dir}/rect.brep" }
+
+[workflow.steps.expect]
+text_contains = ["Compound"]

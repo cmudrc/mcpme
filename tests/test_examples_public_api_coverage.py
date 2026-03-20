@@ -6,7 +6,7 @@ import ast
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES_ROOT = REPO_ROOT / "examples" / "core"
+EXAMPLES_ROOT = REPO_ROOT / "examples"
 PACKAGE_INIT = REPO_ROOT / "src" / "mcpcraft" / "__init__.py"
 
 

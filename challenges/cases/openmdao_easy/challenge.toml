@@ -1,0 +1,49 @@
+# Self-contained case: the shallowest useful OpenMDAO utility workflow.
+# This easy rung stays on concrete file utilities and checked-in Python files.
+id = "openmdao_easy"
+title = "OpenMDAO easy: file utility basics"
+tier = "gha_subset"
+style = "package"
+slice = "systems"
+family = "openmdao"
+difficulty = "easy"
+
+[example]
+summary = "Wrap concrete `openmdao.utils.file_utils` helpers and inspect one checked-in Python module like a real utility workflow."
+motivation = "The easiest OpenMDAO challenge should start from stable utility functions and still do recognizable file-oriented work instead of stopping at import smoke."
+proves = [
+  "Installed OpenMDAO utility helpers can be scaffolded deterministically in one shot.",
+  "The generated facade can inspect a real checked-in Python module without handwritten glue.",
+]
+
+[target]
+kind = "package"
+value = "openmdao.utils.file_utils"
+
+[probe]
+imports = ["openmdao.utils.file_utils"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^fname2mod_name$", "^is_python_file$"]
+
+[ingestion]
+min_generated_tools = 2
+required_tools = ["fname2mod_name", "is_python_file"]
+
+[workflow]
+[[workflow.steps]]
+label = "Confirm the checked-in demo module is a Python file"
+tool = "is_python_file"
+arguments = { file_path = "{challenge_fixture_dir}/demo_pkg/core.py" }
+
+[workflow.steps.expect]
+text_contains = ["true"]
+
+[[workflow.steps]]
+label = "Derive the module basename from the checked-in demo module"
+tool = "fname2mod_name"
+arguments = { fname = "{challenge_fixture_dir}/demo_pkg/core.py" }
+
+[workflow.steps.expect]
+text_contains = ["core"]

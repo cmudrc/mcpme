@@ -37,11 +37,13 @@ jobs:
         run: make docs
 
       - name: Upload Pages artifact
+        if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_PAGES == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
 
   deploy:
+    if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_PAGES == 'true'
     needs: build
     runs-on: ubuntu-latest
     environment:

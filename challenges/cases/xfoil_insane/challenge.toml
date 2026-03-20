@@ -1,0 +1,75 @@
+# Self-contained case: push XFOIL through stored-polar writeback.
+# This top rung keeps the airfoil simple while exercising in-memory polar storage plus later PWRT export.
+id = "xfoil_insane"
+title = "XFOIL insane: stored polar writeback"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "xfoil"
+difficulty = "insane"
+
+[example]
+summary = "Wrap the `xfoil` executable, store two viscous polars in memory, and write them out later with `PWRT` when XFOIL is installed."
+motivation = "The top XFOIL rung should push farther into the interactive polar-management workflow instead of only writing files directly during accumulation."
+proves = [
+  "A deterministic wrapper can cross from XFOIL polar accumulation into later stored-polar export commands.",
+  "The challenge suite can retain multiple real outputs from a richer legacy CLI session than a single sweep.",
+]
+limitations = [
+  "This case intentionally reports `skipped_unavailable` when `xfoil` is not installed.",
+]
+
+[target]
+kind = "command"
+value = ["xfoil"]
+
+[probe]
+commands = [["xfoil"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_xfoil"
+help_probe_args = ["-h"]
+
+[workflow]
+[[workflow.steps]]
+label = "Store two viscous polars in memory and write them later with PWRT"
+tool = "run_xfoil"
+
+[workflow.steps.arguments]
+cwd = "{challenge_artifact_dir}"
+stdin_text = """
+NACA 0012
+PANE
+PLOP
+G
+
+OPER
+VISC 200000
+ALFA -2
+PACC
+
+
+ASEQ -2 8 0.5
+PACC
+RE 150000
+INIT
+ALFA -2
+PACC
+
+
+ASEQ -2 8 0.5
+PACC
+PWRT
+1
+polar_saved_1.txt
+PWRT
+2
+polar_saved_2.txt
+
+QUIT
+"""
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = ["polar_saved_1.txt", "polar_saved_2.txt"]

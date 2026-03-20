@@ -1,0 +1,164 @@
+# Self-contained case: push the AeroSandbox family through a wider object-and-method slice.
+# This top rung keeps the workflow deterministic while using substantially more of the wrapped surface.
+id = "aerosandbox_insane"
+title = "AeroSandbox insane: richer operating conditions"
+tier = "local_full"
+style = "package"
+slice = "mission"
+family = "aerosandbox"
+difficulty = "insane"
+
+[example]
+summary = "Wrap AeroSandbox's `Atmosphere` and `OperatingPoint` classes, query a broader set of thermodynamic and performance methods, and retain both serialized states."
+motivation = "The top AeroSandbox rung should go beyond a few scalar queries and prove that the challenge suite can keep a materially broader physics slice usable without handwritten adapters."
+proves = [
+  "A deterministic wrapper can retain a wide slice of real AeroSandbox methods from more than one class in one shot.",
+  "The generated facade can drive richer aerodynamic-state calculations like total conditions and indicated airspeed.",
+  "The retained artifacts remain inspectable instead of hiding the underlying aerospace objects.",
+]
+limitations = [
+  "This case still stops short of a larger geometry or optimization workflow.",
+]
+
+[target]
+kind = "package"
+value = "aerosandbox"
+
+[probe]
+imports = ["aerosandbox"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^Atmosphere$", "^OperatingPoint$"]
+max_generated_tools = 48
+
+[ingestion]
+min_generated_tools = 28
+required_tools = [
+  "create_atmosphere",
+  "atmosphere_density",
+  "atmosphere_pressure",
+  "atmosphere_speed_of_sound",
+  "atmosphere_save",
+  "create_operating_point",
+  "operating_point_dynamic_pressure",
+  "operating_point_indicated_airspeed",
+  "operating_point_mach",
+  "operating_point_reynolds",
+  "operating_point_total_pressure",
+  "operating_point_total_temperature",
+  "operating_point_save",
+  "close_atmosphere",
+  "close_operating_point",
+]
+
+[workflow]
+[[workflow.steps]]
+label = "Create a higher-altitude Atmosphere session"
+tool = "create_atmosphere"
+arguments = { altitude = 8000.0, temperature_deviation = 10.0 }
+capture_json = { atmosphere_session_id = "session_id" }
+
+[[workflow.steps]]
+label = "Compute density at the higher altitude"
+tool = "atmosphere_density"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute pressure at the higher altitude"
+tool = "atmosphere_pressure"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute the local speed of sound"
+tool = "atmosphere_speed_of_sound"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Save the Atmosphere state"
+tool = "atmosphere_save"
+arguments = { session_id = "{atmosphere_session_id}", filename = "{challenge_artifact_dir}/atmosphere_insane.asb", verbose = false, automatically_add_extension = false }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/atmosphere_insane.asb"]
+
+[[workflow.steps]]
+label = "Create a richer OperatingPoint session"
+tool = "create_operating_point"
+arguments = { args = [], kwargs = { velocity = 120.0, alpha = 3.0, beta = 1.0 } }
+capture_json = { operating_point_session_id = "session_id" }
+
+[[workflow.steps]]
+label = "Compute dynamic pressure"
+tool = "operating_point_dynamic_pressure"
+arguments = { session_id = "{operating_point_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute Mach number"
+tool = "operating_point_mach"
+arguments = { session_id = "{operating_point_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["0."]
+
+[[workflow.steps]]
+label = "Compute indicated airspeed"
+tool = "operating_point_indicated_airspeed"
+arguments = { session_id = "{operating_point_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute total pressure"
+tool = "operating_point_total_pressure"
+arguments = { session_id = "{operating_point_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute total temperature"
+tool = "operating_point_total_temperature"
+arguments = { session_id = "{operating_point_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute Reynolds number at one-and-a-half chord lengths"
+tool = "operating_point_reynolds"
+arguments = { session_id = "{operating_point_session_id}", reference_length = 1.5 }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Save the OperatingPoint state"
+tool = "operating_point_save"
+arguments = { session_id = "{operating_point_session_id}", filename = "{challenge_artifact_dir}/operating_point_insane.asb", verbose = false, automatically_add_extension = false }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/operating_point_insane.asb"]
+
+[[workflow.steps]]
+label = "Close the Atmosphere session"
+tool = "close_atmosphere"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[[workflow.steps]]
+label = "Close the OperatingPoint session"
+tool = "close_operating_point"
+arguments = { session_id = "{operating_point_session_id}" }

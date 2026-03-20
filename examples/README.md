@@ -1,14 +1,9 @@
 # Examples
 
-The examples in `mcpcraft` are split into a small core lane and a richer
-real-world lane.
+The examples in `mcpcraft` stay intentionally small, deterministic, and public-API
+only.
 
 ## Core
-
-The core examples under `examples/core/` stay intentionally small,
-deterministic, and public-API only.
-
-Each core example:
 
 - imports from the top-level `mcpcraft` package rather than internal modules,
 - includes a canonical module docstring that is used to generate Sphinx docs,
@@ -22,13 +17,13 @@ belong under `artifacts/examples/core/<example_id>/`.
 
 Included core examples:
 
-- `core/basic_usage.py`: wrap a typed Python callable and inspect the generated manifest.
-- `core/argparse_cli_wrapper.py`: wrap an existing `argparse` CLI using `ArgparseCommand`.
-- `core/command_scaffold.py`: ingest a standalone CLI through `mcpcraft scaffold-command`.
-- `core/openapi_scaffold.py`: ingest an OpenAPI document through `mcpcraft scaffold-openapi`.
-- `core/package_scaffold.py`: ingest a package with functions and classes through `mcpcraft scaffold-package`.
-- `core/subprocess_wrapper.py`: wrap a file-driven legacy-style batch tool from TOML config.
-- `core/runtime_server.py`: send JSON-RPC requests through `McpServer` and optionally serve stdio.
+- `basic_usage.py`: wrap a typed Python callable and inspect the generated manifest.
+- `argparse_cli_wrapper.py`: wrap an existing `argparse` CLI using `ArgparseCommand`.
+- `command_scaffold.py`: ingest a standalone CLI through `mcpcraft scaffold-command`.
+- `openapi_scaffold.py`: ingest an OpenAPI document through `mcpcraft scaffold-openapi`.
+- `package_scaffold.py`: ingest a package with functions and classes through `mcpcraft scaffold-package`.
+- `subprocess_wrapper.py`: wrap a file-driven legacy-style batch tool from TOML config.
+- `runtime_server.py`: send JSON-RPC requests through `McpServer` and optionally serve stdio.
 
 Run the core lane with:
 

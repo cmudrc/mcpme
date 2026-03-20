@@ -51,7 +51,7 @@ from mcpcraft import ToolExecutionResult, build_manifest, execute_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "subprocess_wrapper"
-ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "core" / "subprocess_wrapper"
+ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "subprocess_wrapper"
 CONFIG_PATH = SOURCE_ROOT / "mcpcraft.toml"
 
 

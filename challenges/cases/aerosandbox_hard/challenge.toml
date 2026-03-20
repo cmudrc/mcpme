@@ -1,0 +1,119 @@
+# Self-contained case: step up from one saved atmosphere to multiple AeroSandbox physics objects.
+# This hard rung uses both Atmosphere and OperatingPoint sessions with retained artifacts.
+id = "aerosandbox_hard"
+title = "AeroSandbox hard: atmosphere and operating point"
+tier = "local_full"
+style = "package"
+slice = "mission"
+family = "aerosandbox"
+difficulty = "hard"
+
+[example]
+summary = "Wrap AeroSandbox's `Atmosphere` and `OperatingPoint` classes, query multiple physics methods, and retain serialized state files for both."
+motivation = "A harder AeroSandbox challenge should show that the generated wrapper can manage more than one real aerospace object lifecycle while still keeping the resulting artifacts inspectable."
+proves = [
+  "One-shot package ingestion can retain more than one high-value class from a broad engineering namespace.",
+  "The generated session wrappers can drive multiple AeroSandbox object lifecycles in one deterministic workflow.",
+  "The live challenge can retain concrete serialized artifacts rather than only transient numeric returns.",
+]
+limitations = [
+  "This case still keeps the objects independent instead of constructing a larger coupled AeroSandbox model graph.",
+]
+
+[target]
+kind = "package"
+value = "aerosandbox"
+
+[probe]
+imports = ["aerosandbox"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^Atmosphere$", "^OperatingPoint$"]
+max_generated_tools = 40
+
+[ingestion]
+min_generated_tools = 24
+required_tools = [
+  "create_atmosphere",
+  "atmosphere_mean_free_path",
+  "atmosphere_save",
+  "create_operating_point",
+  "operating_point_dynamic_pressure",
+  "operating_point_mach",
+  "operating_point_reynolds",
+  "operating_point_save",
+  "close_atmosphere",
+  "close_operating_point",
+]
+
+[workflow]
+[[workflow.steps]]
+label = "Create an Atmosphere session at cruise altitude"
+tool = "create_atmosphere"
+arguments = { altitude = 3000.0 }
+capture_json = { atmosphere_session_id = "session_id" }
+
+[[workflow.steps]]
+label = "Query the atmospheric mean free path"
+tool = "atmosphere_mean_free_path"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["e-"]
+
+[[workflow.steps]]
+label = "Save the Atmosphere state"
+tool = "atmosphere_save"
+arguments = { session_id = "{atmosphere_session_id}", filename = "{challenge_artifact_dir}/atmosphere_hard.asb", verbose = false, automatically_add_extension = false }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/atmosphere_hard.asb"]
+
+[[workflow.steps]]
+label = "Create an OperatingPoint session"
+tool = "create_operating_point"
+arguments = { args = [], kwargs = { velocity = 70.0, alpha = 5.0 } }
+capture_json = { operating_point_session_id = "session_id" }
+
+[[workflow.steps]]
+label = "Compute dynamic pressure"
+tool = "operating_point_dynamic_pressure"
+arguments = { session_id = "{operating_point_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Compute Mach number"
+tool = "operating_point_mach"
+arguments = { session_id = "{operating_point_session_id}" }
+
+[workflow.steps.expect]
+text_contains = ["0."]
+
+[[workflow.steps]]
+label = "Compute Reynolds number at unit reference length"
+tool = "operating_point_reynolds"
+arguments = { session_id = "{operating_point_session_id}", reference_length = 1.0 }
+
+[workflow.steps.expect]
+text_contains = ["."]
+
+[[workflow.steps]]
+label = "Save the OperatingPoint state"
+tool = "operating_point_save"
+arguments = { session_id = "{operating_point_session_id}", filename = "{challenge_artifact_dir}/operating_point_hard.asb", verbose = false, automatically_add_extension = false }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/operating_point_hard.asb"]
+
+[[workflow.steps]]
+label = "Close the Atmosphere session"
+tool = "close_atmosphere"
+arguments = { session_id = "{atmosphere_session_id}" }
+
+[[workflow.steps]]
+label = "Close the OperatingPoint session"
+tool = "close_operating_point"
+arguments = { session_id = "{operating_point_session_id}" }

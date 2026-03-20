@@ -47,6 +47,8 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
         probe=ChallengeProbe(imports=("demo.pkg",)),
         scaffold_kind="package",
         scaffold_options={},
+        family="demo",
+        difficulty="easy",
         rendered_files=(
             ChallengeRenderedFile(
                 source="fixtures/demo.in",
@@ -81,6 +83,8 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
     assert "make challenge CASE=demo_case" in case_readme
     assert "demo_case/challenge.toml" in case_readme
     assert "demo_case/fixtures/demo.txt" in case_readme
+    assert "- Family: `demo`" in case_readme
+    assert "- Difficulty: `easy`" in case_readme
     assert "Ingestion Breadth" in case_readme
     assert "Why This Stays A Challenge" in case_readme
     assert "Prepared Inputs" in case_readme
@@ -88,5 +92,9 @@ def test_challenge_doc_renderer_produces_self_contained_case_readme(tmp_path: Pa
     assert "Minimum generated tools" in case_readme
     assert "close_demo" in case_readme
     assert "Run the demo tool" in case_readme
+    assert "Family Ladders" in index_readme
+    assert "| `demo` | [`demo_case`](cases/demo_case/README.md) | - | - | - |" in index_readme
     assert "compressed into `challenge.toml`" in index_readme
     assert "[`demo_case`](cases/demo_case/README.md)" in index_readme
+    assert "make challenge-deps" in index_readme
+    assert ".challenge-tools/bin" in index_readme

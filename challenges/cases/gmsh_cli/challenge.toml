@@ -1,14 +1,16 @@
 # Self-contained case: treat a meshing command like a real external engineering executable.
 # The checked-in `.geo` file keeps the case tiny while still producing a real mesh artifact.
 id = "gmsh_cli"
-title = "Gmsh CLI oneshot"
+title = "Gmsh medium: 3D mesh generation"
 tier = "gha_subset"
 style = "command"
 slice = "aerodynamics"
+family = "gmsh"
+difficulty = "medium"
 
 [example]
-summary = "Wrap the `gmsh` CLI, feed it a tiny `.geo` model, and verify a mesh file is produced."
-motivation = "A lot of engineering tooling is still command-driven, so one-shot CLI ingestion has to feel just as first-class as Python package ingestion."
+summary = "Wrap the `gmsh` CLI, feed it a tiny `.geo` model, and verify a 3D mesh file is produced."
+motivation = "A medium Gmsh challenge should move beyond the shallowest 2D path and prove a real volume-meshing workflow through the generated CLI wrapper."
 proves = [
   "A standalone engineering CLI can be scaffolded from live help output.",
   "The generated wrapper can pass through real command-line arguments deterministically.",
@@ -29,10 +31,10 @@ help_probe_args = ["-help"]
 
 [workflow]
 [[workflow.steps]]
-label = "Generate a mesh from the tiny Gmsh fixture"
+label = "Generate a 3D mesh from the tiny Gmsh fixture"
 tool = "run_gmsh"
-arguments = { extra_argv = ["{challenge_fixture_dir}/box.geo", "-3", "-o", "{challenge_artifact_dir}/box.msh"] }
+arguments = { extra_argv = ["{challenge_fixture_dir}/box.geo", "-3", "-o", "{challenge_artifact_dir}/box3d.msh"] }
 
 [workflow.steps.expect]
 json_fields = { exit_code = 0 }
-files_nonempty = ["{challenge_artifact_dir}/box.msh"]
+files_nonempty = ["{challenge_artifact_dir}/box3d.msh"]

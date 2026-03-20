@@ -12,19 +12,20 @@ This real-world example shows how `mcpcraft` can carve a useful session-oriented
 out of a real engineering Python package without teaching the library
 anything pyCycle-specific. The workflow mirrors a more realistic integration
 path: ingest the package once, persist the generated facade with a standard
-scaffold report, serve that facade over stdio MCP, and then drive the wrapped
-session lifecycle through MCP.
+scaffold report, and then drive the wrapped session lifecycle through MCP.
 
 Preset Environment
 ------------------
 
-The real-world example-specific public scaffold command is checked in under
+The real-world-example-specific public scaffold command is checked in under
 `examples/support/real_world/pycycle_mpcycle/commands/`. Run
-`examples/real_world/pycycle_mpcycle/ingest.py` first to write `generated_facade.py`
-and `scaffold_report.json` under `artifacts/examples/real_world/pycycle_mpcycle/`,
-`examples/real_world/pycycle_mpcycle/serve.py` to expose that generated facade over
-stdio MCP, and `examples/real_world/pycycle_mpcycle/use.py` to hit that MCP server
-and exercise the generated tools.
+`examples/real_world/pycycle_mpcycle/ingest.py` first to write
+`generated_facade.py` and `scaffold_report.json` under
+`artifacts/examples/real_world/pycycle_mpcycle/`,
+`examples/real_world/pycycle_mpcycle/serve.py` to expose that generated
+facade over stdio MCP, and `examples/real_world/pycycle_mpcycle/use.py`
+separately to exercise the same generated tools through MCP requests without
+launching `serve.py`.
 
 Technical Implementation
 ------------------------
@@ -36,9 +37,9 @@ Technical Implementation
   `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpcraft.serve_stdio`.
-- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
-  `tools/call` requests, then exercises the create/add-parameter/close
-  lifecycle entirely through the served MCP interface.
+- `use.py` builds an in-process `mcpcraft.McpServer` from the saved facade, sends
+  `initialize`, `tools/list`, and `tools/call` requests, then exercises the
+  create/add-parameter/close lifecycle through the MCP runtime.
 
 Expected Results
 ----------------
@@ -93,4 +94,4 @@ Use Script
 .. literalinclude:: ../../../examples/real_world/pycycle_mpcycle/use.py
    :language: python
    :linenos:
-   :lines: 61-
+   :lines: 62-

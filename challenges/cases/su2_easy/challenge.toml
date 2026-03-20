@@ -1,0 +1,50 @@
+# Self-contained case: the shallowest useful SU2 direct-analysis workflow.
+# This easy rung keeps the solve to one iteration while retaining the history and surface CSV outputs.
+id = "su2_easy"
+title = "SU2 easy: one-iteration surface solve"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "su2"
+difficulty = "easy"
+
+[example]
+summary = "Wrap the `SU2_CFD` executable and run a one-iteration direct solve that writes history and surface CSV outputs when SU2 is installed."
+motivation = "The easiest SU2 challenge should still be a real CFD solve with retained outputs, not just a help probe."
+proves = [
+  "A heavyweight optional CFD CLI can live in the challenge suite while still doing real analysis work.",
+  "The generated wrapper can retain concrete SU2 convergence and surface-output artifacts.",
+]
+limitations = [
+  "This case intentionally reports `skipped_unavailable` on machines without SU2 installed.",
+]
+
+[target]
+kind = "command"
+value = ["SU2_CFD"]
+
+[probe]
+commands = [["SU2_CFD"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_su2_cfd"
+help_probe_args = ["-h"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/inv_NACA0012_easy.cfg.in"
+destination = "{challenge_artifact_dir}/inv_NACA0012_easy.cfg"
+
+[workflow]
+[[workflow.steps]]
+label = "Run a one-iteration SU2 direct solve and retain history plus surface outputs"
+tool = "run_su2_cfd"
+arguments = { extra_argv = ["{challenge_artifact_dir}/inv_NACA0012_easy.cfg"], cwd = "{challenge_artifact_dir}" }
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = [
+  "{challenge_artifact_dir}/history.csv",
+  "{challenge_artifact_dir}/surface_flow.csv",
+]

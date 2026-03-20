@@ -1,10 +1,12 @@
 # Self-contained case: run a tiny real SU2 CFD workflow without overfitting to one machine.
 # This case is allowed to skip cleanly when the upstream executable is not installed.
 id = "su2_cli"
-title = "SU2 CLI oneshot"
+title = "SU2 medium: direct solve with restart output"
 tier = "local_full"
 style = "command"
 slice = "aerodynamics"
+family = "su2"
+difficulty = "medium"
 
 [example]
 summary = "Wrap the `SU2_CFD` executable and run a tiny adapted official tutorial case when it is available."

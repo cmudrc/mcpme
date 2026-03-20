@@ -3,12 +3,10 @@
 Core Examples
 =============
 
-The core examples are part of the maintained public contract for
-`mcpcraft`. Each page below is generated from the example module
-docstring and the checked-in source file, so the code and prose stay
-aligned. Core examples that need helper inputs keep them under
-``examples/support/<example_id>/``, while derived outputs stay under
-``artifacts/examples/core/<example_id>/``.
+The core examples are the maintained public contract under
+``examples/core/``. They stay small, deterministic, and inspectable,
+with checked-in support inputs under ``examples/support/`` and derived
+outputs under ``artifacts/examples/core/``.
 
 .. toctree::
    :maxdepth: 1

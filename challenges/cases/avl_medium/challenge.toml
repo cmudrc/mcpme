@@ -1,0 +1,68 @@
+# Self-contained case: a broader AVL batch run that retains both forces and derivatives.
+# This adds the first genuinely richer report without leaving the small fixture behind.
+id = "avl_medium"
+title = "AVL medium: forces and stability"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "avl"
+difficulty = "medium"
+
+[example]
+summary = "Wrap the `avl` executable, solve one tiny wing operating point, and retain both total-forces and stability-derivative reports."
+motivation = "A medium AVL challenge should still be compact, but it should prove more than one output path from the same operating-point analysis."
+proves = [
+  "A deterministic AVL batch session can emit more than one useful aerodynamic artifact in a single run.",
+  "The wrapper path remains viable even when the upstream solver expects menu navigation and filename prompts instead of option flags.",
+]
+limitations = [
+  "This case still uses a deliberately tiny geometry rather than stored run cases or eigenmode analysis.",
+  "This case intentionally reports `skipped_unavailable` when `avl` is not installed.",
+]
+
+[target]
+kind = "command"
+value = ["avl"]
+
+[probe]
+commands = [["avl"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_avl"
+help_probe_args = ["-h"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/minimal_wing.avl"
+destination = "{challenge_artifact_dir}/minimal_wing.avl"
+
+[workflow]
+[[workflow.steps]]
+label = "Solve a tiny wing and write both forces and stability reports"
+tool = "run_avl"
+
+[workflow.steps.arguments]
+cwd = "{challenge_artifact_dir}"
+extra_argv = ["minimal_wing.avl"]
+stdin_text = """
+PLOP
+G
+
+OPER
+A A 4
+X
+FT
+forces.txt
+ST
+stability.txt
+
+QUIT
+"""
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = [
+  "{challenge_artifact_dir}/forces.txt",
+  "{challenge_artifact_dir}/stability.txt",
+]

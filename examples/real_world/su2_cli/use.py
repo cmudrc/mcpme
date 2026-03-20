@@ -5,18 +5,19 @@
 This real-world example models the shape of a real heavyweight CLI integration more
 closely than the smaller examples: first ingest the upstream surface into a
 generated facade, persist that generated artifact with a standard scaffold
-report, serve it over stdio MCP, and only then use it through a client
-request. The split is deliberate so contributors can inspect the generated
-wrapper before the wrapped command is executed.
+report, and then exercise that saved facade through MCP requests. The split is
+deliberate so contributors can inspect the generated wrapper before the wrapped
+command is executed.
 
 ## Preset Environment
 
 The checked-in command surface for this real-world example lives under
 `examples/support/real_world/su2_cli/commands/`. Run `examples/real_world/su2_cli/ingest.py`
 to write `generated_facade.py` and `scaffold_report.json` under
-`artifacts/examples/real_world/su2_cli/`, `examples/real_world/su2_cli/serve.py` to expose
-that generated facade as an MCP server, and `examples/real_world/su2_cli/use.py` to
-hit that MCP server and exercise the wrapped CLI.
+`artifacts/case_studies/su2_cli/`, `case_studies/su2_cli/serve.py` to expose
+that generated facade as an MCP server over stdio, and
+`case_studies/su2_cli/use.py` separately to exercise the same generated
+facade through MCP requests without launching `serve.py`.
 
 ## Technical Implementation
 
@@ -25,11 +26,11 @@ hit that MCP server and exercise the wrapped CLI.
   `generated_facade.py` and `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
   it over stdio with `mcpcraft.serve_stdio`.
-- `use.py` reads the standard artifact paths, starts `serve.py` as a
-  subprocess, sends `initialize`, `tools/list`, and `tools/call` requests, and
-  captures the JSON-RPC responses.
+- `use.py` reads the standard artifact paths, builds an in-process
+  `mcpcraft.McpServer` from the saved facade, sends `initialize`, `tools/list`,
+  and `tools/call` requests, and captures the JSON-RPC responses.
 - The result payload retains both the raw scaffold report and the wrapped
-  help-path execution evidence returned by the served MCP runtime.
+  help-path execution evidence returned by the MCP runtime.
 
 ## Expected Results
 
@@ -61,22 +62,26 @@ expected to skip cleanly on many machines.
 from __future__ import annotations
 
 import json
-import os
 import shutil
-import subprocess
-import sys
 from pathlib import Path
+
+from mcpcraft import McpServer, build_manifest
 
 CASE_STUDY_ID = "su2_cli"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "real_world" / CASE_STUDY_ID
 GENERATED_FACADE_PATH = ARTIFACT_ROOT / "generated_facade.py"
 REPORT_PATH = ARTIFACT_ROOT / "scaffold_report.json"
-SERVE_PATH = REPO_ROOT / "examples" / "real_world" / CASE_STUDY_ID / "serve.py"
+
+
+def _load_server() -> McpServer:
+    """Build an MCP server from the saved generated facade."""
+    manifest = build_manifest(targets=[GENERATED_FACADE_PATH], artifact_root=ARTIFACT_ROOT)
+    return McpServer(manifest)
 
 
 def main() -> None:
-    """Hit the served SU2 MCP runtime and print the stable JSON payload."""
+    """Exercise the generated SU2 facade through in-process MCP requests."""
     if not GENERATED_FACADE_PATH.exists():
         # Mirror the ingest availability check so missing artifacts become
         # readable skips on machines without SU2 installed.
@@ -102,96 +107,42 @@ def main() -> None:
         )
 
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    server = _load_server()
 
-    env = dict(os.environ)
-    pythonpath_entries = [str((REPO_ROOT / "src").resolve())]
-    if env.get("PYTHONPATH"):
-        pythonpath_entries.append(env["PYTHONPATH"])
-    env["PYTHONPATH"] = os.pathsep.join(pythonpath_entries)
+    # Keep the MCP exchange explicit even though the use step now runs
+    # separately from the stdio serving demo.
+    initialize = server.handle_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
+    if initialize is None or "error" in initialize:
+        raise RuntimeError(f"SU2 MCP initialize failed: {initialize}")
 
-    # Start the stdio server in its own process to demonstrate the real client
-    # boundary for a wrapped CLI tool.
-    server = subprocess.Popen(
-        [sys.executable, str(SERVE_PATH)],
-        cwd=REPO_ROOT,
-        env=env,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
+    server.handle_request({"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+    tools_list = server.handle_request({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+    if tools_list is None or "error" in tools_list:
+        raise RuntimeError(f"SU2 MCP tools/list failed: {tools_list}")
+
+    tool_names = [
+        tool["name"]
+        for tool in tools_list["result"]["tools"]
+        if isinstance(tool, dict) and isinstance(tool.get("name"), str)
+    ]
+    if "run_su2_cfd" not in tool_names:
+        raise ValueError(
+            f"Expected the served tool list to include 'run_su2_cfd'; got {tool_names!r}."
+        )
+
+    # Use `-h` as a cheap, deterministic smoke test that still exercises the
+    # real wrapped CLI entry point.
+    tool_call = server.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"arguments": {"extra_argv": ["-h"]}, "name": "run_su2_cfd"},
+        }
     )
-    if server.stdin is None or server.stdout is None or server.stderr is None:
-        raise RuntimeError(
-            "Expected stdio pipes when launching the SU2 real-world example MCP server."
-        )
-
-    try:
-        # Manually issue the MCP handshake so the example teaches the protocol
-        # shape rather than hiding it behind a helper library.
-        server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}) + "\n")
-        server.stdin.flush()
-        initialize = json.loads(server.stdout.readline())
-        if "error" in initialize:
-            raise RuntimeError(f"SU2 MCP initialize failed: {initialize['error']}")
-
-        # Complete initialization before normal requests.
-        server.stdin.write(
-            json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n"
-        )
-        server.stdin.flush()
-
-        # Prove which tool names the generated facade exposes before using one.
-        server.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n")
-        server.stdin.flush()
-        tools_list = json.loads(server.stdout.readline())
-        if "error" in tools_list:
-            raise RuntimeError(f"SU2 MCP tools/list failed: {tools_list['error']}")
-
-        tool_names = [
-            tool["name"]
-            for tool in tools_list["result"]["tools"]
-            if isinstance(tool, dict) and isinstance(tool.get("name"), str)
-        ]
-        if "run_su2_cfd" not in tool_names:
-            raise ValueError(
-                f"Expected the served tool list to include 'run_su2_cfd'; got {tool_names!r}."
-            )
-
-        # Use `-h` as a cheap, deterministic smoke test that still exercises
-        # the real wrapped CLI entry point.
-        server.stdin.write(
-            json.dumps(
-                {
-                    "jsonrpc": "2.0",
-                    "id": 3,
-                    "method": "tools/call",
-                    "params": {"arguments": {"extra_argv": ["-h"]}, "name": "run_su2_cfd"},
-                }
-            )
-            + "\n"
-        )
-        server.stdin.flush()
-        tool_call = json.loads(server.stdout.readline())
-        if "error" in tool_call:
-            raise RuntimeError(f"SU2 MCP tools/call failed: {tool_call['error']}")
-    finally:
-        # Closing stdin allows the stdio server to notice end-of-session and exit.
-        if not server.stdin.closed:
-            server.stdin.close()
-        try:
-            return_code = server.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            # Kill hung servers so the example does not block indefinitely.
-            server.kill()
-            return_code = server.wait(timeout=5)
-        server_stderr = server.stderr.read()
-
-    # Report server stderr verbatim to keep the wrapped command behavior
-    # inspectable when something goes wrong.
-    if return_code != 0:
-        raise RuntimeError(
-            f"SU2 MCP server exited with code {return_code}.\nstderr:\n{server_stderr}"
-        )
+    if tool_call is None or "error" in tool_call:
+        raise RuntimeError(f"SU2 MCP tools/call failed: {tool_call}")
 
     tool_result = tool_call["result"]
     # Sanity-check that the help path reached the real upstream executable.

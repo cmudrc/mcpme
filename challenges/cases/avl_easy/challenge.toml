@@ -1,0 +1,63 @@
+# Self-contained case: the shallowest useful AVL batch run.
+# This keeps the first rung approachable while still producing a real aerodynamic report.
+id = "avl_easy"
+title = "AVL easy: total forces"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "avl"
+difficulty = "easy"
+
+[example]
+summary = "Wrap the `avl` executable, solve one tiny wing operating point, and retain a total-forces report."
+motivation = "The easiest AVL challenge should prove that a sparse, menu-driven legacy CLI can still do recognizable aerodynamic work through a deterministic batch session."
+proves = [
+  "A minimal AVL wrapper can drive a real operating-point solve without relying on rich CLI help output.",
+  "The challenge harness can retain a concrete aerodynamic forces report from a menu-driven solver.",
+]
+limitations = [
+  "This case focuses on one tiny geometry and one total-forces report rather than a broader AVL workflow.",
+  "This case intentionally reports `skipped_unavailable` when `avl` is not installed.",
+]
+
+[target]
+kind = "command"
+value = ["avl"]
+
+[probe]
+commands = [["avl"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_avl"
+help_probe_args = ["-h"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/minimal_wing.avl"
+destination = "{challenge_artifact_dir}/minimal_wing.avl"
+
+[workflow]
+[[workflow.steps]]
+label = "Solve a tiny wing at one angle of attack and write total forces"
+tool = "run_avl"
+
+[workflow.steps.arguments]
+cwd = "{challenge_artifact_dir}"
+extra_argv = ["minimal_wing.avl"]
+stdin_text = """
+PLOP
+G
+
+OPER
+A A 4
+X
+FT
+forces.txt
+
+QUIT
+"""
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = ["{challenge_artifact_dir}/forces.txt"]

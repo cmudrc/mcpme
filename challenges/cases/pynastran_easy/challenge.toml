@@ -1,0 +1,62 @@
+# Self-contained case: the smallest useful pyNastran deck-writing workflow.
+# This easy rung writes a real BDF deck after creating one structural node.
+id = "pynastran_easy"
+title = "pyNastran easy: one-node deck"
+tier = "gha_subset"
+style = "package"
+slice = "structures"
+family = "pynastran"
+difficulty = "easy"
+
+[example]
+summary = "Wrap `pyNastran`'s `BDF` class, add one grid point, and write a non-empty deck file."
+motivation = "The easiest pyNastran challenge should still prove a real deck-writing workflow instead of stopping at class construction."
+proves = [
+  "One-shot class ingestion works for a real structural-analysis package with a large method surface.",
+  "The generated session facade can mutate an in-memory BDF model and emit a concrete deck artifact.",
+]
+
+[target]
+kind = "package"
+value = "pyNastran.bdf.bdf"
+
+[probe]
+imports = ["pyNastran.bdf.bdf"]
+
+[scaffold]
+kind = "package"
+symbol_include_patterns = ["^BDF$"]
+
+[ingestion]
+min_generated_tools = 100
+required_tools = [
+  "create_bdf",
+  "bdf_add_grid",
+  "bdf_write_bdf",
+  "close_bdf",
+]
+
+[workflow]
+[[workflow.steps]]
+label = "Create a BDF session"
+tool = "create_bdf"
+arguments = { debug = false }
+capture_json = { bdf_session_id = "session_id" }
+
+[[workflow.steps]]
+label = "Add one structural grid point"
+tool = "bdf_add_grid"
+arguments = { session_id = "{bdf_session_id}", nid = 1, xyz = [0.0, 0.0, 0.0] }
+
+[[workflow.steps]]
+label = "Write the resulting BDF deck"
+tool = "bdf_write_bdf"
+arguments = { session_id = "{bdf_session_id}", out_filename = "{challenge_artifact_dir}/easy_model.bdf" }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/easy_model.bdf"]
+
+[[workflow.steps]]
+label = "Close the BDF session"
+tool = "close_bdf"
+arguments = { session_id = "{bdf_session_id}" }

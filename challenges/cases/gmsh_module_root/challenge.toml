@@ -1,17 +1,19 @@
 # Self-contained case: ingest the Python module surface for Gmsh itself.
 # This is a simple lifecycle check that complements the CLI-focused challenge.
 id = "gmsh_module_root"
-title = "Gmsh module root oneshot"
+title = "Gmsh hard: module mesh conversion"
 tier = "local_full"
 style = "package"
 slice = "aerodynamics"
+family = "gmsh"
+difficulty = "hard"
 
 [example]
-summary = "Wrap the Python `gmsh` module root and exercise a fuller initialize/check/clear/finalize lifecycle."
-motivation = "Some engineering tools expose both a CLI and a Python module, and a wrapper system should handle both cleanly without package-specific code."
+summary = "Wrap the Python `gmsh` module root, open a checked-in mesh, and convert it to VTK through the top-level module API."
+motivation = "A harder Gmsh challenge should prove that the Python module surface can do real mesh work too, not just lifecycle smoke."
 proves = [
-  "Package-root ingestion can target multiple lifecycle helpers from a compiled upstream module in one shot.",
-  "The generated wrapper can drive a real initialize/check/clear/finalize sequence.",
+  "Package-root ingestion can target useful top-level functions from a compiled upstream module in one shot.",
+  "The generated wrapper can drive a real mesh conversion workflow through the Python module surface.",
   "The same upstream tool can be pressure-tested through both command and Python surfaces.",
 ]
 
@@ -24,12 +26,17 @@ imports = ["gmsh"]
 
 [scaffold]
 kind = "package"
-symbol_include_patterns = ["^(clear|finalize|initialize|is_initialized)$"]
+symbol_include_patterns = ["^(clear|finalize|initialize|open|write)$"]
 max_generated_tools = 8
 
 [ingestion]
-min_generated_tools = 4
-required_tools = ["clear", "finalize", "initialize", "is_initialized"]
+min_generated_tools = 5
+required_tools = ["clear", "finalize", "initialize", "open", "write"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/seed2d.msh"
+destination = "{challenge_artifact_dir}/seed2d.msh"
 
 [workflow]
 [[workflow.steps]]
@@ -38,12 +45,20 @@ tool = "initialize"
 arguments = {}
 
 [[workflow.steps]]
-label = "Verify the upstream Gmsh module reports itself as initialized"
-tool = "is_initialized"
-arguments = {}
+label = "Open the checked-in seed mesh through the module root"
+tool = "open"
+arguments = { fileName = "{challenge_artifact_dir}/seed2d.msh" }
 
 [workflow.steps.expect]
-text_contains = ["1"]
+text_contains = []
+
+[[workflow.steps]]
+label = "Write the loaded seed mesh back out as VTK"
+tool = "write"
+arguments = { fileName = "{challenge_artifact_dir}/seed2d.vtk" }
+
+[workflow.steps.expect]
+files_nonempty = ["{challenge_artifact_dir}/seed2d.vtk"]
 
 [[workflow.steps]]
 label = "Clear any active Gmsh models and views"

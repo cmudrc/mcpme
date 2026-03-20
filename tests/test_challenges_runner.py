@@ -169,6 +169,50 @@ def test_run_challenge_suite_can_select_specific_ids(tmp_path: Path) -> None:
     assert aggregate.results[0].id == "beta"
 
 
+def test_run_challenge_suite_can_filter_by_family_and_difficulty(tmp_path: Path) -> None:
+    """The runner should allow difficulty ladders to be exercised selectively."""
+    easy = ChallengeSpec(
+        id="avl_easy",
+        title="AVL easy",
+        tier="local_full",
+        style="command",
+        slice="aerodynamics",
+        family="avl",
+        difficulty="easy",
+        target=ChallengeTarget(kind="command", value=("missing_easy",)),
+        probe=ChallengeProbe(commands=(("missing_easy",),)),
+        scaffold_kind="command",
+        scaffold_options={},
+        workflow_steps=(ChallengeWorkflowStep(tool="easy"),),
+    )
+    hard = ChallengeSpec(
+        id="avl_hard",
+        title="AVL hard",
+        tier="local_full",
+        style="command",
+        slice="aerodynamics",
+        family="avl",
+        difficulty="hard",
+        target=ChallengeTarget(kind="command", value=("missing_hard",)),
+        probe=ChallengeProbe(commands=(("missing_hard",),)),
+        scaffold_kind="command",
+        scaffold_options={},
+        workflow_steps=(ChallengeWorkflowStep(tool="hard"),),
+    )
+
+    aggregate = run_challenge_suite(
+        (easy, hard),
+        repo_root=tmp_path,
+        artifact_root=tmp_path / "artifacts",
+        selected_tier="all",
+        selected_families=("avl",),
+        selected_difficulty="hard",
+    )
+
+    assert aggregate.total == 1
+    assert aggregate.results[0].id == "avl_hard"
+
+
 def test_run_challenge_suite_isolates_upstream_relative_outputs(
     tmp_path: Path,
     monkeypatch: object,
@@ -288,6 +332,67 @@ def test_run_challenge_suite_renders_setup_inputs_before_the_workflow(
     assert rendered_path.read_text(encoding="utf-8").startswith("workflow-ready ")
 
 
+def test_run_challenge_suite_clears_previous_artifacts_before_rerun(
+    tmp_path: Path,
+    monkeypatch: object,
+) -> None:
+    """Re-running the same case into one artifact root should stay deterministic."""
+    package_dir = tmp_path / "writer_pkg"
+    package_dir.mkdir()
+    (package_dir / "__init__.py").write_text(
+        '"""Challenge package that writes a stable file."""\n'
+        "from pathlib import Path\n\n"
+        "def write_report(path: str) -> str:\n"
+        '    """Write a stable report file.\n\n'
+        "    :param path: Output file path.\n"
+        "    :returns: The written path.\n"
+        '    """\n'
+        "    Path(path).write_text('fresh', encoding='utf-8')\n"
+        "    return path\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    spec = ChallengeSpec(
+        id="writer_pkg",
+        title="Writer package",
+        tier="gha_subset",
+        style="package",
+        slice="systems",
+        target=ChallengeTarget(kind="package", value="writer_pkg"),
+        probe=ChallengeProbe(imports=("writer_pkg",)),
+        scaffold_kind="package",
+        scaffold_options={"symbol_include_patterns": ["^write_report$"]},
+        workflow_steps=(
+            ChallengeWorkflowStep(
+                tool="write_report",
+                arguments={"path": "report.txt"},
+                expect_files_nonempty=("report.txt",),
+            ),
+        ),
+    )
+
+    artifact_root = tmp_path / "artifacts"
+    first = run_challenge_suite(
+        (spec,),
+        repo_root=tmp_path,
+        artifact_root=artifact_root,
+        selected_tier="gha_subset",
+    )
+    stale_path = artifact_root / "writer_pkg" / "stale.txt"
+    stale_path.write_text("stale", encoding="utf-8")
+    second = run_challenge_suite(
+        (spec,),
+        repo_root=tmp_path,
+        artifact_root=artifact_root,
+        selected_tier="gha_subset",
+    )
+
+    assert first.results[0].status == "passed"
+    assert second.results[0].status == "passed"
+    assert not stale_path.exists()
+
+
 def test_challenge_badge_and_summary_render_deterministically() -> None:
     """Badge and markdown summary output should reflect aggregate counts clearly."""
     aggregate = ChallengeAggregate(
@@ -327,5 +432,5 @@ def test_challenge_badge_and_summary_render_deterministically() -> None:
     summary = render_summary_markdown(aggregate)
 
     assert 'aria-label="Challenges Live: 1/2 pass"' in badge
-    assert "| `alpha` | `gha_subset` | `passed` | ok |" in summary
-    assert "| `beta` | `gha_subset` | `failed` | boom |" in summary
+    assert "| `alpha` | `alpha` | `medium` | `gha_subset` | `passed` | ok |" in summary
+    assert "| `beta` | `beta` | `medium` | `gha_subset` | `failed` | boom |" in summary

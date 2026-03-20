@@ -6,22 +6,24 @@ MYPY ?= $(PYTHON) -m mypy
 SPHINX ?= $(PYTHON) -m sphinx
 BUILD ?= $(PYTHON) -m build
 TWINE ?= $(PYTHON) -m twine
+CHALLENGE_BIN ?= $(CURDIR)/.challenge-tools/bin
+CHALLENGE_PATH = PATH="$(CHALLENGE_BIN):$(CURDIR)/.venv/bin:$$PATH"
 
 .PHONY: help check-python dev install-dev generate-example-docs \
 	generate-case-study-docs generate-challenge-docs case-study-docs-check \
-	challenge-docs-check challenge lint fmt fmt-check type test qa coverage \
-	docstrings-check run-example run-examples run-real-world-example \
-	run-real-world-examples run-case-study run-case-studies challenges-subset \
-	challenges-full challenges-metrics docs docs-build docs-check \
-	docs-linkcheck release-check ci clean
+	challenge-docs-check challenge-deps challenge lint fmt fmt-check type test qa coverage \
+	docstrings-check run-example run-examples run-case-study run-case-studies \
+	challenges-subset challenges-full challenges-metrics docs docs-build \
+	docs-check docs-linkcheck release-check ci clean
 
 help:
 	@echo "Common targets:"
 	@echo "  dev              Install the project in editable mode with dev dependencies."
 	@echo "  test             Run the pytest suite."
 	@echo "  qa               Run lint, fmt-check, type, and test."
-	@echo "  run-examples     Execute the core example scripts."
-	@echo "  run-real-world-examples Execute the optional real-world example scripts."
+	@echo "  run-examples     Execute the runnable example scripts."
+	@echo "  run-case-studies Execute the optional case-study scripts."
+	@echo "  challenge-deps   Install optional live challenge runtimes into .challenge-tools/."
 	@echo "  challenge        Run one live challenge case (set CASE=<id>)."
 	@echo "  challenges-subset Run the reduced live raw-upstream challenge suite."
 	@echo "  challenges-full  Run the broader local live raw-upstream challenge suite."
@@ -87,27 +89,26 @@ run-examples: check-python
 	PYTHONPATH=src $(PYTHON) examples/core/subprocess_wrapper.py
 	PYTHONPATH=src $(PYTHON) examples/core/runtime_server.py
 
-run-real-world-example: check-python
-	@if [ -z "$(CASE)" ]; then echo "Set CASE=<real_world_example_id>."; exit 1; fi
-	PYTHONPATH=src $(PYTHON) examples/real_world/$(CASE)/ingest.py
-	PYTHONPATH=src $(PYTHON) examples/real_world/$(CASE)/use.py
+run-case-study: check-python
+	@if [ -z "$(CASE)" ]; then echo "Set CASE=<case_study_id>."; exit 1; fi
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/$(CASE)/ingest.py
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/$(CASE)/use.py
 
-run-real-world-examples: check-python
-	PYTHONPATH=src $(PYTHON) examples/real_world/su2_cli/ingest.py
-	PYTHONPATH=src $(PYTHON) examples/real_world/su2_cli/use.py
-	PYTHONPATH=src $(PYTHON) examples/real_world/pycycle_mpcycle/ingest.py
-	PYTHONPATH=src $(PYTHON) examples/real_world/pycycle_mpcycle/use.py
-	PYTHONPATH=src $(PYTHON) examples/real_world/tigl_cpacs/ingest.py
-	PYTHONPATH=src $(PYTHON) examples/real_world/tigl_cpacs/use.py
+run-case-studies: check-python
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/su2_cli/ingest.py
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/su2_cli/use.py
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/pycycle_mpcycle/ingest.py
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/pycycle_mpcycle/use.py
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/tigl_cpacs/ingest.py
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) case_studies/tigl_cpacs/use.py
 
-run-case-study: run-real-world-example
-
-run-case-studies: run-real-world-examples
+challenge-deps: check-python
+	$(PYTHON) scripts/install_challenge_deps.py --profile $(or $(PROFILE),full)
 
 challenge: check-python
 	@if [ -z "$(CASE)" ]; then echo "Set CASE=<challenge_id>."; exit 1; fi
 	mkdir -p artifacts/challenges/single
-	PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
 		--catalog-dir challenges/cases \
 		--tier all \
 		--only "$(CASE)" \
@@ -118,7 +119,7 @@ challenge: check-python
 
 challenges-subset: check-python
 	mkdir -p artifacts/challenges/gha_subset
-	PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
 		--tier gha_subset \
 		--artifact-root artifacts/challenges/gha_subset \
 		--metrics-json artifacts/challenges/gha_subset/challenges_metrics.json \
@@ -127,7 +128,7 @@ challenges-subset: check-python
 
 challenges-full: check-python
 	mkdir -p artifacts/challenges/full
-	PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
+	$(CHALLENGE_PATH) PYTHONPATH=src $(PYTHON) scripts/run_challenges.py \
 		--tier all \
 		--artifact-root artifacts/challenges/full \
 		--metrics-json artifacts/challenges/full/challenges_metrics.json \

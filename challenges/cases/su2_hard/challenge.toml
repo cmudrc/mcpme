@@ -1,0 +1,52 @@
+# Self-contained case: step up to richer direct-solve outputs from SU2.
+# This hard rung retains volume, surface, restart, and history artifacts from one adapted tutorial run.
+id = "su2_hard"
+title = "SU2 hard: direct solve with volume output"
+tier = "local_full"
+style = "command"
+slice = "aerodynamics"
+family = "su2"
+difficulty = "hard"
+
+[example]
+summary = "Wrap the `SU2_CFD` executable and run a tiny direct solve that writes history, surface CSV, restart, and ParaView volume outputs when SU2 is installed."
+motivation = "A harder SU2 challenge should retain more of what makes a CFD run useful than a convergence trace alone."
+proves = [
+  "A deterministic wrapper can drive a real SU2 direct solve that retains multiple output artifact types.",
+  "The challenge harness can verify richer CFD outputs from an optional heavyweight solver.",
+]
+limitations = [
+  "This case intentionally reports `skipped_unavailable` on machines without SU2 installed.",
+]
+
+[target]
+kind = "command"
+value = ["SU2_CFD"]
+
+[probe]
+commands = [["SU2_CFD"]]
+
+[scaffold]
+kind = "command"
+function_name = "run_su2_cfd"
+help_probe_args = ["-h"]
+
+[setup]
+[[setup.rendered_files]]
+source = "fixtures/inv_NACA0012_hard.cfg.in"
+destination = "{challenge_artifact_dir}/inv_NACA0012_hard.cfg"
+
+[workflow]
+[[workflow.steps]]
+label = "Run a one-iteration SU2 direct solve with volume and restart outputs"
+tool = "run_su2_cfd"
+arguments = { extra_argv = ["{challenge_artifact_dir}/inv_NACA0012_hard.cfg"], cwd = "{challenge_artifact_dir}" }
+
+[workflow.steps.expect]
+json_fields = { exit_code = 0 }
+files_nonempty = [
+  "{challenge_artifact_dir}/history.csv",
+  "{challenge_artifact_dir}/surface_flow.csv",
+  "{challenge_artifact_dir}/restart_flow.dat",
+  "{challenge_artifact_dir}/vol_solution.vtu",
+]

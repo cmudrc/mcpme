@@ -11,21 +11,22 @@ Introduction
 This real-world example tackles a more awkward upstream than the small core examples:
 TiGL workflows revolve around native bindings, CPACS files, and handles that
 are not themselves JSON-friendly. Instead of baking that complexity into
-`mcpcraft`, the real-world example keeps a tiny helper package checked in, ingests that
-helper through the public CLI, persists the generated facade with a standard
-scaffold report, serves that facade over stdio MCP, and then uses it through a
-real MCP client request.
+`mcpcraft`, the real-world example keeps a tiny helper package checked in,
+ingests that helper through the public CLI, persists the generated facade with
+a standard scaffold report, and then exercises that saved facade through MCP
+requests.
 
 Preset Environment
 ------------------
 
 The helper package, the public scaffold wrapper, and the real D150 CPACS XML
 fixture all live under `examples/support/real_world/tigl_cpacs/`. Run
-`examples/real_world/tigl_cpacs/ingest.py` first to write `generated_facade.py` and
-`scaffold_report.json` under `artifacts/examples/real_world/tigl_cpacs/`,
-`examples/real_world/tigl_cpacs/serve.py` to expose that generated facade over stdio
-MCP, and `examples/real_world/tigl_cpacs/use.py` to hit that MCP server and execute
-the helper against the checked-in CPACS input.
+`examples/real_world/tigl_cpacs/ingest.py` first to write
+`generated_facade.py` and `scaffold_report.json` under
+`artifacts/examples/real_world/tigl_cpacs/`,
+`examples/real_world/tigl_cpacs/serve.py` to expose that generated facade over
+stdio MCP, and `examples/real_world/tigl_cpacs/use.py` separately to exercise
+the helper against the checked-in CPACS input without launching `serve.py`.
 
 Technical Implementation
 ------------------------
@@ -38,9 +39,10 @@ Technical Implementation
 - `serve.py` adds the checked-in helper package parent to `sys.path`, loads the
   saved generated facade through the public API, and serves it over stdio with
   `mcpcraft.serve_stdio`.
-- `use.py` starts `serve.py`, sends `initialize`, `tools/list`, and
-  `tools/call` requests, and captures the TiGL summary through the served MCP
-  interface.
+- `use.py` adds the checked-in helper package parent to `sys.path`, builds an
+  in-process `mcpcraft.McpServer` from the saved facade, sends `initialize`,
+  `tools/list`, and `tools/call` requests, and captures the TiGL summary
+  through the MCP runtime.
 
 Expected Results
 ----------------
@@ -98,4 +100,4 @@ Use Script
 .. literalinclude:: ../../../examples/real_world/tigl_cpacs/use.py
    :language: python
    :linenos:
-   :lines: 66-
+   :lines: 68-

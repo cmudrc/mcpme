@@ -18,64 +18,105 @@ source .venv/bin/activate
 make dev
 ```
 
-## Killer Usage Examples
-
-Turn a normal Python module into an MCP manifest without importing user code
-during discovery:
+Install the optional live-challenge runtimes into the repo-local
+`.challenge-tools/` prefix when you want the broader raw-upstream lane:
 
 ```bash
-mcpcraft manifest examples/core/basic_usage.py
+make challenge-deps
 ```
 
-One-shot wrap an installed engineering package into a plain Python facade you
-can review:
+## Usage Examples
+
+For wrapped targets that need a generated facade, the CLI flow stays explicit:
+scaffold first, inspect the manifest second, and serve that saved facade last.
+
+Scaffold an installed package, inspect the generated manifest, then serve it:
 
 ```bash
-mcpcraft scaffold-package openmdao.utils.file_utils artifacts/openmdao_file_utils.py
-mcpcraft manifest artifacts/openmdao_file_utils.py
+mcpcraft scaffold-package openmdao.utils.file_utils generated_facade.py
+mcpcraft manifest generated_facade.py
+mcpcraft serve generated_facade.py
 ```
 
-One-shot wrap a real CLI tool:
+Scaffold a real CLI command through its help surface, inspect the manifest,
+then serve it:
 
 ```bash
-mcpcraft scaffold-command artifacts/gmsh_wrapper.py -- gmsh -help
-mcpcraft inspect artifacts/gmsh_wrapper.py
+mcpcraft scaffold-command generated_facade.py -- gmsh -help
+mcpcraft manifest generated_facade.py
+mcpcraft serve generated_facade.py
 ```
 
-Serve a wrapped target over stdio MCP:
+Scaffold an OpenAPI document into a plain Python HTTP facade, inspect the
+manifest, then serve it:
 
 ```bash
-mcpcraft serve examples/core/basic_usage.py
+mcpcraft scaffold-openapi api.json generated_facade.py
+mcpcraft manifest generated_facade.py
+mcpcraft serve generated_facade.py
 ```
 
-Run the maintained runnable examples:
+Source-backed Python files already are the inspectable surface, so they skip
+the scaffold step:
 
 ```bash
-make run-examples
+mcpcraft manifest tool_module.py
+mcpcraft serve tool_module.py
 ```
 
-The smaller core examples live under `examples/core/`, keep inspectable source
-inputs under `examples/support/`, and write only derived outputs under
-`artifacts/examples/core/`.
+## Real-Upstream Coverage
 
-Run the richer real-world examples for real upstream surfaces:
+### Real-World Examples
+
+The real-world examples are the primary inspectable integration lane for real
+engineering surfaces. Each example follows the same persisted handoff:
+`ingest.py` scaffolds and writes `generated_facade.py` plus
+`scaffold_report.json`, `serve.py` exposes that saved facade over stdio MCP,
+and `use.py` exercises the same saved tools through MCP requests.
+
+| Example | Upstream Surface | What It Covers | Run |
+| --- | --- | --- | --- |
+| `su2_cli` | `SU2_CFD` CLI | Command scaffolding around a heavyweight CFD executable. | `make run-real-world-example CASE=su2_cli` |
+| `pycycle_mpcycle` | `pycycle.api.MPCycle` | Package scaffolding plus a session-oriented runtime lifecycle. | `make run-real-world-example CASE=pycycle_mpcycle` |
+| `tigl_cpacs` | TiGL/TiXI helper package + CPACS fixture | Package scaffolding against native bindings and checked-in engineering data. | `make run-real-world-example CASE=tigl_cpacs` |
+
+Run the full lane or step through one example manually:
 
 ```bash
 make run-real-world-examples
-make run-real-world-example CASE=pycycle_mpcycle
+PYTHONPATH=src python examples/real_world/pycycle_mpcycle/ingest.py
+PYTHONPATH=src python examples/real_world/pycycle_mpcycle/serve.py
+PYTHONPATH=src python examples/real_world/pycycle_mpcycle/use.py
 ```
 
-Each real-world example directory under `examples/real_world/` follows a more
-realistic `ingest.py` then `serve.py` then `use.py` flow, with support inputs
-under `examples/support/real_world/` and derived outputs under
-`artifacts/examples/real_world/`. The handoff is standardized around
-`generated_facade.py` plus `scaffold_report.json` rather than a bespoke state
-blob.
+### Challenges
 
-Run the live raw-upstream challenge cases:
+The challenge lane is the live, non-gating raw-upstream stress test. Each case
+is self-contained under `challenges/cases/<id>/` with a canonical
+`challenge.toml`, any tiny checked-in fixtures it needs, and a generated
+README. Unlike the real-world examples, ingestion and workflow stay compressed into
+the challenge spec so the wrapping problem remains explicit.
+
+| Challenge | Tier | Target | What It Probes |
+| --- | --- | --- | --- |
+| `aerosandbox_root` | `local_full` | `aerosandbox` | Package-root ingestion around `Atmosphere` methods. |
+| `build123d_importers` | `gha_subset` | `build123d.importers` | Filtered package ingestion across STL and SVG importer routes. |
+| `build123d_root` | `local_full` | `build123d` | Broader package-root wrapping narrowed to importer workflows. |
+| `gmsh_cli` | `gha_subset` | `gmsh` | CLI wrapping that produces a real mesh file from a tiny `.geo` input. |
+| `gmsh_module_root` | `local_full` | `gmsh` | Python module-root lifecycle coverage for initialize/check/clear/finalize. |
+| `openmdao_api_problem` | `local_full` | `openmdao.api` | Root-package ingestion around `Problem` setup and inspection flows. |
+| `openmdao_file_utils` | `gha_subset` | `openmdao.utils.file_utils` | Concrete utility-function wrapping against a checked-in demo package. |
+| `pynastran_bdf` | `gha_subset` | `pyNastran.bdf.bdf` | Class scaffolding that creates model content and writes a non-empty deck. |
+| `su2_cli` | `local_full` | `SU2_CFD` | Live CLI ingestion against a tiny adapted tutorial case. |
+| `submitit_root` | `local_full` | `submitit` | Executor lifecycle wrapping for both local and auto executors. |
+| `xfoil_cli` | `local_full` | `xfoil` | CLI ingestion around a batch polar-generation workflow. |
+
+Run the reduced suite, the broader local suite, or one case in isolation:
 
 ```bash
+make challenge-deps
 make challenges-subset
+make challenges-full
 make challenge CASE=openmdao_file_utils
 ```
 

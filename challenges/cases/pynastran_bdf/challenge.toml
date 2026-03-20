@@ -1,10 +1,12 @@
 # Self-contained case: wrap a deck-building workflow from a structural-analysis package.
 # The resulting BDF file makes the challenge concrete and easy to inspect afterward.
 id = "pynastran_bdf"
-title = "pyNastran BDF oneshot"
+title = "pyNastran medium: inspected node deck"
 tier = "gha_subset"
 style = "package"
 slice = "structures"
+family = "pynastran"
+difficulty = "medium"
 
 [example]
 summary = "Wrap `pyNastran`'s `BDF` class, create a node, inspect model stats, and write a non-empty deck file."
