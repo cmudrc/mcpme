@@ -44,17 +44,17 @@ class McpServer:
                         "capabilities": {
                             "tools": {},
                             "experimental": {
-                                "mcpmeJobs": {
+                                "mcpwrapJobs": {
                                     "methods": [
-                                        "mcpme/jobs/list",
-                                        "mcpme/jobs/get",
-                                        "mcpme/jobs/tail",
-                                        "mcpme/jobs/cancel",
+                                        "mcpwrap/jobs/list",
+                                        "mcpwrap/jobs/get",
+                                        "mcpwrap/jobs/tail",
+                                        "mcpwrap/jobs/cancel",
                                     ]
                                 }
                             },
                         },
-                        "serverInfo": {"name": "mcpme", "version": "0.1.0"},
+                        "serverInfo": {"name": "mcpwrap", "version": "0.1.0"},
                     },
                 }
             if method == "notifications/initialized":
@@ -68,7 +68,7 @@ class McpServer:
             if method == "tools/call":
                 params = request.get("params", {})
                 meta = params.get("_meta", {}) if isinstance(params, dict) else {}
-                run_mode = meta.get("mcpme/runMode")
+                run_mode = meta.get("mcpwrap/runMode")
                 if run_mode == "async":
                     if self.job_manager is None:
                         raise RuntimeError("Job manager is not initialized.")
@@ -86,7 +86,7 @@ class McpServer:
                                     "text": f"Started job {job['jobId']} for {job['tool']}.",
                                 }
                             ],
-                            "_meta": {"mcpme/job": job},
+                            "_meta": {"mcpwrap/job": job},
                         },
                     }
                 result = execute_tool(
@@ -99,7 +99,7 @@ class McpServer:
                     "id": request_id,
                     "result": result.to_mcp_result(),
                 }
-            if method == "mcpme/jobs/list":
+            if method == "mcpwrap/jobs/list":
                 if self.job_manager is None:
                     raise RuntimeError("Job manager is not initialized.")
                 return {
@@ -107,7 +107,7 @@ class McpServer:
                     "id": request_id,
                     "result": {"jobs": self.job_manager.list_jobs()},
                 }
-            if method == "mcpme/jobs/get":
+            if method == "mcpwrap/jobs/get":
                 if self.job_manager is None:
                     raise RuntimeError("Job manager is not initialized.")
                 params = request.get("params", {})
@@ -116,7 +116,7 @@ class McpServer:
                     "id": request_id,
                     "result": self.job_manager.get(str(params["jobId"])),
                 }
-            if method == "mcpme/jobs/tail":
+            if method == "mcpwrap/jobs/tail":
                 if self.job_manager is None:
                     raise RuntimeError("Job manager is not initialized.")
                 params = request.get("params", {})
@@ -129,7 +129,7 @@ class McpServer:
                         lines=int(params.get("lines", 100)),
                     ),
                 }
-            if method == "mcpme/jobs/cancel":
+            if method == "mcpwrap/jobs/cancel":
                 if self.job_manager is None:
                     raise RuntimeError("Job manager is not initialized.")
                 params = request.get("params", {})

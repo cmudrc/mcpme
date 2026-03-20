@@ -55,21 +55,21 @@ def schema_from_annotation(annotation: Any) -> dict[str, Any]:
         return {
             "type": "string",
             "contentEncoding": "base64",
-            "x-mcpme-kind": "bytes",
+            "x-mcpwrap-kind": "bytes",
         }
     if annotation is Path:
         return {
             "type": "string",
             "format": "path",
-            "x-mcpme-kind": "path",
-            "x-mcpme-path-kind": "auto",
+            "x-mcpwrap-kind": "path",
+            "x-mcpwrap-path-kind": "auto",
         }
     if _is_pathlike_annotation(annotation):
         return {
             "type": "string",
             "format": "path",
-            "x-mcpme-kind": "path",
-            "x-mcpme-path-kind": "auto",
+            "x-mcpwrap-kind": "path",
+            "x-mcpwrap-path-kind": "auto",
         }
     if annotation is type(None):
         return {"type": "null"}
@@ -80,8 +80,8 @@ def schema_from_annotation(annotation: Any) -> dict[str, Any]:
         return {
             "type": "string",
             "format": "path",
-            "x-mcpme-kind": "path",
-            "x-mcpme-path-kind": "auto",
+            "x-mcpwrap-kind": "path",
+            "x-mcpwrap-path-kind": "auto",
         }
     if origin is Annotated:
         args = get_args(annotation)
@@ -123,16 +123,16 @@ def _apply_annotated_metadata(schema: dict[str, Any], metadata: tuple[Any, ...])
     for item in metadata:
         if isinstance(item, str):
             if updated.get("format") == "path" and item in {"file", "directory", "auto"}:
-                updated["x-mcpme-path-kind"] = item
-            if updated.get("x-mcpme-kind") == "bytes" and item == "binary":
-                updated["x-mcpme-bytes-kind"] = "binary"
+                updated["x-mcpwrap-path-kind"] = item
+            if updated.get("x-mcpwrap-kind") == "bytes" and item == "binary":
+                updated["x-mcpwrap-bytes-kind"] = "binary"
             continue
         if (
             isinstance(item, dict)
             and updated.get("format") == "path"
             and item.get("kind") in {"file", "directory", "auto"}
         ):
-            updated["x-mcpme-path-kind"] = item["kind"]
+            updated["x-mcpwrap-path-kind"] = item["kind"]
     return updated
 
 

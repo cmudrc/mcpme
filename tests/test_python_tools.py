@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from mcpme._python_tools import (
+from mcpwrap._python_tools import (
     StaticPythonResolver,
     _literal_str_sequence,
     _parameter_defaults,
@@ -15,7 +15,7 @@ from mcpme._python_tools import (
     load_module_from_path,
     resolve_qualname,
 )
-from mcpme.schema import SchemaGenerationError
+from mcpwrap.schema import SchemaGenerationError
 
 
 def test_static_python_resolver_supports_source_types_and_module_reexports(
@@ -61,7 +61,7 @@ def test_static_python_resolver_supports_source_types_and_module_reexports(
     assert deck_schema["format"] == "path"
     assert (
         discovered[0].tool.input_schema["properties"]["config"]["properties"]["deck"][
-            "x-mcpme-path-kind"
+            "x-mcpwrap-path-kind"
         ]
         == "file"
     )
@@ -70,8 +70,8 @@ def test_static_python_resolver_supports_source_types_and_module_reexports(
     assert discovered[0].tool.output_schema == {
         "type": "string",
         "format": "path",
-        "x-mcpme-kind": "path",
-        "x-mcpme-path-kind": "auto",
+        "x-mcpwrap-kind": "path",
+        "x-mcpwrap-path-kind": "auto",
     }
 
     package_dir = tmp_path / "solver_pkg"
@@ -107,7 +107,7 @@ def test_static_python_resolver_helper_edges_are_explicit(tmp_path: Path) -> Non
     with pytest.raises(SchemaGenerationError):
         resolver.discover_file(unsupported)
     with pytest.raises(ImportError):
-        resolver.discover_module("mcpme_missing_test_module")
+        resolver.discover_module("mcpwrap_missing_test_module")
 
     module_source = tmp_path / "helpers.py"
     module_source.write_text(

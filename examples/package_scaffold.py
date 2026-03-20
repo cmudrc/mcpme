@@ -4,7 +4,7 @@
 
 This example shows how to ingest an installed-style Python package that mixes
 plain functions and stateful classes. The package is translated into a plain
-Python facade first, then wrapped through the normal `mcpme` manifest flow.
+Python facade first, then wrapped through the normal `mcpwrap` manifest flow.
 
 ## Preset Environment
 
@@ -19,7 +19,7 @@ inspectable, while the generated facade remains a derived artifact under
 - Run the public scaffold CLI through a checked-in shell wrapper to generate a
   deterministic wrapper module.
 - Build a manifest from the generated facade and execute both function and
-  class-session tools through :func:`mcpme.execute_tool`.
+  class-session tools through :func:`mcpwrap.execute_tool`.
 - Print the scaffold report and the resulting tool outputs as JSON.
 
 ## Expected Results
@@ -46,7 +46,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from mcpme import build_manifest, execute_tool
+from mcpwrap import build_manifest, execute_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "package_scaffold"
@@ -63,7 +63,7 @@ def _require_support_file(path: Path) -> Path:
 
 
 def _pythonpath_env(*paths: Path) -> dict[str, str]:
-    """Build an environment that keeps `mcpme` importable for child processes."""
+    """Build an environment that keeps `mcpwrap` importable for child processes."""
     env = dict(os.environ)
     extra_paths = [str(path.resolve()) for path in paths]
     current = env.get("PYTHONPATH")

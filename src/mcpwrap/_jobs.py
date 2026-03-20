@@ -143,7 +143,7 @@ class JobManager:
             target=self._monitor_job,
             args=(managed,),
             daemon=True,
-            name=f"mcpme-job-{job_id}",
+            name=f"mcpwrap-job-{job_id}",
         )
         monitor.start()
         return self.get(job_id)

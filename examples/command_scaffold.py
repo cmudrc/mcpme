@@ -3,7 +3,7 @@
 ## Introduction
 
 This example shows how to ingest a standalone command-line tool whose public
-interface is only exposed through `--help`. `mcpme` captures that help output,
+interface is only exposed through `--help`. `mcpwrap` captures that help output,
 turns it into a deterministic Python facade, and then wraps the facade like any
 other source-backed tool.
 
@@ -21,7 +21,7 @@ before execution, while the generated facade still lands under
 - Run the public scaffold CLI through the checked-in shell wrapper to generate
   a facade module under `artifacts/examples/command_scaffold/`.
 - Build a manifest from the generated facade and execute it through
-  :func:`mcpme.execute_tool`.
+  :func:`mcpwrap.execute_tool`.
 - Print the scaffold report and normalized subprocess result as JSON.
 
 ## Expected Results
@@ -48,7 +48,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from mcpme import build_manifest, execute_tool
+from mcpwrap import build_manifest, execute_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "command_scaffold"
@@ -64,7 +64,7 @@ def _require_support_file(path: Path) -> Path:
 
 
 def _pythonpath_env() -> dict[str, str]:
-    """Build an environment that keeps `mcpme` importable for child processes."""
+    """Build an environment that keeps `mcpwrap` importable for child processes."""
     env = dict(os.environ)
     existing = env.get("PYTHONPATH")
     paths = [str((REPO_ROOT / "src").resolve())]

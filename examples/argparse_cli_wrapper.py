@@ -4,7 +4,7 @@
 
 This example wraps a small command-line engineering helper that already exposes
 its interface through `argparse`. That is a strong deterministic source of
-truth, so `mcpme` can build a tool schema without resorting to heuristics.
+truth, so `mcpwrap` can build a tool schema without resorting to heuristics.
 
 ## Preset Environment
 
@@ -18,16 +18,16 @@ example only produces derived outputs under `artifacts/examples/argparse_cli_wra
 
 - Keep the wrapped CLI and its shell launcher checked in under
   `examples/support/`.
-- Register its parser and command prefix with :class:`mcpme.ArgparseCommand`.
+- Register its parser and command prefix with :class:`mcpwrap.ArgparseCommand`.
 - Build a manifest from that registration and execute it through
-  :func:`mcpme.execute_tool`.
+  :func:`mcpwrap.execute_tool`.
 - Print the normalized MCP result so you can see the transport shape clients
   would receive.
 
 ## Expected Results
 
 Running this script prints a JSON result describing a beam case. The underlying
-CLI receives normal command-line arguments, while `mcpme` handles validation,
+CLI receives normal command-line arguments, while `mcpwrap` handles validation,
 argument rendering, and result normalization.
 
 ## References
@@ -47,7 +47,7 @@ import os
 import sys
 from pathlib import Path
 
-from mcpme import ArgparseCommand, ToolExecutionResult, build_manifest, execute_tool
+from mcpwrap import ArgparseCommand, ToolExecutionResult, build_manifest, execute_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "argparse_cli_wrapper"

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows the simplest useful `mcpme` workflow: expose a typed Python
+This example shows the simplest useful `mcpwrap` workflow: expose a typed Python
 callable as an MCP tool without any handwritten server boilerplate.
 
 The wrapped function models a small engineering post-processing helper. It is
@@ -18,9 +18,9 @@ manifest.
 
 ## Technical Implementation
 
-- Import only the curated top-level public API from `mcpme`.
+- Import only the curated top-level public API from `mcpwrap`.
 - Define a typed callable with a Sphinx-style docstring and an `MCP:` block.
-- Build a :class:`mcpme.Manifest` directly from that callable.
+- Build a :class:`mcpwrap.Manifest` directly from that callable.
 - Print the manifest as JSON so the generated tool surface is easy to inspect.
 
 ## Expected Results
@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import json
 
-from mcpme import Manifest, build_manifest
+from mcpwrap import Manifest, build_manifest
 
 
 def summarize_mesh(job_name: str, iterations: int = 3) -> dict[str, int | str]:

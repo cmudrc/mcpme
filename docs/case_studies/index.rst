@@ -24,6 +24,6 @@ stay under `artifacts/case_studies/`.
 Case Study Inventory
 --------------------
 
-- ``case_studies/pycycle_mpcycle``: This case study shows how `mcpme` can carve a useful session-oriented wrapper
+- ``case_studies/pycycle_mpcycle``: This case study shows how `mcpwrap` can carve a useful session-oriented wrapper
 - ``case_studies/su2_cli``: This case study models the shape of a real heavyweight CLI integration more
 - ``case_studies/tigl_cpacs``: This case study tackles a more awkward upstream than the small core examples:

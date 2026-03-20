@@ -9,7 +9,7 @@ Introduction
 ------------
 
 This example shows how to ingest an OpenAPI specification without adding any
-runtime AI layer. `mcpme` turns the spec into a plain Python HTTP facade, then
+runtime AI layer. `mcpwrap` turns the spec into a plain Python HTTP facade, then
 wraps the generated functions through its normal deterministic discovery path.
 
 Preset Environment
@@ -28,7 +28,7 @@ Technical Implementation
 - Run the public scaffold CLI through a checked-in shell wrapper to generate a
   Python facade for the API operations.
 - Build a manifest from the generated facade and execute the resulting tools
-  through :func:`mcpme.execute_tool`.
+  through :func:`mcpwrap.execute_tool`.
 - Print the scaffold report and the normalized HTTP responses as JSON.
 
 Expected Results

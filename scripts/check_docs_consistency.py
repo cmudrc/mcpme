@@ -21,10 +21,10 @@ PUBLIC_PATH_PATTERN = re.compile(
 )
 API_AUTODOC_DIRECTIVE_PATTERN = re.compile(
     r"^\.\.\s+auto(?:class|data|function|attribute|exception)::\s+"
-    r"mcpme\.([A-Za-z_][A-Za-z0-9_]*)\s*$",
+    r"mcpwrap\.([A-Za-z_][A-Za-z0-9_]*)\s*$",
     re.MULTILINE,
 )
-INTERNAL_MODULE_PATTERN = re.compile(r"\bmcpme\._[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*\b")
+INTERNAL_MODULE_PATTERN = re.compile(r"\bmcpwrap\._[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*\b")
 STALE_NAME_PATTERN = re.compile(r"\bpython_template\b|\bsrc/python_template\b")
 TOCTREE_ALIAS_PATTERN = re.compile(r"^(?P<label>.+?)\s*<(?P<target>[^>]+)>\s*$")
 
@@ -113,8 +113,8 @@ def _find_missing_docs_entries(repo_root: Path) -> list[Violation]:
 
 
 def _parse_exports(repo_root: Path) -> set[str]:
-    """Parse canonical top-level exports from ``src/mcpme/__init__.py``."""
-    init_path = repo_root / "src" / "mcpme" / "__init__.py"
+    """Parse canonical top-level exports from ``src/mcpwrap/__init__.py``."""
+    init_path = repo_root / "src" / "mcpwrap" / "__init__.py"
     tree = ast.parse(init_path.read_text(encoding="utf-8"), filename=str(init_path))
     for node in tree.body:
         if not isinstance(node, ast.Assign) or len(node.targets) != 1:
@@ -131,7 +131,7 @@ def _parse_exports(repo_root: Path) -> set[str]:
                 if isinstance(item, ast.Constant) and isinstance(item.value, str)
             }
             return exports
-    raise ValueError("Unable to locate __all__ in src/mcpme/__init__.py")
+    raise ValueError("Unable to locate __all__ in src/mcpwrap/__init__.py")
 
 
 def _parse_api_rendered_symbols(repo_root: Path) -> set[str]:

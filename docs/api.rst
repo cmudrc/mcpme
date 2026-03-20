@@ -18,11 +18,11 @@ Core Entry Points
 ``execute_tool`` runs one manifest tool through the generic execution engine.
 ``serve_stdio`` exposes a manifest through a small stdio MCP runtime.
 
-.. autofunction:: mcpme.build_manifest
+.. autofunction:: mcpwrap.build_manifest
 
-.. autofunction:: mcpme.execute_tool
+.. autofunction:: mcpwrap.execute_tool
 
-.. autofunction:: mcpme.serve_stdio
+.. autofunction:: mcpwrap.serve_stdio
 
 Runtime
 ^^^^^^^
@@ -30,7 +30,7 @@ Runtime
 ``McpServer`` is the in-process JSON-RPC runtime facade. It is the smallest
 useful runtime object for tests, embedding, and custom launchers.
 
-.. autoclass:: mcpme.McpServer
+.. autoclass:: mcpwrap.McpServer
    :members:
    :undoc-members:
 
@@ -41,11 +41,11 @@ Contracts
 contracts at runtime: one describes what can be exposed, and the other
 describes what happened when a tool ran.
 
-.. autoclass:: mcpme.Manifest
+.. autoclass:: mcpwrap.Manifest
    :members:
    :undoc-members:
 
-.. autoclass:: mcpme.ToolExecutionResult
+.. autoclass:: mcpwrap.ToolExecutionResult
    :members:
    :undoc-members:
 
@@ -56,6 +56,6 @@ Registration Helpers
 exported. It keeps the public API small while still covering a common source of
 deterministic CLI metadata.
 
-.. autoclass:: mcpme.ArgparseCommand
+.. autoclass:: mcpwrap.ArgparseCommand
    :members:
    :undoc-members:

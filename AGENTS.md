@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository builds `mcpme`, a deterministic Python 3.12+ library for
+This repository builds `mcpwrap`, a deterministic Python 3.12+ library for
 wrapping engineering tools as MCP servers. Keep changes focused, keep the
 public API intentional, and prefer standard-library solutions unless a
 third-party dependency clearly improves the maintenance story.
@@ -54,7 +54,7 @@ merging.
 ## Public Vs Private Boundaries
 
 - The supported public surface is whatever is re-exported from
-  `src/mcpme/__init__.py`.
+  `src/mcpwrap/__init__.py`.
 - Keep that top-level surface minimal. Prefer stable entry points and a small
   set of user-facing types over re-exporting every internal model.
 - Prefer adding new public behavior to stable top-level modules before creating
@@ -71,7 +71,7 @@ merging.
 - Update tests, docs, and examples alongside behavior changes.
 - Keep `case_studies/` separate from the small core `examples/` contract. Case
   studies may depend on heavyweight optional upstream runtimes and may report
-  `skipped_unavailable`, but they should still use only the public `mcpme`
+  `skipped_unavailable`, but they should still use only the public `mcpwrap`
   surface.
 - Keep each case-study directory readable as a real ingest/persist/use flow:
   `case_studies/<id>/ingest.py` should write the deterministic artifact pair

@@ -1,11 +1,11 @@
 # Case Studies
 
-The case studies in `mcpme` are intentionally separate from the small,
+The case studies in `mcpwrap` are intentionally separate from the small,
 always-runnable `examples/` contract.
 
 Each case study:
 
-- uses only the public `mcpme` surface plus the public scaffold CLI,
+- uses only the public `mcpwrap` surface plus the public scaffold CLI,
 - targets a real engineering upstream or CLI shape,
 - stays self-contained and reproducible from the repository root, and
 - reports either `passed` or `skipped_unavailable` as stable JSON.

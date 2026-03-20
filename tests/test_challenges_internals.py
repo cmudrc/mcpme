@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from mcpme._challenges import (
+from mcpwrap._challenges import (
     ChallengeAggregate,
     ChallengeCatalogError,
     ChallengeIngestion,
@@ -51,7 +51,7 @@ from mcpme._challenges import (
     write_junit_xml,
     write_summary_markdown,
 )
-from mcpme.execution import ToolExecutionResult
+from mcpwrap.execution import ToolExecutionResult
 
 
 def test_challenge_parser_and_rendering_helpers_cover_error_paths(tmp_path: Path) -> None:

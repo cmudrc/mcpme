@@ -79,7 +79,7 @@ Expectations: json fields {'exit_code': 0}; files are non-empty ['{challenge_art
 
 - A standalone engineering CLI can be scaffolded from live help output.
 - The generated wrapper can pass through real command-line arguments deterministically.
-- A raw upstream command can emit a non-empty engineering artifact under `mcpme` control.
+- A raw upstream command can emit a non-empty engineering artifact under `mcpwrap` control.
 
 ## Challenge Definition
 
@@ -100,7 +100,7 @@ motivation = "A medium Gmsh challenge should move beyond the shallowest 2D path 
 proves = [
   "A standalone engineering CLI can be scaffolded from live help output.",
   "The generated wrapper can pass through real command-line arguments deterministically.",
-  "A raw upstream command can emit a non-empty engineering artifact under `mcpme` control.",
+  "A raw upstream command can emit a non-empty engineering artifact under `mcpwrap` control.",
 ]
 
 [target]

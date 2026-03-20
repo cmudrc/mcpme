@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from mcpme._openapi import (
+from mcpwrap._openapi import (
     _annotation_from_schema,
     _collect_parameters,
     _dedupe_name,

@@ -65,7 +65,7 @@ SUPPORT_REQUIREMENTS = {
         / "scaffold_package.sh",
     ),
     "subprocess_wrapper.py": (
-        REPO_ROOT / "examples" / "support" / "subprocess_wrapper" / "mcpme.toml",
+        REPO_ROOT / "examples" / "support" / "subprocess_wrapper" / "mcpwrap.toml",
         REPO_ROOT / "examples" / "support" / "subprocess_wrapper" / "legacy_solver.py",
         REPO_ROOT
         / "examples"

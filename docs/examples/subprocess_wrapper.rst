@@ -25,10 +25,10 @@ example only creates derived execution artifacts under
 Technical Implementation
 ------------------------
 
-- Keep the stand-in solver, `mcpme.toml`, and shell launcher checked in under
+- Keep the stand-in solver, `mcpwrap.toml`, and shell launcher checked in under
   `examples/support/subprocess_wrapper/`.
 - Build a manifest from that config and call the wrapped tool with
-  :func:`mcpme.execute_tool`.
+  :func:`mcpwrap.execute_tool`.
 - Print the MCP result so the structured content and retained artifact metadata
   are visible.
 
@@ -43,7 +43,7 @@ References
 ----------
 
 - ``README.md``
-- ``examples/support/subprocess_wrapper/mcpme.toml``
+- ``examples/support/subprocess_wrapper/mcpwrap.toml``
 - ``examples/support/subprocess_wrapper/legacy_solver.py``
 - ``examples/support/subprocess_wrapper/commands/run_legacy_solver.sh``
 - ``docs/specification.rst``

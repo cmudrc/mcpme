@@ -264,7 +264,7 @@ def _execute_subprocess_binding(
     if binding.timeout_seconds is not None and binding.timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be greater than zero.")
     if artifact_dir is None:
-        with tempfile.TemporaryDirectory(prefix=f"mcpme-{tool.name}-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix=f"mcpwrap-{tool.name}-") as temp_dir:
             return _run_subprocess_in_workspace(
                 tool=tool,
                 binding=binding,
@@ -283,7 +283,7 @@ def _execute_subprocess_binding(
             artifact_mode=artifact_mode,
             retained_artifact_dir=artifact_dir,
         )
-    with tempfile.TemporaryDirectory(prefix=f"mcpme-{tool.name}-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix=f"mcpwrap-{tool.name}-") as temp_dir:
         return _run_subprocess_in_workspace(
             tool=tool,
             binding=binding,
@@ -749,10 +749,10 @@ def _tool_meta(
     execution_record: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the MCP ``_meta`` payload returned alongside tool results."""
-    meta: dict[str, Any] = {"mcpme/execution": execution_record}
+    meta: dict[str, Any] = {"mcpwrap/execution": execution_record}
     if artifact_dir is not None:
-        meta["mcpme/artifactDir"] = str(artifact_dir)
-        meta["mcpme/artifacts"] = _artifact_records(artifact_dir)
+        meta["mcpwrap/artifactDir"] = str(artifact_dir)
+        meta["mcpwrap/artifacts"] = _artifact_records(artifact_dir)
     return meta
 
 

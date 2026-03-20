@@ -166,7 +166,7 @@ def _render_examples_index(specs: list[ExampleDocSpec]) -> str:
         "",
         _heading("Examples"),
         "",
-        "The examples are part of the maintained public contract for `mcpme`.",
+        "The examples are part of the maintained public contract for `mcpwrap`.",
         "Each page below is generated from the example module docstring and the",
         "checked-in source file, so the code and prose stay aligned. Examples",
         "that need local helper inputs keep them under `examples/support/`,",

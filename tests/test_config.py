@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from mcpme.config import load_config
+from mcpwrap.config import load_config
 
 
 def test_load_config_discovers_pyproject_and_parses_overrides(
@@ -27,12 +27,12 @@ def test_load_config_discovers_pyproject_and_parses_overrides(
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpwrap]
 targets = ["{target_file.as_posix()}"]
 artifact_mode = "summary"
 artifact_root = "artifacts"
 
-[tool.mcpme.tool.run_job]
+[tool.mcpwrap.tool.run_job]
 title = "Run Job"
 read_only = true
 """.strip(),
@@ -49,13 +49,13 @@ read_only = true
     assert config.overrides["run_job"].annotations.read_only is True
 
 
-def test_load_config_supports_top_level_mcpme_table(tmp_path: Path) -> None:
-    """Standalone config files may use a top-level ``[mcpme]`` table."""
+def test_load_config_supports_top_level_mcpwrap_table(tmp_path: Path) -> None:
+    """Standalone config files may use a top-level ``[mcpwrap]`` table."""
 
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpwrap.toml"
     config_path.write_text(
         """
-[mcpme]
+[mcpwrap]
 artifact_mode = "none"
 """.strip(),
         encoding="utf-8",
@@ -69,10 +69,10 @@ artifact_mode = "none"
 def test_load_config_rejects_invalid_artifact_mode(tmp_path: Path) -> None:
     """Artifact mode should be validated eagerly."""
 
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpwrap.toml"
     config_path.write_text(
         """
-[mcpme]
+[mcpwrap]
 artifact_mode = "mystery"
 """.strip(),
         encoding="utf-8",

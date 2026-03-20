@@ -61,7 +61,7 @@ def main() -> None:
         return
 
     env = dict(os.environ)
-    # The wrapper invokes `python -m mcpme.cli`, so give it this checkout's
+    # The wrapper invokes `python -m mcpwrap.cli`, so give it this checkout's
     # source tree rather than relying on an installed wheel.
     pythonpath_entries = [str((REPO_ROOT / "src").resolve())]
     if env.get("PYTHONPATH"):

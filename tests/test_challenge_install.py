@@ -37,12 +37,14 @@ def test_install_challenge_deps_env_script_uses_repo_local_tool_prefix() -> None
     script_path = Path(__file__).resolve().parents[1] / "scripts" / "install_challenge_deps.py"
     module = _load_module(script_path)
 
-    repo_root = Path("/tmp/mcpme")
+    repo_root = Path("/tmp/mcpwrap")
     install_root = repo_root / ".challenge-tools"
     su2_home = install_root / "su2" / module.SU2_VERSION
 
     rendered = module._render_env_script(repo_root, install_root, su2_home)
 
-    assert 'export PATH="/tmp/mcpme/.challenge-tools/bin:/tmp/mcpme/.venv/bin:$PATH"' in rendered
-    assert 'export SU2_HOME="/tmp/mcpme/.challenge-tools/su2/8.4.0"' in rendered
+    assert (
+        'export PATH="/tmp/mcpwrap/.challenge-tools/bin:/tmp/mcpwrap/.venv/bin:$PATH"' in rendered
+    )
+    assert 'export SU2_HOME="/tmp/mcpwrap/.challenge-tools/su2/8.4.0"' in rendered
     assert 'export SU2_RUN="$SU2_HOME/bin"' in rendered

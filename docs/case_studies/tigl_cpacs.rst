@@ -11,7 +11,7 @@ Introduction
 This case study tackles a more awkward upstream than the small core examples:
 TiGL workflows revolve around native bindings, CPACS files, and handles that
 are not themselves JSON-friendly. Instead of baking that complexity into
-`mcpme`, the case study keeps a tiny helper package checked in, ingests that
+`mcpwrap`, the case study keeps a tiny helper package checked in, ingests that
 helper through the public CLI, persists the generated facade with a standard
 scaffold report, and then exercises that saved facade through MCP requests.
 
@@ -36,9 +36,9 @@ Technical Implementation
   `generated_facade.py` and `scaffold_report.json`.
 - `serve.py` adds the checked-in helper package parent to `sys.path`, loads the
   saved generated facade through the public API, and serves it over stdio with
-  `mcpme.serve_stdio`.
+  `mcpwrap.serve_stdio`.
 - `use.py` adds the checked-in helper package parent to `sys.path`, builds an
-  in-process `mcpme.McpServer` from the saved facade, sends `initialize`,
+  in-process `mcpwrap.McpServer` from the saved facade, sends `initialize`,
   `tools/list`, and `tools/call` requests, and captures the TiGL summary
   through the MCP runtime.
 

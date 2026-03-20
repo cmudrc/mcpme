@@ -8,7 +8,7 @@ Source: ``case_studies/pycycle_mpcycle/use.py`` with companions ``case_studies/p
 Introduction
 ------------
 
-This case study shows how `mcpme` can carve a useful session-oriented wrapper
+This case study shows how `mcpwrap` can carve a useful session-oriented wrapper
 out of a real engineering Python package without teaching the library
 anything pyCycle-specific. The workflow mirrors a more realistic integration
 path: ingest the package once, persist the generated facade with a standard
@@ -34,8 +34,8 @@ Technical Implementation
   wrapper and writes the deterministic artifact pair `generated_facade.py` and
   `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
-  it over stdio with `mcpme.serve_stdio`.
-- `use.py` builds an in-process `mcpme.McpServer` from the saved facade, sends
+  it over stdio with `mcpwrap.serve_stdio`.
+- `use.py` builds an in-process `mcpwrap.McpServer` from the saved facade, sends
   `initialize`, `tools/list`, and `tools/call` requests, then exercises the
   create/add-parameter/close lifecycle through the MCP runtime.
 

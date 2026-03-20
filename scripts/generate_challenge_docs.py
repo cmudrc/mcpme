@@ -13,7 +13,7 @@ import argparse
 import json
 from pathlib import Path
 
-from mcpme._challenges import ChallengeSpec, ChallengeWorkflowStep, load_challenge_catalog
+from mcpwrap._challenges import ChallengeSpec, ChallengeWorkflowStep, load_challenge_catalog
 
 
 def _repo_root() -> Path:
@@ -279,7 +279,7 @@ def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -
         "",
         _heading("Live Raw-Upstream Challenges"),
         "",
-        "This directory holds the live, non-gating raw-upstream challenge track for `mcpme`.",
+        "This directory holds the live, non-gating raw-upstream challenge track for `mcpwrap`.",
         "Each case lives in its own folder with a canonical `challenge.toml`, any tiny",
         "checked-in fixtures it needs, and a generated `README.md` that explains why the",
         "case exists and how to run it in isolation.",

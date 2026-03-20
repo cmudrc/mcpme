@@ -7,13 +7,13 @@ meant for contributors, not as a public API contract.
 Scaffolding Strategy
 --------------------
 
-`mcpme` keeps the supported top-level API intentionally small. Rather than
+`mcpwrap` keeps the supported top-level API intentionally small. Rather than
 exposing a large ingestion framework at the package root, stage-1 one-shot
 ingestion works by generating plain Python facade modules through CLI commands:
 
-- ``mcpme scaffold-package`` for installed Python packages or modules
-- ``mcpme scaffold-command`` for standalone CLI tools
-- ``mcpme scaffold-openapi`` for OpenAPI-described HTTP surfaces
+- ``mcpwrap scaffold-package`` for installed Python packages or modules
+- ``mcpwrap scaffold-command`` for standalone CLI tools
+- ``mcpwrap scaffold-openapi`` for OpenAPI-described HTTP surfaces
 
 Those generated files are inspectable artifacts. Once written, they flow
 through the same deterministic discovery, schema generation, execution, and MCP

@@ -385,21 +385,21 @@ class StaticPythonResolver:
             return {
                 "type": "string",
                 "format": "path",
-                "x-mcpme-kind": "path",
-                "x-mcpme-path-kind": "auto",
+                "x-mcpwrap-kind": "path",
+                "x-mcpwrap-path-kind": "auto",
             }
         if canonical_name in _PATHLIKE_NAMES:
             return {
                 "type": "string",
                 "format": "path",
-                "x-mcpme-kind": "path",
-                "x-mcpme-path-kind": "auto",
+                "x-mcpwrap-kind": "path",
+                "x-mcpwrap-path-kind": "auto",
             }
         if canonical_name in _BYTES_NAMES:
             return {
                 "type": "string",
                 "contentEncoding": "base64",
-                "x-mcpme-kind": "bytes",
+                "x-mcpwrap-kind": "bytes",
             }
         if canonical_name in _NDARRAY_NAMES:
             return {"type": "array", "items": {"type": "number"}}
@@ -440,8 +440,8 @@ class StaticPythonResolver:
             return {
                 "type": "string",
                 "format": "path",
-                "x-mcpme-kind": "path",
-                "x-mcpme-path-kind": "auto",
+                "x-mcpwrap-kind": "path",
+                "x-mcpwrap-path-kind": "auto",
             }
         if container_name in _UNION_NAMES:
             return {
@@ -718,16 +718,16 @@ def _apply_annotation_metadata(schema: dict[str, Any], metadata: list[Any]) -> d
     for item in metadata:
         if isinstance(item, str):
             if updated.get("format") == "path" and item in {"file", "directory", "auto"}:
-                updated["x-mcpme-path-kind"] = item
-            if updated.get("x-mcpme-kind") == "bytes" and item == "binary":
-                updated["x-mcpme-bytes-kind"] = "binary"
+                updated["x-mcpwrap-path-kind"] = item
+            if updated.get("x-mcpwrap-kind") == "bytes" and item == "binary":
+                updated["x-mcpwrap-bytes-kind"] = "binary"
             continue
         if (
             isinstance(item, dict)
             and updated.get("format") == "path"
             and item.get("kind") in {"file", "directory", "auto"}
         ):
-            updated["x-mcpme-path-kind"] = item["kind"]
+            updated["x-mcpwrap-path-kind"] = item["kind"]
     return updated
 
 
@@ -841,9 +841,9 @@ def load_module_from_path(path: Path, *, fresh: bool = False) -> ModuleType:
     path_hash = hashlib.sha256(str(resolved_path).encode("utf-8")).hexdigest()[:12]
     if fresh:
         content_hash = hashlib.sha256(resolved_path.read_bytes()).hexdigest()[:12]
-        module_name = f"_mcpme_dynamic_{resolved_path.stem}_{path_hash}_{content_hash}"
+        module_name = f"_mcpwrap_dynamic_{resolved_path.stem}_{path_hash}_{content_hash}"
     else:
-        module_name = f"_mcpme_dynamic_{resolved_path.stem}_{path_hash}"
+        module_name = f"_mcpwrap_dynamic_{resolved_path.stem}_{path_hash}"
     if module_name in sys.modules:
         return sys.modules[module_name]
     spec = importlib.util.spec_from_file_location(module_name, resolved_path)

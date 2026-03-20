@@ -3,7 +3,7 @@
 Examples
 ========
 
-The examples are part of the maintained public contract for `mcpme`.
+The examples are part of the maintained public contract for `mcpwrap`.
 Each page below is generated from the example module docstring and the
 checked-in source file, so the code and prose stay aligned. Examples
 that need local helper inputs keep them under `examples/support/`,
@@ -24,7 +24,7 @@ Example Inventory
 -----------------
 
 - ``examples/argparse_cli_wrapper.py``: This example wraps a small command-line engineering helper that already exposes
-- ``examples/basic_usage.py``: This example shows the simplest useful `mcpme` workflow: expose a typed Python
+- ``examples/basic_usage.py``: This example shows the simplest useful `mcpwrap` workflow: expose a typed Python
 - ``examples/command_scaffold.py``: This example shows how to ingest a standalone command-line tool whose public
 - ``examples/openapi_scaffold.py``: This example shows how to ingest an OpenAPI specification without adding any
 - ``examples/package_scaffold.py``: This example shows how to ingest an installed-style Python package that mixes

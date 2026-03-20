@@ -133,8 +133,8 @@ def _iter_runtime_materialization_violations() -> list[str]:
 
 def test_case_studies_import_only_the_public_package_root() -> None:
     """Case studies should not import internal modules or deep package paths."""
-    private_pattern = re.compile(r"^\s*(from|import)\s+mcpme\._")
-    deep_module_pattern = re.compile(r"^\s*from\s+mcpme\.[A-Za-z0-9_]+")
+    private_pattern = re.compile(r"^\s*(from|import)\s+mcpwrap\._")
+    deep_module_pattern = re.compile(r"^\s*from\s+mcpwrap\.[A-Za-z0-9_]+")
     violations = _collect_violations(pattern=private_pattern, root=CASE_STUDIES_ROOT)
     violations.extend(_collect_violations(pattern=deep_module_pattern, root=CASE_STUDIES_ROOT))
     assert violations == [], "\n".join(violations)

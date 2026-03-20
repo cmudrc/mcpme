@@ -11,10 +11,16 @@ from pathlib import Path
 
 import pytest
 
-from mcpme import build_manifest
-from mcpme._jobs import JobManager, _pid_exists, _read_json_file, _tail_text_file, _write_json_file
-from mcpme.execution import PythonCallableBinding, SubprocessBinding
-from mcpme.manifest import ArtifactPolicy, Manifest, SourceReference, ToolManifest
+from mcpwrap import build_manifest
+from mcpwrap._jobs import (
+    JobManager,
+    _pid_exists,
+    _read_json_file,
+    _tail_text_file,
+    _write_json_file,
+)
+from mcpwrap.execution import PythonCallableBinding, SubprocessBinding
+from mcpwrap.manifest import ArtifactPolicy, Manifest, SourceReference, ToolManifest
 
 
 def test_job_manager_supports_completion_cancel_and_tail(tmp_path: Path) -> None:
@@ -31,13 +37,13 @@ def test_job_manager_supports_completion_cancel_and_tail(tmp_path: Path) -> None
         "print(f'done:{payload}', flush=True)\n",
         encoding="utf-8",
     )
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpwrap.toml"
     config_path.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpwrap]
 artifact_root = "{(tmp_path / "artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpwrap.subprocess]]
 name = "sleepy"
 description = "Run slowly."
 argv = ["{sys.executable}", "{script_path.as_posix()}", "{{delay}}"]
@@ -45,14 +51,14 @@ stdin_template = "{{message}}"
 result_kind = "stdout_text"
 timeout_seconds = 1.0
 
-[tool.mcpme.subprocess.input_schema]
+[tool.mcpwrap.subprocess.input_schema]
 type = "object"
 required = ["message", "delay"]
 
-[tool.mcpme.subprocess.input_schema.properties.message]
+[tool.mcpwrap.subprocess.input_schema.properties.message]
 type = "string"
 
-[tool.mcpme.subprocess.input_schema.properties.delay]
+[tool.mcpwrap.subprocess.input_schema.properties.delay]
 type = "number"
 """.strip(),
         encoding="utf-8",
@@ -250,7 +256,7 @@ def test_job_manager_get_avoids_false_lost_on_stale_running_reads(
         "_write_job_record",
         lambda job_id, record: persisted.append(record),
     )
-    monkeypatch.setattr("mcpme._jobs._pid_exists", lambda pid: False)
+    monkeypatch.setattr("mcpwrap._jobs._pid_exists", lambda pid: False)
 
     assert manager.get("race")["status"] == "completed"
     assert persisted == []
@@ -270,21 +276,21 @@ def test_job_manager_records_timeouts_and_result_errors(tmp_path: Path) -> None:
     timeout_config = tmp_path / "timeout.toml"
     timeout_config.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpwrap]
 artifact_root = "{(tmp_path / "timeout_artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpwrap.subprocess]]
 name = "timeout_job"
 description = "Timeout job."
 argv = ["{sys.executable}", "{sleepy_script.as_posix()}", "{{delay}}"]
 result_kind = "stdout_text"
 timeout_seconds = 0.05
 
-[tool.mcpme.subprocess.input_schema]
+[tool.mcpwrap.subprocess.input_schema]
 type = "object"
 required = ["delay"]
 
-[tool.mcpme.subprocess.input_schema.properties.delay]
+[tool.mcpwrap.subprocess.input_schema.properties.delay]
 type = "number"
 """.strip(),
         encoding="utf-8",
@@ -303,10 +309,10 @@ type = "number"
     result_config = tmp_path / "result_error.toml"
     result_config.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpwrap]
 artifact_root = "{(tmp_path / "result_artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpwrap.subprocess]]
 name = "result_error"
 description = "Missing result file."
 argv = ["{sys.executable}", "{result_script.as_posix()}"]

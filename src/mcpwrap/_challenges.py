@@ -1,7 +1,7 @@
 """Live raw-upstream challenge loading, execution, and reporting helpers.
 
 This module intentionally sits outside the public package surface. The
-challenge track is useful pressure on ``mcpme``'s ingestion quality, but it is
+challenge track is useful pressure on ``mcpwrap``'s ingestion quality, but it is
 not part of the supported API contract for downstream users.
 
 The harness follows the same path a real user would:

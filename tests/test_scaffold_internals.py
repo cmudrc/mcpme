@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 import pytest
 
-from mcpme._scaffold import (
+from mcpwrap._scaffold import (
     _annotation_source,
     _camel_to_snake,
     _capture_help_text,

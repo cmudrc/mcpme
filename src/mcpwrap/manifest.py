@@ -21,7 +21,7 @@ class ArtifactPolicy:
     """
 
     mode: str = "full"
-    root_dir: Path = Path(".mcpme-artifacts")
+    root_dir: Path = Path(".mcpwrap-artifacts")
 
     def __post_init__(self) -> None:
         """Validate artifact policy values early."""

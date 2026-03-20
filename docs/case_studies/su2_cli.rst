@@ -33,9 +33,9 @@ Technical Implementation
   checked-in shell wrapper, and writes the deterministic artifact pair
   `generated_facade.py` and `scaffold_report.json`.
 - `serve.py` loads the saved generated facade through the public API and serves
-  it over stdio with `mcpme.serve_stdio`.
+  it over stdio with `mcpwrap.serve_stdio`.
 - `use.py` reads the standard artifact paths, builds an in-process
-  `mcpme.McpServer` from the saved facade, sends `initialize`, `tools/list`,
+  `mcpwrap.McpServer` from the saved facade, sends `initialize`, `tools/list`,
   and `tools/call` requests, and captures the JSON-RPC responses.
 - The result payload retains both the raw scaffold report and the wrapped
   help-path execution evidence returned by the MCP runtime.

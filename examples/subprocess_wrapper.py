@@ -17,10 +17,10 @@ example only creates derived execution artifacts under
 
 ## Technical Implementation
 
-- Keep the stand-in solver, `mcpme.toml`, and shell launcher checked in under
+- Keep the stand-in solver, `mcpwrap.toml`, and shell launcher checked in under
   `examples/support/subprocess_wrapper/`.
 - Build a manifest from that config and call the wrapped tool with
-  :func:`mcpme.execute_tool`.
+  :func:`mcpwrap.execute_tool`.
 - Print the MCP result so the structured content and retained artifact metadata
   are visible.
 
@@ -33,7 +33,7 @@ under `artifacts/examples/subprocess_wrapper/`.
 ## References
 
 - ``README.md``
-- ``examples/support/subprocess_wrapper/mcpme.toml``
+- ``examples/support/subprocess_wrapper/mcpwrap.toml``
 - ``examples/support/subprocess_wrapper/legacy_solver.py``
 - ``examples/support/subprocess_wrapper/commands/run_legacy_solver.sh``
 - ``docs/specification.rst``
@@ -47,18 +47,18 @@ import os
 import sys
 from pathlib import Path
 
-from mcpme import ToolExecutionResult, build_manifest, execute_tool
+from mcpwrap import ToolExecutionResult, build_manifest, execute_tool
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = REPO_ROOT / "examples" / "support" / "subprocess_wrapper"
 ARTIFACT_ROOT = REPO_ROOT / "artifacts" / "examples" / "subprocess_wrapper"
-CONFIG_PATH = SOURCE_ROOT / "mcpme.toml"
+CONFIG_PATH = SOURCE_ROOT / "mcpwrap.toml"
 
 
 def run_example() -> ToolExecutionResult:
     """Execute the manifest-driven subprocess example."""
     os.environ.setdefault("PYTHON_BIN", sys.executable)
-    os.environ.setdefault("MCPME_EXAMPLE_SOURCE_ROOT", str(SOURCE_ROOT.resolve()))
+    os.environ.setdefault("MCPWRAP_EXAMPLE_SOURCE_ROOT", str(SOURCE_ROOT.resolve()))
     ARTIFACT_ROOT.mkdir(parents=True, exist_ok=True)
     manifest = build_manifest(config_path=CONFIG_PATH, artifact_root=ARTIFACT_ROOT)
     return execute_tool(

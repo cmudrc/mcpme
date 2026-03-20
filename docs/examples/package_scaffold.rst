@@ -10,7 +10,7 @@ Introduction
 
 This example shows how to ingest an installed-style Python package that mixes
 plain functions and stateful classes. The package is translated into a plain
-Python facade first, then wrapped through the normal `mcpme` manifest flow.
+Python facade first, then wrapped through the normal `mcpwrap` manifest flow.
 
 Preset Environment
 ------------------
@@ -27,7 +27,7 @@ Technical Implementation
 - Run the public scaffold CLI through a checked-in shell wrapper to generate a
   deterministic wrapper module.
 - Build a manifest from the generated facade and execute both function and
-  class-session tools through :func:`mcpme.execute_tool`.
+  class-session tools through :func:`mcpwrap.execute_tool`.
 - Print the scaffold report and the resulting tool outputs as JSON.
 
 Expected Results

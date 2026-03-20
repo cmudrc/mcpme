@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from mcpme import build_manifest, execute_tool
+from mcpwrap import build_manifest, execute_tool
 
 
 def test_execute_python_tool_captures_artifacts(tmp_path: Path) -> None:
@@ -56,28 +56,28 @@ def test_execute_subprocess_tool_from_config(tmp_path: Path) -> None:
         "print(json.dumps({'message': payload['message'], 'length': len(payload['message'])}))\n",
         encoding="utf-8",
     )
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpwrap.toml"
     config_path.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpwrap]
 artifact_mode = "full"
 artifact_root = "{(tmp_path / "artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpwrap.subprocess]]
 name = "emit_message"
 description = "Emit a JSON summary from a rendered input file."
 argv = ["{sys.executable}", "{script_path.as_posix()}", "input.json"]
 result_kind = "stdout_json"
 
-[tool.mcpme.subprocess.input_schema]
+[tool.mcpwrap.subprocess.input_schema]
 type = "object"
 required = ["message"]
 
-[tool.mcpme.subprocess.input_schema.properties.message]
+[tool.mcpwrap.subprocess.input_schema.properties.message]
 type = "string"
 description = "Message text."
 
-[[tool.mcpme.subprocess.files]]
+[[tool.mcpwrap.subprocess.files]]
 path = "input.json"
 template = "{{{{\\"message\\": \\"{{message}}\\"}}}}"
 """.strip(),
@@ -107,14 +107,14 @@ def test_execute_subprocess_supports_binary_results_and_retained_directories(
         "print('completed')\n",
         encoding="utf-8",
     )
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpwrap.toml"
     config_path.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpwrap]
 artifact_mode = "summary"
 artifact_root = "{(tmp_path / "artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpwrap.subprocess]]
 name = "emit_artifacts"
 description = "Emit a binary file and retained report directory."
 argv = ["{sys.executable}", "{script_path.as_posix()}"]
@@ -122,7 +122,7 @@ result_kind = "file_bytes"
 result_path = "report.bin"
 input_schema = {{ type = "object", properties = {{ }}, required = [] }}
 
-[[tool.mcpme.subprocess.outputs]]
+[[tool.mcpwrap.subprocess.outputs]]
 path = "reports"
 kind = "directory"
 when = "success"

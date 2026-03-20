@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mcpme import build_manifest, serve_stdio
+from mcpwrap import build_manifest, serve_stdio
 
 CASE_STUDY_ID = "su2_cli"
 REPO_ROOT = Path(__file__).resolve().parents[2]

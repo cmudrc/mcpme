@@ -234,7 +234,7 @@ def _ensure_avl(install_root: Path, force: bool) -> InstalledTool:
         )
 
     url = _avl_binary_url(platform.system(), platform.machine())
-    with tempfile.TemporaryDirectory(prefix="mcpme-avl-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="mcpwrap-avl-") as temp_dir:
         temp_path = Path(temp_dir)
         download_path = temp_path / "avl"
         _download(url, download_path)
@@ -298,7 +298,7 @@ def _ensure_xfoil(install_root: Path, force: bool) -> InstalledTool:
 
     cflags, libs = _x11_flags_for_xfoil()
     legacy_flags = "-O -fdefault-real-8 -fallow-argument-mismatch -std=legacy"
-    with tempfile.TemporaryDirectory(prefix="mcpme-xfoil-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="mcpwrap-xfoil-") as temp_dir:
         temp_path = Path(temp_dir)
         archive_path = temp_path / f"xfoil{XFOIL_VERSION}.tgz"
         _download(
@@ -409,7 +409,7 @@ def _ensure_su2(install_root: Path, force: bool) -> InstalledTool:
         )
 
     url = _su2_asset_url(platform.system())
-    with tempfile.TemporaryDirectory(prefix="mcpme-su2-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="mcpwrap-su2-") as temp_dir:
         temp_path = Path(temp_dir)
         archive_path = temp_path / "su2.zip"
         outer_dir = temp_path / "outer"

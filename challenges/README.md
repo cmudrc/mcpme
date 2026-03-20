@@ -2,7 +2,7 @@
 
 # Live Raw-Upstream Challenges
 
-This directory holds the live, non-gating raw-upstream challenge track for `mcpme`.
+This directory holds the live, non-gating raw-upstream challenge track for `mcpwrap`.
 Each case lives in its own folder with a canonical `challenge.toml`, any tiny
 checked-in fixtures it needs, and a generated `README.md` that explains why the
 case exists and how to run it in isolation.

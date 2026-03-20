@@ -1,7 +1,7 @@
 Quickstart
 ==========
 
-`mcpme` targets Python 3.12+ and assumes a standard `src/` layout.
+`mcpwrap` targets Python 3.12+ and assumes a standard `src/` layout.
 
 Local development setup:
 
@@ -43,18 +43,18 @@ Inspect a target with the CLI:
 
 .. code-block:: bash
 
-   mcpme inspect examples/basic_usage.py
+   mcpwrap inspect examples/basic_usage.py
 
 Generate inspectable facades when the source surface is a package, standalone
 CLI, or OpenAPI spec:
 
 .. code-block:: bash
 
-   mcpme scaffold-package some_package artifacts/generated_package.py
-   mcpme scaffold-command artifacts/generated_cli.py -- tool
-   mcpme scaffold-openapi api.json artifacts/generated_api.py
+   mcpwrap scaffold-package some_package artifacts/generated_package.py
+   mcpwrap scaffold-command artifacts/generated_cli.py -- tool
+   mcpwrap scaffold-openapi api.json artifacts/generated_api.py
 
-`mcpme` discovers Python files and source-backed modules without importing them
+`mcpwrap` discovers Python files and source-backed modules without importing them
 by default. Discovery reads signatures, annotations, and docstrings from source
 and defers imports until execution time.
 
@@ -77,37 +77,37 @@ example that retains a report directory looks like:
 
 .. code-block:: toml
 
-   [tool.mcpme]
+   [tool.mcpwrap]
    artifact_mode = "summary"
    python_discovery_mode = "source"
 
-   [[tool.mcpme.subprocess]]
+   [[tool.mcpwrap.subprocess]]
    name = "emit_artifacts"
    description = "Render an input file and retain a report directory."
    argv = ["python", "emit_artifacts.py", "input.json"]
    result_kind = "file_bytes"
    result_path = "report.bin"
 
-   [tool.mcpme.subprocess.input_schema]
+   [tool.mcpwrap.subprocess.input_schema]
    type = "object"
    required = ["message"]
 
-   [tool.mcpme.subprocess.input_schema.properties.message]
+   [tool.mcpwrap.subprocess.input_schema.properties.message]
    type = "string"
 
-   [[tool.mcpme.subprocess.files]]
+   [[tool.mcpwrap.subprocess.files]]
    path = "input.json"
    template = "{{\"message\": \"{message}\"}}"
 
-   [[tool.mcpme.subprocess.outputs]]
+   [[tool.mcpwrap.subprocess.outputs]]
    path = "reports"
    kind = "directory"
    when = "success"
 
 Long-running subprocess tools can also be started in background mode through
-``tools/call`` by adding ``_meta = {"mcpme/runMode": "async"}`` to the request
-params. The runtime then exposes ``mcpme/jobs/list``, ``mcpme/jobs/get``,
-``mcpme/jobs/tail``, and ``mcpme/jobs/cancel`` for deterministic job control.
+``tools/call`` by adding ``_meta = {"mcpwrap/runMode": "async"}`` to the request
+params. The runtime then exposes ``mcpwrap/jobs/list``, ``mcpwrap/jobs/get``,
+``mcpwrap/jobs/tail``, and ``mcpwrap/jobs/cancel`` for deterministic job control.
 
 Build the docs:
 

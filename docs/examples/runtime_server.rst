@@ -9,8 +9,8 @@ Introduction
 ------------
 
 This example demonstrates the smallest practical MCP runtime loop you can build
-with `mcpme`. It keeps the public API surface small: build a manifest, hand it
-to :class:`mcpme.McpServer`, and exchange JSON-RPC messages.
+with `mcpwrap`. It keeps the public API surface small: build a manifest, hand it
+to :class:`mcpwrap.McpServer`, and exchange JSON-RPC messages.
 
 Preset Environment
 ------------------
@@ -25,8 +25,8 @@ Technical Implementation
 - Define a typed callable that represents a small engineering status query.
 - Build a manifest from that callable.
 - Send `initialize`, `tools/list`, and `tools/call` requests through
-  :class:`mcpme.McpServer`.
-- Expose an opt-in `--stdio` path that delegates to :func:`mcpme.serve_stdio`
+  :class:`mcpwrap.McpServer`.
+- Expose an opt-in `--stdio` path that delegates to :func:`mcpwrap.serve_stdio`
   for a real stdio runtime.
 
 Expected Results

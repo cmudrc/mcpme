@@ -14,7 +14,7 @@ from .runtime import serve_stdio
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the ``mcpme`` command-line interface."""
+    """Run the ``mcpwrap`` command-line interface."""
     parser = argparse.ArgumentParser(description="Deterministic engineering tool wrappers for MCP.")
     parser.add_argument("--config", type=Path, help="Optional configuration path.")
     subparsers = parser.add_subparsers(dest="command", required=True)

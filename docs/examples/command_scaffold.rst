@@ -9,7 +9,7 @@ Introduction
 ------------
 
 This example shows how to ingest a standalone command-line tool whose public
-interface is only exposed through `--help`. `mcpme` captures that help output,
+interface is only exposed through `--help`. `mcpwrap` captures that help output,
 turns it into a deterministic Python facade, and then wraps the facade like any
 other source-backed tool.
 
@@ -29,7 +29,7 @@ Technical Implementation
 - Run the public scaffold CLI through the checked-in shell wrapper to generate
   a facade module under `artifacts/examples/command_scaffold/`.
 - Build a manifest from the generated facade and execute it through
-  :func:`mcpme.execute_tool`.
+  :func:`mcpwrap.execute_tool`.
 - Print the scaffold report and normalized subprocess result as JSON.
 
 Expected Results

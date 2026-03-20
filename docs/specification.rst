@@ -2,7 +2,7 @@ MCP Wrapper Specification
 =========================
 
 This document is the first-pass product and implementation spec for a
-pip-installable library, tentatively named ``mcpme``, that turns existing
+pip-installable library, tentatively named ``mcpwrap``, that turns existing
 engineering tools into MCP servers with minimal handwritten glue.
 
 Status
@@ -565,8 +565,8 @@ works well for packages and loose script collections.
 
 Preferred locations:
 
-* ``pyproject.toml`` under ``[tool.mcpme]``
-* ``mcpme.toml`` for non-package repos
+* ``pyproject.toml`` under ``[tool.mcpwrap]``
+* ``mcpwrap.toml`` for non-package repos
 
 Config should be used for:
 
@@ -584,12 +584,12 @@ Example:
 
 .. code-block:: toml
 
-   [tool.mcpme]
+   [tool.mcpwrap]
    targets = ["acme.fea", "scripts/mesh.py"]
    transport = "stdio"
    python_discovery_mode = "source"
 
-   [tool.mcpme.tool.mesh_model]
+   [tool.mcpwrap.tool.mesh_model]
    title = "Mesh CAD Model"
    read_only = false
    destructive = false
@@ -607,7 +607,7 @@ The current intended top-level surface is:
 
 .. code-block:: python
 
-   from mcpme import (
+   from mcpwrap import (
        ArgparseCommand,
        build_manifest,
        execute_tool,
@@ -626,12 +626,12 @@ The current intended top-level surface is:
 
 Candidate CLI commands:
 
-* ``mcpme inspect <target>``
-* ``mcpme manifest <target>``
-* ``mcpme serve <target>``
-* ``mcpme scaffold-package <package> <output.py>``
-* ``mcpme scaffold-command <output.py> -- <command ...>``
-* ``mcpme scaffold-openapi <spec.json> <output.py>``
+* ``mcpwrap inspect <target>``
+* ``mcpwrap manifest <target>``
+* ``mcpwrap serve <target>``
+* ``mcpwrap scaffold-package <package> <output.py>``
+* ``mcpwrap scaffold-command <output.py> -- <command ...>``
+* ``mcpwrap scaffold-openapi <spec.json> <output.py>``
 
 The CLI should expose the same discovery engine as the Python library instead of
 maintaining a parallel implementation.

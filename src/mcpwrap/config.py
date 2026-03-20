@@ -112,13 +112,13 @@ class ManifestConfig:
 
 
 def _resolve_config_table(data: dict[str, Any]) -> dict[str, Any]:
-    """Return the ``tool.mcpme`` table from parsed TOML data."""
-    if "tool" in data and isinstance(data["tool"], dict) and "mcpme" in data["tool"]:
-        table = data["tool"]["mcpme"]
+    """Return the ``tool.mcpwrap`` table from parsed TOML data."""
+    if "tool" in data and isinstance(data["tool"], dict) and "mcpwrap" in data["tool"]:
+        table = data["tool"]["mcpwrap"]
         if isinstance(table, dict):
             return table
-    if "mcpme" in data and isinstance(data["mcpme"], dict):
-        return data["mcpme"]
+    if "mcpwrap" in data and isinstance(data["mcpwrap"], dict):
+        return data["mcpwrap"]
     return {}
 
 
@@ -144,7 +144,9 @@ def _optional_bool(value: Any) -> bool | None:
 def _load_toml_path(config_path: Path | None) -> tuple[Path | None, dict[str, Any]]:
     """Load TOML data from an explicit or discovered configuration path."""
     candidate_paths = (
-        (config_path,) if config_path is not None else (Path("pyproject.toml"), Path("mcpme.toml"))
+        (config_path,)
+        if config_path is not None
+        else (Path("pyproject.toml"), Path("mcpwrap.toml"))
     )
     for path in candidate_paths:
         if path is not None and path.exists():
@@ -160,7 +162,7 @@ def load_config(config_path: str | Path | None = None) -> ManifestConfig:
     """
     resolved_path, data = _load_toml_path(Path(config_path) if config_path is not None else None)
     table = _resolve_config_table(data)
-    root_dir = Path(table.get("artifact_root", ".mcpme-artifacts"))
+    root_dir = Path(table.get("artifact_root", ".mcpwrap-artifacts"))
     if resolved_path is not None and not root_dir.is_absolute():
         root_dir = resolved_path.resolve().parent / root_dir
     python_discovery_mode = str(table.get("python_discovery_mode", "source"))

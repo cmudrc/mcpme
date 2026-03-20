@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from mcpme import build_manifest, serve_stdio
+from mcpwrap import build_manifest, serve_stdio
 
 CASE_STUDY_ID = "tigl_cpacs"
 REPO_ROOT = Path(__file__).resolve().parents[2]

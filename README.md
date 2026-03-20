@@ -1,12 +1,12 @@
-# mcpme
+# mcpwrap
 
-[![Challenges Live](https://raw.githubusercontent.com/cmudrc/mcpme/main/.github/badges/challenges-live-subset.svg)](https://github.com/cmudrc/mcpme/actions/workflows/challenges.yml)
+[![Challenges Live](https://raw.githubusercontent.com/cmudrc/mcpwrap/main/.github/badges/challenges-live-subset.svg)](https://github.com/cmudrc/mcpwrap/actions/workflows/challenges.yml)
 
-`mcpme` is a deterministic Python library for wrapping engineering tools as MCP
+`mcpwrap` is a deterministic Python library for wrapping engineering tools as MCP
 servers.
 
 The motivation is simple: engineers should be able to expose trusted tools
-without replacing them with opaque AI behavior. `mcpme` starts from public
+without replacing them with opaque AI behavior. `mcpwrap` starts from public
 interfaces, docstrings, CLI help, and explicit file contracts. The first pass
 is intentionally non-AI, wrapper-first, and inspectable.
 
@@ -33,35 +33,35 @@ scaffold first, inspect the manifest second, and serve that saved facade last.
 Scaffold an installed package, inspect the generated manifest, then serve it:
 
 ```bash
-mcpme scaffold-package openmdao.utils.file_utils generated_facade.py
-mcpme manifest generated_facade.py
-mcpme serve generated_facade.py
+mcpwrap scaffold-package openmdao.utils.file_utils generated_facade.py
+mcpwrap manifest generated_facade.py
+mcpwrap serve generated_facade.py
 ```
 
 Scaffold a real CLI command through its help surface, inspect the manifest,
 then serve it:
 
 ```bash
-mcpme scaffold-command generated_facade.py -- gmsh -help
-mcpme manifest generated_facade.py
-mcpme serve generated_facade.py
+mcpwrap scaffold-command generated_facade.py -- gmsh -help
+mcpwrap manifest generated_facade.py
+mcpwrap serve generated_facade.py
 ```
 
 Scaffold an OpenAPI document into a plain Python HTTP facade, inspect the
 manifest, then serve it:
 
 ```bash
-mcpme scaffold-openapi api.json generated_facade.py
-mcpme manifest generated_facade.py
-mcpme serve generated_facade.py
+mcpwrap scaffold-openapi api.json generated_facade.py
+mcpwrap manifest generated_facade.py
+mcpwrap serve generated_facade.py
 ```
 
 Source-backed Python files already are the inspectable surface, so they skip
 the scaffold step:
 
 ```bash
-mcpme manifest tool_module.py
-mcpme serve tool_module.py
+mcpwrap manifest tool_module.py
+mcpwrap serve tool_module.py
 ```
 
 ## Real-Upstream Coverage

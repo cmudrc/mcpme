@@ -3,7 +3,7 @@
 ## Introduction
 
 This example shows how to ingest an OpenAPI specification without adding any
-runtime AI layer. `mcpme` turns the spec into a plain Python HTTP facade, then
+runtime AI layer. `mcpwrap` turns the spec into a plain Python HTTP facade, then
 wraps the generated functions through its normal deterministic discovery path.
 
 ## Preset Environment
@@ -20,7 +20,7 @@ derived artifact under `artifacts/examples/openapi_scaffold/`.
 - Run the public scaffold CLI through a checked-in shell wrapper to generate a
   Python facade for the API operations.
 - Build a manifest from the generated facade and execute the resulting tools
-  through :func:`mcpme.execute_tool`.
+  through :func:`mcpwrap.execute_tool`.
 - Print the scaffold report and the normalized HTTP responses as JSON.
 
 ## Expected Results
@@ -47,7 +47,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from mcpme import build_manifest, execute_tool
+from mcpwrap import build_manifest, execute_tool
 from support.openapi_scaffold.solver_api_server import solver_api_server
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -64,7 +64,7 @@ def _require_support_file(path: Path) -> Path:
 
 
 def _pythonpath_env() -> dict[str, str]:
-    """Build an environment that keeps `mcpme` importable for child processes."""
+    """Build an environment that keeps `mcpwrap` importable for child processes."""
     env = dict(os.environ)
     existing = env.get("PYTHONPATH")
     paths = [str((REPO_ROOT / "src").resolve())]

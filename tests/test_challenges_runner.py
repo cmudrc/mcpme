@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from mcpme._challenges import (
+from mcpwrap._challenges import (
     ChallengeAggregate,
     ChallengeProbe,
     ChallengeRenderedFile,

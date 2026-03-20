@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from mcpme import build_manifest, execute_tool
+from mcpwrap import build_manifest, execute_tool
 
 
 def test_subprocess_file_json_result_and_error_mode_are_supported(tmp_path: Path) -> None:
@@ -23,13 +23,13 @@ def test_subprocess_file_json_result_and_error_mode_are_supported(tmp_path: Path
         "import sys\nsys.stderr.write('solver failed')\nraise SystemExit(2)\n",
         encoding="utf-8",
     )
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpwrap.toml"
     config_path.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpwrap]
 artifact_root = "{(tmp_path / "artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpwrap.subprocess]]
 name = "write_result"
 description = "Write a JSON result file."
 argv = ["{sys.executable}", "{writer.as_posix()}"]
@@ -37,7 +37,7 @@ input_schema = {{ type = "object", properties = {{ }}, required = [] }}
 result_kind = "file_json"
 result_path = "result.json"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpwrap.subprocess]]
 name = "fail_result"
 description = "Fail deterministically."
 argv = ["{sys.executable}", "{failing.as_posix()}"]
