@@ -1,4 +1,4 @@
-"""Sphinx configuration for the mcpme documentation."""
+"""Sphinx configuration for the mcpcraft documentation."""
 
 from __future__ import annotations
 
@@ -13,9 +13,9 @@ autoclass_content = "both"
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-project = "mcpme"
-copyright = "2026, mcpme contributors"
-author = "mcpme contributors"
+project = "mcpcraft"
+copyright = "2026, mcpcraft contributors"
+author = "mcpcraft contributors"
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -57,7 +57,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GitHub",
-            "url": "https://github.com/cmudrc/mcpme",
+            "url": "https://github.com/cmudrc/mcpcraft",
             "icon": "fa-brands fa-github",
         }
     ],

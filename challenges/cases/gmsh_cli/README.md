@@ -28,7 +28,7 @@ This case keeps its ingestion recipe and workflow assertions in
 `challenge.toml` instead of checking in companion `ingest.py` and
 `use.py` scripts. That boundary is intentional: the challenge lane
 should stay a compact problem statement rather than turning into a
-worked answer key like the case-study lane.
+worked answer key like the real-world example lane.
 
 ## Run This Case
 
@@ -77,7 +77,7 @@ Expectations: json fields {'exit_code': 0}; files are non-empty ['{challenge_art
 
 - A standalone engineering CLI can be scaffolded from live help output.
 - The generated wrapper can pass through real command-line arguments deterministically.
-- A raw upstream command can emit a non-empty engineering artifact under `mcpme` control.
+- A raw upstream command can emit a non-empty engineering artifact under `mcpcraft` control.
 
 ## Challenge Definition
 
@@ -96,7 +96,7 @@ motivation = "A lot of engineering tooling is still command-driven, so one-shot 
 proves = [
   "A standalone engineering CLI can be scaffolded from live help output.",
   "The generated wrapper can pass through real command-line arguments deterministically.",
-  "A raw upstream command can emit a non-empty engineering artifact under `mcpme` control.",
+  "A raw upstream command can emit a non-empty engineering artifact under `mcpcraft` control.",
 ]
 
 [target]

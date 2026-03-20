@@ -3,30 +3,22 @@
 Examples
 ========
 
-The examples are part of the maintained public contract for `mcpme`.
-Each page below is generated from the example module docstring and the
-checked-in source file, so the code and prose stay aligned. Examples
-that need local helper inputs keep them under `examples/support/`,
-while derived outputs stay under `artifacts/examples/`.
+The examples documentation is split into two maintained lanes:
+
+- ``examples/core`` for the curated public-API teaching contract.
+- ``examples/real_world`` for richer optional upstream walkthroughs.
+
+Both lanes keep checked-in support inputs under ``examples/support`` and
+write only derived outputs under ``artifacts/examples``.
 
 .. toctree::
    :maxdepth: 1
 
-   argparse_cli_wrapper
-   basic_usage
-   command_scaffold
-   openapi_scaffold
-   package_scaffold
-   runtime_server
-   subprocess_wrapper
+   core/index
+   real_world/index
 
-Example Inventory
------------------
+Lane Inventory
+--------------
 
-- ``examples/argparse_cli_wrapper.py``: This example wraps a small command-line engineering helper that already exposes
-- ``examples/basic_usage.py``: This example shows the simplest useful `mcpme` workflow: expose a typed Python
-- ``examples/command_scaffold.py``: This example shows how to ingest a standalone command-line tool whose public
-- ``examples/openapi_scaffold.py``: This example shows how to ingest an OpenAPI specification without adding any
-- ``examples/package_scaffold.py``: This example shows how to ingest an installed-style Python package that mixes
-- ``examples/runtime_server.py``: This example demonstrates the smallest practical MCP runtime loop you can build
-- ``examples/subprocess_wrapper.py``: This example wraps a legacy-style batch solver that communicates through input
+- ``examples/core``: 7 runnable teaching example(s).
+- ``examples/real_world``: 3 richer optional walkthrough(s).

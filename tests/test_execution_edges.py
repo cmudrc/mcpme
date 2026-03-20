@@ -8,9 +8,9 @@ import json
 import sys
 from pathlib import Path
 
-from mcpme import ArgparseCommand, build_manifest, execute_tool, serve_stdio
-from mcpme.execution import ToolExecutionResult, _extract_subprocess_result, _normalize_result
-from mcpme.manifest import ArtifactPolicy, Manifest, SourceReference, ToolManifest
+from mcpcraft import ArgparseCommand, build_manifest, execute_tool, serve_stdio
+from mcpcraft.execution import ToolExecutionResult, _extract_subprocess_result, _normalize_result
+from mcpcraft.manifest import ArtifactPolicy, Manifest, SourceReference, ToolManifest
 
 
 async def async_tool(job_name: str) -> str:
@@ -123,31 +123,31 @@ def test_execution_supports_no_artifacts_stdio_and_argparse_false_flags(tmp_path
         "import pathlib\n"
         "import sys\n\n"
         "pathlib.Path('stdin.txt').write_text(sys.stdin.read(), encoding='utf-8')\n"
-        "print(json.dumps({'env': os.environ['MCPME_FLAG'], 'cwd': pathlib.Path.cwd().name}))\n",
+        "print(json.dumps({'env': os.environ['MCPCRAFT_FLAG'], 'cwd': pathlib.Path.cwd().name}))\n",
         encoding="utf-8",
     )
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpcraft.toml"
     config_path.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpcraft]
 artifact_mode = "none"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpcraft.subprocess]]
 name = "stdin_env"
 description = "Read stdin and env."
 argv = ["{sys.executable}", "{env_script.as_posix()}"]
 stdin_template = "{{message}}"
 cwd = "workspace"
 
-[tool.mcpme.subprocess.input_schema]
+[tool.mcpcraft.subprocess.input_schema]
 type = "object"
 required = ["message"]
 
-[tool.mcpme.subprocess.input_schema.properties.message]
+[tool.mcpcraft.subprocess.input_schema.properties.message]
 type = "string"
 
-[tool.mcpme.subprocess.env]
-MCPME_FLAG = "enabled"
+[tool.mcpcraft.subprocess.env]
+MCPCRAFT_FLAG = "enabled"
 """.strip(),
         encoding="utf-8",
     )
@@ -173,14 +173,14 @@ def test_execution_supports_summary_artifacts_and_subprocess_timeouts(tmp_path: 
         "print('finished')\n",
         encoding="utf-8",
     )
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpcraft.toml"
     config_path.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpcraft]
 artifact_mode = "summary"
 artifact_root = "{(tmp_path / "artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpcraft.subprocess]]
 name = "sleepy"
 description = "Sleep past the timeout."
 argv = ["{sys.executable}", "{sleepy_script.as_posix()}"]
@@ -188,11 +188,11 @@ result_kind = "stdout_text"
 stdin_template = "{{message}}"
 timeout_seconds = 0.05
 
-[tool.mcpme.subprocess.input_schema]
+[tool.mcpcraft.subprocess.input_schema]
 type = "object"
 required = ["message"]
 
-[tool.mcpme.subprocess.input_schema.properties.message]
+[tool.mcpcraft.subprocess.input_schema.properties.message]
 type = "string"
 """.strip(),
         encoding="utf-8",
@@ -210,7 +210,7 @@ type = "string"
     assert (result.artifact_dir / "stderr.txt").exists()
     assert not (result.artifact_dir / "input.txt").exists()
     assert result.meta is not None
-    assert "mcpme/artifacts" in result.meta
+    assert "mcpcraft/artifacts" in result.meta
 
 
 def test_runtime_stdio_and_result_extractors_cover_edge_paths(tmp_path: Path) -> None:
@@ -256,6 +256,6 @@ def test_runtime_stdio_and_result_extractors_cover_edge_paths(tmp_path: Path) ->
     stdout = io.StringIO()
     serve_stdio(manifest, stdin=stdin, stdout=stdout)
     responses = [json.loads(line) for line in stdout.getvalue().splitlines()]
-    assert responses[0]["result"]["serverInfo"]["name"] == "mcpme"
+    assert responses[0]["result"]["serverInfo"]["name"] == "mcpcraft"
     assert responses[1]["result"]["tools"][0]["name"] == "ping"
     assert responses[2]["error"]["code"] == -32000

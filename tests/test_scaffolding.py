@@ -10,10 +10,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-from mcpme import build_manifest, execute_tool
-from mcpme._openapi import scaffold_openapi
-from mcpme._scaffold import scaffold_package
-from mcpme.cli import main
+from mcpcraft import build_manifest, execute_tool
+from mcpcraft._openapi import scaffold_openapi
+from mcpcraft._scaffold import scaffold_package
+from mcpcraft.cli import main
 
 
 def test_scaffold_package_generates_executable_facade(

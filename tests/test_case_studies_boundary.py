@@ -1,4 +1,4 @@
-"""Boundary tests for case-study imports, docs contracts, and generated pages."""
+"""Boundary tests for real-world example imports, docs contracts, and pages."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CASE_STUDIES_ROOT = REPO_ROOT / "case_studies"
+REAL_WORLD_EXAMPLES_ROOT = REPO_ROOT / "examples" / "real_world"
 REQUIRED_DOC_SECTIONS = (
     "Introduction",
     "Preset Environment",
@@ -20,14 +20,13 @@ REQUIRED_DOC_SECTIONS = (
 )
 
 
-def _iter_case_study_dirs() -> list[Path]:
-    """Return checked-in case-study directories with ingest/use entrypoints."""
+def _iter_real_world_example_dirs() -> list[Path]:
+    """Return checked-in real-world example directories with entrypoints."""
     return [
         path
-        for path in sorted(CASE_STUDIES_ROOT.iterdir())
+        for path in sorted(REAL_WORLD_EXAMPLES_ROOT.iterdir())
         if path.is_dir()
         and not path.name.startswith("_")
-        and path.name != "support"
         and (path / "ingest.py").exists()
         and (path / "serve.py").exists()
         and (path / "use.py").exists()
@@ -47,10 +46,10 @@ def _collect_violations(*, pattern: re.Pattern[str], root: Path) -> list[str]:
     return violations
 
 
-def _iter_case_study_doc_lines() -> list[tuple[Path, list[str]]]:
-    """Yield case-study `use.py` paths and their module docstring lines."""
+def _iter_real_world_example_doc_lines() -> list[tuple[Path, list[str]]]:
+    """Yield real-world example `use.py` paths and their module docstring lines."""
     docs: list[tuple[Path, list[str]]] = []
-    for case_dir in _iter_case_study_dirs():
+    for case_dir in _iter_real_world_example_dirs():
         path = case_dir / "use.py"
         module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         docstring = ast.get_docstring(module, clean=False)
@@ -83,9 +82,9 @@ def _expr_uses_artifact_root(expression: ast.AST) -> bool:
 
 
 def _iter_runtime_materialization_violations() -> list[str]:
-    """Find case-study entrypoints that still materialize source inputs at runtime."""
+    """Find real-world entrypoints that still materialize source inputs at runtime."""
     violations: list[str] = []
-    for case_dir in _iter_case_study_dirs():
+    for case_dir in _iter_real_world_example_dirs():
         for path in (case_dir / "ingest.py", case_dir / "serve.py", case_dir / "use.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
@@ -98,14 +97,14 @@ def _iter_runtime_materialization_violations() -> list[str]:
                     if not _expr_uses_artifact_root(node.func.value):
                         violations.append(
                             f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file writes are "
-                            "only allowed under ARTIFACT_ROOT in case-study entrypoints."
+                            "only allowed under ARTIFACT_ROOT in real-world example entrypoints."
                         )
                     continue
                 if isinstance(node.func, ast.Attribute) and node.func.attr == "mkdir":
                     if not _expr_uses_artifact_root(node.func.value):
                         violations.append(
                             f"{path.relative_to(REPO_ROOT)}:{node.lineno}: mkdir is only allowed "
-                            "under ARTIFACT_ROOT in case-study entrypoints."
+                            "under ARTIFACT_ROOT in real-world example entrypoints."
                         )
                     continue
                 if isinstance(node.func, ast.Name) and node.func.id == "open":
@@ -125,25 +124,27 @@ def _iter_runtime_materialization_violations() -> list[str]:
                     ):
                         violations.append(
                             f"{path.relative_to(REPO_ROOT)}:{node.lineno}: runtime file opens in "
-                            "write mode are only allowed under ARTIFACT_ROOT in case-study "
-                            "entrypoints."
+                            "write mode are only allowed under ARTIFACT_ROOT in real-world "
+                            "example entrypoints."
                         )
     return violations
 
 
-def test_case_studies_import_only_the_public_package_root() -> None:
-    """Case studies should not import internal modules or deep package paths."""
-    private_pattern = re.compile(r"^\s*(from|import)\s+mcpme\._")
-    deep_module_pattern = re.compile(r"^\s*from\s+mcpme\.[A-Za-z0-9_]+")
-    violations = _collect_violations(pattern=private_pattern, root=CASE_STUDIES_ROOT)
-    violations.extend(_collect_violations(pattern=deep_module_pattern, root=CASE_STUDIES_ROOT))
+def test_real_world_examples_import_only_the_public_package_root() -> None:
+    """Real-world examples should not import internal modules or deep package paths."""
+    private_pattern = re.compile(r"^\s*(from|import)\s+mcpcraft\._")
+    deep_module_pattern = re.compile(r"^\s*from\s+mcpcraft\.[A-Za-z0-9_]+")
+    violations = _collect_violations(pattern=private_pattern, root=REAL_WORLD_EXAMPLES_ROOT)
+    violations.extend(
+        _collect_violations(pattern=deep_module_pattern, root=REAL_WORLD_EXAMPLES_ROOT)
+    )
     assert violations == [], "\n".join(violations)
 
 
-def test_case_studies_include_canonical_module_doc_sections() -> None:
-    """Every case study should carry the canonical generated-docs sections."""
+def test_real_world_examples_include_canonical_module_doc_sections() -> None:
+    """Every real-world example should carry the canonical generated-docs sections."""
     violations: list[str] = []
-    for path, lines in _iter_case_study_doc_lines():
+    for path, lines in _iter_real_world_example_doc_lines():
         present = _extract_markdown_section_names(lines)
         missing = [section for section in REQUIRED_DOC_SECTIONS if section not in present]
         if missing:
@@ -151,10 +152,10 @@ def test_case_studies_include_canonical_module_doc_sections() -> None:
     assert violations == [], "\n".join(violations)
 
 
-def test_case_study_entrypoints_include_module_docstrings() -> None:
-    """Every checked-in case-study entrypoint should have a module docstring."""
+def test_real_world_example_entrypoints_include_module_docstrings() -> None:
+    """Every checked-in real-world example entrypoint should have a module docstring."""
     violations: list[str] = []
-    for case_dir in _iter_case_study_dirs():
+    for case_dir in _iter_real_world_example_dirs():
         for path in (case_dir / "ingest.py", case_dir / "serve.py", case_dir / "use.py"):
             module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             docstring = ast.get_docstring(module, clean=False)
@@ -163,23 +164,23 @@ def test_case_study_entrypoints_include_module_docstrings() -> None:
     assert violations == [], "\n".join(violations)
 
 
-def test_case_studies_do_not_materialize_support_inputs_at_runtime() -> None:
-    """Case studies should keep support inputs checked in rather than writing them on the fly."""
+def test_real_world_examples_do_not_materialize_support_inputs_at_runtime() -> None:
+    """Real-world examples should keep support inputs checked in at runtime."""
     violations = _iter_runtime_materialization_violations()
     assert violations == [], "\n".join(violations)
 
 
-def test_generated_case_study_docs_are_up_to_date() -> None:
-    """Checked-in generated case-study docs should match current docstrings."""
+def test_generated_example_docs_include_real_world_examples() -> None:
+    """Checked-in generated docs should match current real-world example docstrings."""
     completed = subprocess.run(
-        [sys.executable, "scripts/generate_case_study_docs.py", "--check"],
+        [sys.executable, "scripts/generate_example_docs.py", "--check"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
         check=False,
     )
     assert completed.returncode == 0, (
-        "Generated case-study docs are out of date.\n"
+        "Generated example docs are out of date.\n"
         f"stdout:\n{completed.stdout}\n"
         f"stderr:\n{completed.stderr}"
     )

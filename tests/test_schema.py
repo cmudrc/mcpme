@@ -12,7 +12,7 @@ from typing import Annotated, Any, Literal, TypedDict
 
 import pytest
 
-from mcpme.schema import (
+from mcpcraft.schema import (
     SchemaGenerationError,
     SchemaValidationError,
     coerce_value,
@@ -117,7 +117,7 @@ def test_schema_supports_paths_bytes_and_annotated_metadata() -> None:
     bytes_schema = schema_from_annotation(Annotated[bytes, "binary"])
 
     assert file_path_schema["format"] == "path"
-    assert file_path_schema["x-mcpme-path-kind"] == "file"
+    assert file_path_schema["x-mcpcraft-path-kind"] == "file"
     assert bytes_schema["contentEncoding"] == "base64"
     assert coerce_value("mesh.inp", Path) == Path("mesh.inp")
     assert coerce_value(base64.b64encode(b"abc").decode("ascii"), bytes) == b"abc"

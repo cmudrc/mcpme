@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mcpme import McpServer, build_manifest
+from mcpcraft import McpServer, build_manifest
 
 
 def test_runtime_handles_unknown_methods_and_notifications(tmp_path: Path) -> None:

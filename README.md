@@ -1,12 +1,12 @@
-# mcpme
+# mcpcraft
 
-[![Challenges Live](https://raw.githubusercontent.com/cmudrc/mcpme/main/.github/badges/challenges-live-subset.svg)](https://github.com/cmudrc/mcpme/actions/workflows/challenges.yml)
+[![Challenges Live](https://raw.githubusercontent.com/cmudrc/mcpcraft/main/.github/badges/challenges-live-subset.svg)](https://github.com/cmudrc/mcpcraft/actions/workflows/challenges.yml)
 
-`mcpme` is a deterministic Python library for wrapping engineering tools as MCP
+`mcpcraft` is a deterministic Python library for wrapping engineering tools as MCP
 servers.
 
 The motivation is simple: engineers should be able to expose trusted tools
-without replacing them with opaque AI behavior. `mcpme` starts from public
+without replacing them with opaque AI behavior. `mcpcraft` starts from public
 interfaces, docstrings, CLI help, and explicit file contracts. The first pass
 is intentionally non-AI, wrapper-first, and inspectable.
 
@@ -24,28 +24,28 @@ Turn a normal Python module into an MCP manifest without importing user code
 during discovery:
 
 ```bash
-mcpme manifest examples/basic_usage.py
+mcpcraft manifest examples/core/basic_usage.py
 ```
 
 One-shot wrap an installed engineering package into a plain Python facade you
 can review:
 
 ```bash
-mcpme scaffold-package openmdao.utils.file_utils artifacts/openmdao_file_utils.py
-mcpme manifest artifacts/openmdao_file_utils.py
+mcpcraft scaffold-package openmdao.utils.file_utils artifacts/openmdao_file_utils.py
+mcpcraft manifest artifacts/openmdao_file_utils.py
 ```
 
 One-shot wrap a real CLI tool:
 
 ```bash
-mcpme scaffold-command artifacts/gmsh_wrapper.py -- gmsh -help
-mcpme inspect artifacts/gmsh_wrapper.py
+mcpcraft scaffold-command artifacts/gmsh_wrapper.py -- gmsh -help
+mcpcraft inspect artifacts/gmsh_wrapper.py
 ```
 
 Serve a wrapped target over stdio MCP:
 
 ```bash
-mcpme serve examples/basic_usage.py
+mcpcraft serve examples/core/basic_usage.py
 ```
 
 Run the maintained runnable examples:
@@ -54,21 +54,23 @@ Run the maintained runnable examples:
 make run-examples
 ```
 
-The smaller runnable examples keep inspectable source inputs under
-`examples/support/` and write only derived outputs under `artifacts/examples/`.
+The smaller core examples live under `examples/core/`, keep inspectable source
+inputs under `examples/support/`, and write only derived outputs under
+`artifacts/examples/core/`.
 
-Run the richer case studies for real upstream surfaces:
+Run the richer real-world examples for real upstream surfaces:
 
 ```bash
-make run-case-studies
-make run-case-study CASE=pycycle_mpcycle
+make run-real-world-examples
+make run-real-world-example CASE=pycycle_mpcycle
 ```
 
-Each case-study directory now follows a more realistic `ingest.py` then
-`serve.py` then `use.py` flow, with support inputs under
-`case_studies/support/` and derived outputs under `artifacts/case_studies/`.
-The handoff is standardized around `generated_facade.py` plus
-`scaffold_report.json` rather than a bespoke state blob.
+Each real-world example directory under `examples/real_world/` follows a more
+realistic `ingest.py` then `serve.py` then `use.py` flow, with support inputs
+under `examples/support/real_world/` and derived outputs under
+`artifacts/examples/real_world/`. The handoff is standardized around
+`generated_facade.py` plus `scaffold_report.json` rather than a bespoke state
+blob.
 
 Run the live raw-upstream challenge cases:
 
@@ -78,4 +80,4 @@ make challenge CASE=openmdao_file_utils
 ```
 
 The broader live challenge track lives in [challenges/README.md](challenges/README.md).
-The separate case-study lane lives in [case_studies/README.md](case_studies/README.md).
+The richer optional example lane lives in [examples/real_world/README.md](examples/real_world/README.md).

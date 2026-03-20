@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from mcpme._challenges import ChallengeAggregate, ChallengeResult, render_badge_svg
+from mcpcraft._challenges import ChallengeAggregate, ChallengeResult, render_badge_svg
 
 DEFAULT_METRICS_JSON = Path("artifacts/challenges/gha_subset/challenges_metrics.json")
 DEFAULT_BADGE_SVG = Path(".github/badges/challenges-live-subset.svg")

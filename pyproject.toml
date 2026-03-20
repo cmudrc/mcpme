@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mcpme"
+name = "mcpcraft"
 version = "0.1.0"
 description = "Deterministic wrappers for exposing engineering tools as MCP servers"
 readme = "README.md"
@@ -26,7 +26,7 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
-mcpme = "mcpme.cli:main"
+mcpcraft = "mcpcraft.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -56,9 +56,9 @@ challenge-full = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cmudrc/mcpme"
-Repository = "https://github.com/cmudrc/mcpme"
-Issues = "https://github.com/cmudrc/mcpme/issues"
+Homepage = "https://github.com/cmudrc/mcpcraft"
+Repository = "https://github.com/cmudrc/mcpcraft"
+Issues = "https://github.com/cmudrc/mcpcraft/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -68,7 +68,7 @@ include-package-data = true
 where = ["src"]
 
 [tool.setuptools.package-data]
-mcpme = ["py.typed"]
+mcpcraft = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
@@ -95,7 +95,7 @@ convention = "pep257"
 "tests/*.py" = ["D"]
 
 [tool.mypy]
-packages = ["mcpme"]
+packages = ["mcpcraft"]
 python_version = "3.12"
 warn_unused_configs = true
 check_untyped_defs = true

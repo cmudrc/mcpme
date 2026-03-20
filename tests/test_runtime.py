@@ -6,7 +6,7 @@ import sys
 import time
 from pathlib import Path
 
-from mcpme import McpServer, build_manifest
+from mcpcraft import McpServer, build_manifest
 
 
 def test_runtime_lists_and_calls_tools(tmp_path: Path) -> None:
@@ -38,7 +38,7 @@ def test_runtime_lists_and_calls_tools(tmp_path: Path) -> None:
         }
     )
 
-    assert initialize["result"]["serverInfo"]["name"] == "mcpme"
+    assert initialize["result"]["serverInfo"]["name"] == "mcpcraft"
     assert tools_list["result"]["tools"][0]["name"] == "shout"
     assert call["result"]["content"][0]["text"] == "MESH"
 
@@ -57,13 +57,13 @@ def test_runtime_supports_async_jobs_tail_and_cancel(tmp_path: Path) -> None:
         "print(f'done:{payload}', flush=True)\n",
         encoding="utf-8",
     )
-    config_path = tmp_path / "mcpme.toml"
+    config_path = tmp_path / "mcpcraft.toml"
     config_path.write_text(
         f"""
-[tool.mcpme]
+[tool.mcpcraft]
 artifact_root = "{(tmp_path / "artifacts").as_posix()}"
 
-[[tool.mcpme.subprocess]]
+[[tool.mcpcraft.subprocess]]
 name = "sleepy"
 description = "Run slowly."
 argv = ["{sys.executable}", "{script_path.as_posix()}", "{{delay}}"]
@@ -71,14 +71,14 @@ stdin_template = "{{message}}"
 result_kind = "stdout_text"
 timeout_seconds = 1.0
 
-[tool.mcpme.subprocess.input_schema]
+[tool.mcpcraft.subprocess.input_schema]
 type = "object"
 required = ["message", "delay"]
 
-[tool.mcpme.subprocess.input_schema.properties.message]
+[tool.mcpcraft.subprocess.input_schema.properties.message]
 type = "string"
 
-[tool.mcpme.subprocess.input_schema.properties.delay]
+[tool.mcpcraft.subprocess.input_schema.properties.delay]
 type = "number"
 """.strip(),
         encoding="utf-8",
@@ -94,17 +94,17 @@ type = "number"
             "params": {
                 "name": "sleepy",
                 "arguments": {"message": "mesh", "delay": 0.05},
-                "_meta": {"mcpme/runMode": "async"},
+                "_meta": {"mcpcraft/runMode": "async"},
             },
         }
     )
-    job_id = start_response["result"]["_meta"]["mcpme/job"]["jobId"]
+    job_id = start_response["result"]["_meta"]["mcpcraft/job"]["jobId"]
     for _ in range(50):
         job = server.handle_request(
             {
                 "jsonrpc": "2.0",
                 "id": 2,
-                "method": "mcpme/jobs/get",
+                "method": "mcpcraft/jobs/get",
                 "params": {"jobId": job_id},
             }
         )["result"]
@@ -116,11 +116,11 @@ type = "number"
         {
             "jsonrpc": "2.0",
             "id": 3,
-            "method": "mcpme/jobs/tail",
+            "method": "mcpcraft/jobs/tail",
             "params": {"jobId": job_id, "stream": "stdout", "lines": 10},
         }
     )
-    jobs_list = server.handle_request({"jsonrpc": "2.0", "id": 4, "method": "mcpme/jobs/list"})
+    jobs_list = server.handle_request({"jsonrpc": "2.0", "id": 4, "method": "mcpcraft/jobs/list"})
     assert "done:mesh" in tail["result"]["lines"]
     assert any(item["jobId"] == job_id for item in jobs_list["result"]["jobs"])
 
@@ -132,16 +132,16 @@ type = "number"
             "params": {
                 "name": "sleepy",
                 "arguments": {"message": "cancel", "delay": 0.5},
-                "_meta": {"mcpme/runMode": "async"},
+                "_meta": {"mcpcraft/runMode": "async"},
             },
         }
     )
-    cancel_job_id = cancel_start["result"]["_meta"]["mcpme/job"]["jobId"]
+    cancel_job_id = cancel_start["result"]["_meta"]["mcpcraft/job"]["jobId"]
     server.handle_request(
         {
             "jsonrpc": "2.0",
             "id": 6,
-            "method": "mcpme/jobs/cancel",
+            "method": "mcpcraft/jobs/cancel",
             "params": {"jobId": cancel_job_id},
         }
     )
@@ -150,7 +150,7 @@ type = "number"
             {
                 "jsonrpc": "2.0",
                 "id": 7,
-                "method": "mcpme/jobs/get",
+                "method": "mcpcraft/jobs/get",
                 "params": {"jobId": cancel_job_id},
             }
         )["result"]

@@ -65,7 +65,7 @@ SUPPORT_REQUIREMENTS = {
         / "scaffold_package.sh",
     ),
     "subprocess_wrapper.py": (
-        REPO_ROOT / "examples" / "support" / "subprocess_wrapper" / "mcpme.toml",
+        REPO_ROOT / "examples" / "support" / "subprocess_wrapper" / "mcpcraft.toml",
         REPO_ROOT / "examples" / "support" / "subprocess_wrapper" / "legacy_solver.py",
         REPO_ROOT
         / "examples"
@@ -81,7 +81,7 @@ def _artifact_root_for(script_name: str) -> Path | None:
     """Return the artifact root for one example script when it has one."""
     if script_name in {"basic_usage.py", "runtime_server.py"}:
         return None
-    return REPO_ROOT / "artifacts" / "examples" / Path(script_name).stem
+    return REPO_ROOT / "artifacts" / "examples" / "core" / Path(script_name).stem
 
 
 @pytest.mark.parametrize(
@@ -106,7 +106,7 @@ def test_example_scripts_run_successfully(script_name: str, expected_fragment: s
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO_ROOT / "src")
     completed = subprocess.run(
-        [sys.executable, f"examples/{script_name}"],
+        [sys.executable, f"examples/core/{script_name}"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,

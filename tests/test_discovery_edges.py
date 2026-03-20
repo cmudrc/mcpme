@@ -7,15 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from mcpme import ArgparseCommand, build_manifest
-from mcpme.config import ToolOverride
-from mcpme.discovery import (
+from mcpcraft import ArgparseCommand, build_manifest
+from mcpcraft.config import ToolOverride
+from mcpcraft.discovery import (
     _apply_override,
     _build_python_tool_manifest,
     _load_module_from_path,
     _public_names_from_python_file,
 )
-from mcpme.manifest import SourceReference, ToolAnnotations
+from mcpcraft.manifest import SourceReference, ToolAnnotations
 
 
 def helper_tool(job_name: str) -> str:

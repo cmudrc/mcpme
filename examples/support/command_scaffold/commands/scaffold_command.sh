@@ -7,6 +7,6 @@ if [ "$#" -ne 1 ]; then
 fi
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
-exec "${PYTHON_BIN:-python3}" -m mcpme.cli scaffold-command "$1" \
+exec "${PYTHON_BIN:-python3}" -m mcpcraft.cli scaffold-command "$1" \
   --name run_beam_cli \
   -- sh "$SCRIPT_DIR/run_beam_cli.sh"

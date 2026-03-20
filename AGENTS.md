@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository builds `mcpme`, a deterministic Python 3.12+ library for
+This repository builds `mcpcraft`, a deterministic Python 3.12+ library for
 wrapping engineering tools as MCP servers. Keep changes focused, keep the
 public API intentional, and prefer standard-library solutions unless a
 third-party dependency clearly improves the maintenance story.
@@ -26,14 +26,13 @@ merging.
   - `make type`
   - `make test`
 - If docs changed:
-  - `make case-study-docs-check`
   - `make docs-check`
   - `make docs`
-- If case studies changed:
-  - `python scripts/generate_case_study_docs.py`
-  - `make run-case-studies`
-- If the example changed:
+- If a core example changed:
   - `make run-examples`
+  - `python scripts/generate_example_docs.py`
+- If a real-world example changed:
+  - `make run-real-world-examples`
   - `python scripts/generate_example_docs.py`
 - If the live challenge track changed:
   - `python scripts/generate_challenge_docs.py`
@@ -51,7 +50,7 @@ merging.
 ## Public Vs Private Boundaries
 
 - The supported public surface is whatever is re-exported from
-  `src/mcpme/__init__.py`.
+  `src/mcpcraft/__init__.py`.
 - Keep that top-level surface minimal. Prefer stable entry points and a small
   set of user-facing types over re-exporting every internal model.
 - Prefer adding new public behavior to stable top-level modules before creating
@@ -66,22 +65,23 @@ merging.
   intentionally live, separate from the main gate, and should remain
   non-gating.
 - Update tests, docs, and examples alongside behavior changes.
-- Keep `case_studies/` separate from the small core `examples/` contract. Case
-  studies may depend on heavyweight optional upstream runtimes and may report
-  `skipped_unavailable`, but they should still use only the public `mcpme`
-  surface.
-- Keep each case-study directory readable as a real ingest/persist/use flow:
-  `case_studies/<id>/ingest.py` should write the deterministic artifact pair
+- Keep `examples/core/` separate from the richer optional
+  `examples/real_world/` lane. Real-world examples may depend on heavyweight
+  optional upstream runtimes and may report `skipped_unavailable`, but they
+  should still use only the public `mcpcraft` surface.
+- Keep each real-world example directory readable as a real ingest/persist/use
+  flow: `examples/real_world/<id>/ingest.py` should write the deterministic artifact pair
   `generated_facade.py` and `scaffold_report.json` under
-  `artifacts/case_studies/<id>/`, `case_studies/<id>/serve.py` should expose
-  that saved generated facade over stdio MCP, and `case_studies/<id>/use.py`
-  should demonstrate the saved capabilities through MCP requests.
-- Keep checked-in support inputs under `examples/support/<id>/` and
-  `case_studies/support/<id>/`. Generated facades and retained execution
-  artifacts belong under `artifacts/` and should not be promoted into the
-  support trees.
-- Keep case-study `use.py` module docstrings authoritative. Generated
-  case-study docs should be refreshed whenever those walkthroughs change.
+  `artifacts/examples/real_world/<id>/`, `examples/real_world/<id>/serve.py`
+  should expose that saved generated facade over stdio MCP, and
+  `examples/real_world/<id>/use.py` should demonstrate the saved capabilities
+  through MCP requests.
+- Keep checked-in support inputs under `examples/support/<id>/` for core
+  examples and `examples/support/real_world/<id>/` for real-world examples.
+  Generated facades and retained execution artifacts belong under
+  `artifacts/` and should not be promoted into the support trees.
+- Keep real-world example `use.py` module docstrings authoritative. Generated
+  example docs should be refreshed whenever those walkthroughs change.
 - Keep example module docstrings authoritative. Generated example docs should be
   refreshed whenever examples change.
 - Keep `challenges/` out of the public API and example-doc contract unless

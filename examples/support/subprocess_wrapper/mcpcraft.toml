@@ -1,0 +1,35 @@
+[tool.mcpcraft]
+artifact_mode = "summary"
+
+[[tool.mcpcraft.subprocess]]
+name = "legacy_solver"
+description = "Run a deterministic file-driven legacy solver."
+argv = [
+  "sh",
+  "-c",
+  "exec sh \"$MCPCRAFT_EXAMPLE_SOURCE_ROOT/commands/run_legacy_solver.sh\""
+]
+result_kind = "file_json"
+result_path = "result.json"
+
+[tool.mcpcraft.subprocess.input_schema]
+type = "object"
+required = ["case_name", "velocity", "area"]
+
+[tool.mcpcraft.subprocess.input_schema.properties.case_name]
+type = "string"
+
+[tool.mcpcraft.subprocess.input_schema.properties.velocity]
+type = "number"
+
+[tool.mcpcraft.subprocess.input_schema.properties.area]
+type = "number"
+
+[[tool.mcpcraft.subprocess.files]]
+path = "deck.json"
+template = "{{\"case_name\": \"{case_name}\", \"velocity\": {velocity}, \"area\": {area}}}"
+
+[[tool.mcpcraft.subprocess.outputs]]
+path = "reports"
+kind = "directory"
+when = "success"

@@ -189,13 +189,15 @@ cython_debug/
 
 # Ruff stuff:
 .ruff_cache/
+.challenge-tools/
 
 # Project-local generated artifacts
-# Checked-in example and case-study support inputs live under
-# `examples/support/` and `case_studies/support/`. Only derived outputs belong
-# under `artifacts/`.
+# Checked-in example support inputs live under `examples/support/`. Only
+# derived outputs belong under `artifacts/`.
 artifacts/
+.mcpcraft-artifacts/
 .mcpme-artifacts/
+.mcpwrap-artifacts/
 
 # PyPI configuration file
 .pypirc

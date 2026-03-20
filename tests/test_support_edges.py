@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from mcpme.config import _optional_bool, load_config
-from mcpme.docstrings import parse_docstring
-from mcpme.manifest import (
+from mcpcraft.config import _optional_bool, load_config
+from mcpcraft.docstrings import parse_docstring
+from mcpcraft.manifest import (
     ArgparseOptionSpec,
     FileTemplate,
     Manifest,
@@ -17,7 +17,7 @@ from mcpme.manifest import (
     ToolAnnotations,
     ToolManifest,
 )
-from mcpme.schema import SchemaValidationError, coerce_value, to_json_compatible, validate_value
+from mcpcraft.schema import SchemaValidationError, coerce_value, to_json_compatible, validate_value
 
 
 def test_docstring_and_config_edge_paths_are_explicit(tmp_path: Path) -> None:

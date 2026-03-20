@@ -7,7 +7,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from mcpme._challenges import (
+from mcpcraft._challenges import (
     ChallengeCatalogError,
     load_challenge_catalog,
     run_challenge_suite,

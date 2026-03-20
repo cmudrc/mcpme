@@ -6,4 +6,4 @@ if [ "$#" -ne 1 ]; then
   exit 1
 fi
 
-exec "${PYTHON_BIN:-python3}" -m mcpme.cli scaffold-package demo_pkg "$1"
+exec "${PYTHON_BIN:-python3}" -m mcpcraft.cli scaffold-package demo_pkg "$1"

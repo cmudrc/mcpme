@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from mcpme._challenges import ChallengeCatalogError, load_challenge_catalog
+from mcpcraft._challenges import ChallengeCatalogError, load_challenge_catalog
 
 
 def test_load_challenge_catalog_rejects_duplicate_ids(tmp_path: Path) -> None:

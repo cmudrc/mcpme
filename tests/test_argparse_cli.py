@@ -9,8 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from mcpme import ArgparseCommand, build_manifest, execute_tool
-from mcpme.cli import main
+from mcpcraft import ArgparseCommand, build_manifest, execute_tool
+from mcpcraft.cli import main
 
 
 def test_argparse_command_builds_schema_and_executes(tmp_path: Path) -> None:
@@ -91,7 +91,7 @@ def test_cli_manifest_and_inspect_commands_emit_deterministic_output(
 
 
 def test_module_invocation_runs_cli_main(tmp_path: Path) -> None:
-    """`python -m mcpme.cli` should execute the CLI entry point."""
+    """`python -m mcpcraft.cli` should execute the CLI entry point."""
     source = tmp_path / "mesh_tools.py"
     source.write_text(
         """def mesh_model(input_path: str) -> str:\n"""
@@ -106,7 +106,7 @@ def test_module_invocation_runs_cli_main(tmp_path: Path) -> None:
     env = dict(os.environ)
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
     completed = subprocess.run(
-        [sys.executable, "-m", "mcpme.cli", "manifest", str(source)],
+        [sys.executable, "-m", "mcpcraft.cli", "manifest", str(source)],
         capture_output=True,
         text=True,
         env=env,

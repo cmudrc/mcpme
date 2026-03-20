@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mcpme.docstrings import parse_docstring
+from mcpcraft.docstrings import parse_docstring
 
 
 def test_parse_docstring_extracts_sphinx_sections() -> None:

@@ -13,7 +13,7 @@ import argparse
 import json
 from pathlib import Path
 
-from mcpme._challenges import ChallengeSpec, ChallengeWorkflowStep, load_challenge_catalog
+from mcpcraft._challenges import ChallengeSpec, ChallengeWorkflowStep, load_challenge_catalog
 
 
 def _repo_root() -> Path:
@@ -165,7 +165,7 @@ def _render_case_readme(spec: ChallengeSpec, repo_root: Path) -> str:
             "`challenge.toml` instead of checking in companion `ingest.py` and",
             "`use.py` scripts. That boundary is intentional: the challenge lane",
             "should stay a compact problem statement rather than turning into a",
-            "worked answer key like the case-study lane.",
+            "worked answer key like the real-world example lane.",
             "",
             _heading("Run This Case", 2),
             "",
@@ -251,7 +251,7 @@ def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -
         "",
         _heading("Live Raw-Upstream Challenges"),
         "",
-        "This directory holds the live, non-gating raw-upstream challenge track for `mcpme`.",
+        "This directory holds the live, non-gating raw-upstream challenge track for `mcpcraft`.",
         "Each case lives in its own folder with a canonical `challenge.toml`, any tiny",
         "checked-in fixtures it needs, and a generated `README.md` that explains why the",
         "case exists and how to run it in isolation.",
@@ -265,7 +265,7 @@ def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -
             "brutally honest."
         ),
         (
-            "- Unlike the case studies, they intentionally keep ingestion and workflow "
+            "- Unlike the real-world examples, they intentionally keep ingestion and workflow "
             "compressed into `challenge.toml` so contributors still have to solve the "
             "wrapping problem themselves."
         ),

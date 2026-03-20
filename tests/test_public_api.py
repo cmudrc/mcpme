@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import mcpme as package
+import mcpcraft as package
 
 
 def test_public_exports_match_the_curated_api() -> None:

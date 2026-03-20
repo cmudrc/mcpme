@@ -19,6 +19,7 @@ make type
 make docstrings-check
 make test
 make run-examples
+make run-real-world-examples
 make docs-check
 make docs
 ```
@@ -44,7 +45,7 @@ pre-commit run --all-files
   raw-upstream suite changes.
 - Regenerate checked-in challenge READMEs when challenge catalog files change.
 - Regenerate checked-in example docs when example docstrings change.
-- Keep the top-level `mcpme` public API small and deliberate.
+- Keep the top-level `mcpcraft` public API small and deliberate.
 - Describe what changed and how you validated it.
 
 ## Code Style

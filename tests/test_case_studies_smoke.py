@@ -1,4 +1,4 @@
-"""Smoke tests for the checked-in case-study scripts."""
+"""Smoke tests for the checked-in real-world example scripts."""
 
 from __future__ import annotations
 
@@ -14,27 +14,53 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SUPPORT_REQUIREMENTS = {
     "su2_cli": (
-        REPO_ROOT / "case_studies" / "support" / "su2_cli" / "commands" / "su2_cfd.sh",
-        REPO_ROOT / "case_studies" / "support" / "su2_cli" / "commands" / "scaffold_su2_cli.sh",
+        REPO_ROOT / "examples" / "support" / "real_world" / "su2_cli" / "commands" / "su2_cfd.sh",
+        REPO_ROOT
+        / "examples"
+        / "support"
+        / "real_world"
+        / "su2_cli"
+        / "commands"
+        / "scaffold_su2_cli.sh",
     ),
     "pycycle_mpcycle": (
         REPO_ROOT
-        / "case_studies"
+        / "examples"
         / "support"
+        / "real_world"
         / "pycycle_mpcycle"
         / "commands"
         / "scaffold_pycycle_mpcycle.sh",
     ),
     "tigl_cpacs": (
         REPO_ROOT
-        / "case_studies"
+        / "examples"
         / "support"
+        / "real_world"
         / "tigl_cpacs"
         / "commands"
         / "scaffold_tigl_cpacs.sh",
-        REPO_ROOT / "case_studies" / "support" / "tigl_cpacs" / "tigl_support" / "__init__.py",
-        REPO_ROOT / "case_studies" / "support" / "tigl_cpacs" / "tigl_support" / "core.py",
-        REPO_ROOT / "case_studies" / "support" / "tigl_cpacs" / "fixtures" / "CPACS_30_D150.xml",
+        REPO_ROOT
+        / "examples"
+        / "support"
+        / "real_world"
+        / "tigl_cpacs"
+        / "tigl_support"
+        / "__init__.py",
+        REPO_ROOT
+        / "examples"
+        / "support"
+        / "real_world"
+        / "tigl_cpacs"
+        / "tigl_support"
+        / "core.py",
+        REPO_ROOT
+        / "examples"
+        / "support"
+        / "real_world"
+        / "tigl_cpacs"
+        / "fixtures"
+        / "CPACS_30_D150.xml",
     ),
 }
 
@@ -47,23 +73,23 @@ SUPPORT_REQUIREMENTS = {
         ("tigl_cpacs", "open_cpacs_summary", "TiGL/TiXI"),
     ],
 )
-def test_case_study_scripts_run_successfully(
+def test_real_world_example_scripts_run_successfully(
     case_id: str,
     expected_pass_fragment: str,
     expected_skip_fragment: str,
 ) -> None:
-    """Each case study should ingest first and then use the deterministic artifacts."""
+    """Each real-world example should ingest first and then use deterministic artifacts."""
     for required_path in SUPPORT_REQUIREMENTS[case_id]:
         assert required_path.exists(), f"Missing checked-in support input: {required_path}"
 
-    artifact_root = REPO_ROOT / "artifacts" / "case_studies" / case_id
+    artifact_root = REPO_ROOT / "artifacts" / "examples" / "real_world" / case_id
     shutil.rmtree(artifact_root, ignore_errors=True)
 
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO_ROOT / "src")
 
     ingest_completed = subprocess.run(
-        [sys.executable, f"case_studies/{case_id}/ingest.py"],
+        [sys.executable, f"examples/real_world/{case_id}/ingest.py"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -84,7 +110,7 @@ def test_case_study_scripts_run_successfully(
         assert scaffold_report.exists(), f"Missing scaffold report artifact: {scaffold_report}"
 
     use_completed = subprocess.run(
-        [sys.executable, f"case_studies/{case_id}/use.py"],
+        [sys.executable, f"examples/real_world/{case_id}/use.py"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,

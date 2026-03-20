@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES_ROOT = REPO_ROOT / "examples"
+EXAMPLES_ROOT = REPO_ROOT / "examples" / "core"
 REQUIRED_DOC_SECTIONS = (
     "Introduction",
     "Preset Environment",
@@ -112,8 +112,8 @@ def _iter_runtime_materialization_violations() -> list[str]:
 
 def test_examples_import_only_the_public_package_root() -> None:
     """Examples should not import internal modules or deep package paths."""
-    private_pattern = re.compile(r"^\s*(from|import)\s+mcpme\._")
-    deep_module_pattern = re.compile(r"^\s*from\s+mcpme\.[A-Za-z0-9_]+")
+    private_pattern = re.compile(r"^\s*(from|import)\s+mcpcraft\._")
+    deep_module_pattern = re.compile(r"^\s*from\s+mcpcraft\.[A-Za-z0-9_]+")
     violations = _collect_violations(pattern=private_pattern, root=EXAMPLES_ROOT)
     violations.extend(_collect_violations(pattern=deep_module_pattern, root=EXAMPLES_ROOT))
     assert violations == [], "\n".join(violations)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mcpme import build_manifest
+from mcpcraft import build_manifest
 
 
 def test_build_manifest_from_python_file_generates_schema(tmp_path: Path) -> None:

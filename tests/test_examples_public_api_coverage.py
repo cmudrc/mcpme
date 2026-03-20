@@ -6,8 +6,8 @@ import ast
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES_ROOT = REPO_ROOT / "examples"
-PACKAGE_INIT = REPO_ROOT / "src" / "mcpme" / "__init__.py"
+EXAMPLES_ROOT = REPO_ROOT / "examples" / "core"
+PACKAGE_INIT = REPO_ROOT / "src" / "mcpcraft" / "__init__.py"
 
 
 def _public_symbols() -> tuple[str, ...]:
@@ -42,14 +42,14 @@ def _python_examples() -> tuple[Path, ...]:
 
 
 def _collect_package_aliases(module: ast.Module) -> set[str]:
-    """Collect local aliases used for ``import mcpme`` statements."""
+    """Collect local aliases used for ``import mcpcraft`` statements."""
     aliases: set[str] = set()
     for node in ast.walk(module):
         if not isinstance(node, ast.Import):
             continue
         for alias in node.names:
-            if alias.name == "mcpme":
-                aliases.add(alias.asname or "mcpme")
+            if alias.name == "mcpcraft":
+                aliases.add(alias.asname or "mcpcraft")
     return aliases
 
 
@@ -57,7 +57,7 @@ def _explicit_imported_symbols(module: ast.Module, exports: set[str]) -> set[str
     """Collect directly imported public symbols from example source."""
     covered: set[str] = set()
     for node in ast.walk(module):
-        if not isinstance(node, ast.ImportFrom) or node.module != "mcpme":
+        if not isinstance(node, ast.ImportFrom) or node.module != "mcpcraft":
             continue
         for alias in node.names:
             if alias.name == "*":
@@ -69,7 +69,7 @@ def _explicit_imported_symbols(module: ast.Module, exports: set[str]) -> set[str
 
 
 def _attribute_symbols(module: ast.Module, exports: set[str], aliases: set[str]) -> set[str]:
-    """Collect public symbol usage through ``mcpme.<symbol>`` access."""
+    """Collect public symbol usage through ``mcpcraft.<symbol>`` access."""
     covered: set[str] = set()
     for node in ast.walk(module):
         if not isinstance(node, ast.Attribute) or not isinstance(node.value, ast.Name):

@@ -7,13 +7,13 @@ from pathlib import Path
 
 import pytest
 
-from mcpme.execution import (
+from mcpcraft.execution import (
     _directory_manifest,
     _extract_subprocess_result,
     _object_structured_content,
     _retain_output_paths,
 )
-from mcpme.manifest import RetainedPathSpec, SubprocessResultSpec
+from mcpcraft.manifest import RetainedPathSpec, SubprocessResultSpec
 
 
 def test_execution_helper_extractors_and_retained_paths_cover_edge_cases(

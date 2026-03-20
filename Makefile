@@ -10,17 +10,18 @@ TWINE ?= $(PYTHON) -m twine
 .PHONY: help check-python dev install-dev generate-example-docs \
 	generate-case-study-docs generate-challenge-docs case-study-docs-check \
 	challenge-docs-check challenge lint fmt fmt-check type test qa coverage \
-	docstrings-check run-example run-examples run-case-study run-case-studies \
-	challenges-subset challenges-full challenges-metrics docs docs-build \
-	docs-check docs-linkcheck release-check ci clean
+	docstrings-check run-example run-examples run-real-world-example \
+	run-real-world-examples run-case-study run-case-studies challenges-subset \
+	challenges-full challenges-metrics docs docs-build docs-check \
+	docs-linkcheck release-check ci clean
 
 help:
 	@echo "Common targets:"
 	@echo "  dev              Install the project in editable mode with dev dependencies."
 	@echo "  test             Run the pytest suite."
 	@echo "  qa               Run lint, fmt-check, type, and test."
-	@echo "  run-examples     Execute the runnable example scripts."
-	@echo "  run-case-studies Execute the optional case-study scripts."
+	@echo "  run-examples     Execute the core example scripts."
+	@echo "  run-real-world-examples Execute the optional real-world example scripts."
 	@echo "  challenge        Run one live challenge case (set CASE=<id>)."
 	@echo "  challenges-subset Run the reduced live raw-upstream challenge suite."
 	@echo "  challenges-full  Run the broader local live raw-upstream challenge suite."
@@ -55,7 +56,7 @@ qa: lint fmt-check type test
 
 coverage: check-python
 	mkdir -p artifacts/coverage
-	PYTHONPATH=src $(PYTEST) --cov=src/mcpme --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
+	PYTHONPATH=src $(PYTEST) --cov=src/mcpcraft --cov-report=term --cov-report=json:artifacts/coverage/coverage.json -q
 	$(PYTHON) scripts/check_coverage_thresholds.py --coverage-json artifacts/coverage/coverage.json
 
 docstrings-check: check-python
@@ -64,14 +65,13 @@ docstrings-check: check-python
 generate-example-docs: check-python
 	$(PYTHON) scripts/generate_example_docs.py
 
-generate-case-study-docs: check-python
-	$(PYTHON) scripts/generate_case_study_docs.py
+generate-case-study-docs: generate-example-docs
 
 generate-challenge-docs: check-python
 	$(PYTHON) scripts/generate_challenge_docs.py
 
 case-study-docs-check: check-python
-	$(PYTHON) scripts/generate_case_study_docs.py --check
+	$(PYTHON) scripts/generate_example_docs.py --check
 
 challenge-docs-check: check-python
 	$(PYTHON) scripts/generate_challenge_docs.py --check
@@ -79,26 +79,30 @@ challenge-docs-check: check-python
 run-example: run-examples
 
 run-examples: check-python
-	PYTHONPATH=src $(PYTHON) examples/basic_usage.py
-	PYTHONPATH=src $(PYTHON) examples/argparse_cli_wrapper.py
-	PYTHONPATH=src $(PYTHON) examples/command_scaffold.py
-	PYTHONPATH=src $(PYTHON) examples/openapi_scaffold.py
-	PYTHONPATH=src $(PYTHON) examples/package_scaffold.py
-	PYTHONPATH=src $(PYTHON) examples/subprocess_wrapper.py
-	PYTHONPATH=src $(PYTHON) examples/runtime_server.py
+	PYTHONPATH=src $(PYTHON) examples/core/basic_usage.py
+	PYTHONPATH=src $(PYTHON) examples/core/argparse_cli_wrapper.py
+	PYTHONPATH=src $(PYTHON) examples/core/command_scaffold.py
+	PYTHONPATH=src $(PYTHON) examples/core/openapi_scaffold.py
+	PYTHONPATH=src $(PYTHON) examples/core/package_scaffold.py
+	PYTHONPATH=src $(PYTHON) examples/core/subprocess_wrapper.py
+	PYTHONPATH=src $(PYTHON) examples/core/runtime_server.py
 
-run-case-study: check-python
-	@if [ -z "$(CASE)" ]; then echo "Set CASE=<case_study_id>."; exit 1; fi
-	PYTHONPATH=src $(PYTHON) case_studies/$(CASE)/ingest.py
-	PYTHONPATH=src $(PYTHON) case_studies/$(CASE)/use.py
+run-real-world-example: check-python
+	@if [ -z "$(CASE)" ]; then echo "Set CASE=<real_world_example_id>."; exit 1; fi
+	PYTHONPATH=src $(PYTHON) examples/real_world/$(CASE)/ingest.py
+	PYTHONPATH=src $(PYTHON) examples/real_world/$(CASE)/use.py
 
-run-case-studies: check-python
-	PYTHONPATH=src $(PYTHON) case_studies/su2_cli/ingest.py
-	PYTHONPATH=src $(PYTHON) case_studies/su2_cli/use.py
-	PYTHONPATH=src $(PYTHON) case_studies/pycycle_mpcycle/ingest.py
-	PYTHONPATH=src $(PYTHON) case_studies/pycycle_mpcycle/use.py
-	PYTHONPATH=src $(PYTHON) case_studies/tigl_cpacs/ingest.py
-	PYTHONPATH=src $(PYTHON) case_studies/tigl_cpacs/use.py
+run-real-world-examples: check-python
+	PYTHONPATH=src $(PYTHON) examples/real_world/su2_cli/ingest.py
+	PYTHONPATH=src $(PYTHON) examples/real_world/su2_cli/use.py
+	PYTHONPATH=src $(PYTHON) examples/real_world/pycycle_mpcycle/ingest.py
+	PYTHONPATH=src $(PYTHON) examples/real_world/pycycle_mpcycle/use.py
+	PYTHONPATH=src $(PYTHON) examples/real_world/tigl_cpacs/ingest.py
+	PYTHONPATH=src $(PYTHON) examples/real_world/tigl_cpacs/use.py
+
+run-case-study: run-real-world-example
+
+run-case-studies: run-real-world-examples
 
 challenge: check-python
 	@if [ -z "$(CASE)" ]; then echo "Set CASE=<challenge_id>."; exit 1; fi
@@ -133,12 +137,11 @@ challenges-full: check-python
 challenges-metrics: check-python
 	PYTHONPATH=src $(PYTHON) scripts/generate_challenges_badge.py
 
-docs-build: generate-example-docs generate-case-study-docs
+docs-build: generate-example-docs
 	PYTHONPATH=src $(SPHINX) -b html docs docs/_build/html -n -W --keep-going -E
 
 docs-check: check-python
 	$(PYTHON) scripts/generate_example_docs.py --check
-	$(PYTHON) scripts/generate_case_study_docs.py --check
 	$(PYTHON) scripts/check_docs_consistency.py
 
 docs-linkcheck: check-python

@@ -1,38 +1,54 @@
 # Examples
 
-The examples in `mcpme` stay intentionally small, deterministic, and public-API
-only.
+The examples in `mcpcraft` are split into a small core lane and a richer
+real-world lane.
 
-Each Python example:
+## Core
 
-- imports from the top-level `mcpme` package rather than internal modules,
+The core examples under `examples/core/` stay intentionally small,
+deterministic, and public-API only.
+
+Each core example:
+
+- imports from the top-level `mcpcraft` package rather than internal modules,
 - includes a canonical module docstring that is used to generate Sphinx docs,
 - exercises at least one real deterministic wrapping pattern, and
 - is runnable from the repository root with `PYTHONPATH=src`.
 
-Examples that need local helper inputs keep them checked in under
+Core examples that need local helper inputs keep them checked in under
 `examples/support/<example_id>/`, so the environment is inspectable before
 execution. Derived outputs such as generated facades and retained run artifacts
-belong under `artifacts/examples/<example_id>/`.
+belong under `artifacts/examples/core/<example_id>/`.
 
-Included examples:
+Included core examples:
 
-- `basic_usage.py`: wrap a typed Python callable and inspect the generated manifest.
-- `argparse_cli_wrapper.py`: wrap an existing `argparse` CLI using `ArgparseCommand`.
-- `command_scaffold.py`: ingest a standalone CLI through `mcpme scaffold-command`.
-- `openapi_scaffold.py`: ingest an OpenAPI document through `mcpme scaffold-openapi`.
-- `package_scaffold.py`: ingest a package with functions and classes through `mcpme scaffold-package`.
-- `subprocess_wrapper.py`: wrap a file-driven legacy-style batch tool from TOML config.
-- `runtime_server.py`: send JSON-RPC requests through `McpServer` and optionally serve stdio.
+- `core/basic_usage.py`: wrap a typed Python callable and inspect the generated manifest.
+- `core/argparse_cli_wrapper.py`: wrap an existing `argparse` CLI using `ArgparseCommand`.
+- `core/command_scaffold.py`: ingest a standalone CLI through `mcpcraft scaffold-command`.
+- `core/openapi_scaffold.py`: ingest an OpenAPI document through `mcpcraft scaffold-openapi`.
+- `core/package_scaffold.py`: ingest a package with functions and classes through `mcpcraft scaffold-package`.
+- `core/subprocess_wrapper.py`: wrap a file-driven legacy-style batch tool from TOML config.
+- `core/runtime_server.py`: send JSON-RPC requests through `McpServer` and optionally serve stdio.
 
-Run it locally with:
+Run the core lane with:
 
 ```bash
-PYTHONPATH=src python examples/basic_usage.py
-PYTHONPATH=src python examples/argparse_cli_wrapper.py
-PYTHONPATH=src python examples/command_scaffold.py
-PYTHONPATH=src python examples/openapi_scaffold.py
-PYTHONPATH=src python examples/package_scaffold.py
-PYTHONPATH=src python examples/subprocess_wrapper.py
-PYTHONPATH=src python examples/runtime_server.py
+PYTHONPATH=src python examples/core/basic_usage.py
+PYTHONPATH=src python examples/core/argparse_cli_wrapper.py
+PYTHONPATH=src python examples/core/command_scaffold.py
+PYTHONPATH=src python examples/core/openapi_scaffold.py
+PYTHONPATH=src python examples/core/package_scaffold.py
+PYTHONPATH=src python examples/core/subprocess_wrapper.py
+PYTHONPATH=src python examples/core/runtime_server.py
 ```
+
+## Real World
+
+The richer optional lane lives under `examples/real_world/`. Those examples
+keep their checked-in support assets under `examples/support/real_world/`,
+write derived outputs under `artifacts/examples/real_world/`, and use an
+explicit `ingest.py -> serve.py -> use.py` flow so the generated facade
+remains inspectable.
+
+See [examples/real_world/README.md](real_world/README.md) for the current
+inventory and run commands.

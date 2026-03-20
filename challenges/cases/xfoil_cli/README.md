@@ -28,7 +28,7 @@ This case keeps its ingestion recipe and workflow assertions in
 `challenge.toml` instead of checking in companion `ingest.py` and
 `use.py` scripts. That boundary is intentional: the challenge lane
 should stay a compact problem statement rather than turning into a
-worked answer key like the case-study lane.
+worked answer key like the real-world example lane.
 
 ## Run This Case
 
