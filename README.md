@@ -10,6 +10,38 @@ without replacing them with opaque AI behavior. `mcpcraft` starts from public
 interfaces, docstrings, CLI help, and explicit file contracts. The first pass
 is intentionally non-AI, wrapper-first, and inspectable.
 
+## Inputs To Outputs
+
+The core story is: deterministic input surfaces go in, inspectable Python sits
+in the middle, and MCP tools plus retained execution evidence come out.
+
+```mermaid
+flowchart LR
+  subgraph inputs["Input Surfaces"]
+    py["Python file or module"]
+    pkg["Importable package"]
+    cli["CLI help surface"]
+    api["OpenAPI document"]
+  end
+
+  py --> manifest["Deterministic manifest"]
+  pkg --> scaffold_pkg["mcpcraft scaffold-package"]
+  cli --> scaffold_cmd["mcpcraft scaffold-command"]
+  api --> scaffold_api["mcpcraft scaffold-openapi"]
+
+  scaffold_pkg --> facade["Inspectable plain Python facade"]
+  scaffold_cmd --> facade
+  scaffold_api --> facade
+
+  facade --> review["Review or edit the saved facade"]
+  review --> manifest
+
+  manifest --> serve["mcpcraft serve or serve_stdio()"]
+  serve --> tools["MCP tool surface"]
+  tools --> upstream["Wrapped package, command, or HTTP API"]
+  upstream --> outputs["Structured results plus retained artifacts<br/>stdout, stderr, files, summaries"]
+```
+
 ## Installation
 
 ```bash
@@ -65,6 +97,26 @@ mcpcraft serve tool_module.py
 ```
 
 ## Real-Upstream Coverage
+
+The repo keeps two complementary live-upstream lanes: the real-world examples
+act like inspectable answer keys, while the challenge suite stays compact so
+one-shot wrapping remains a real problem to solve.
+
+```mermaid
+flowchart LR
+  upstream["Real upstream package or CLI"] --> examples["Real-world example lane<br/>inspectable answer-key flow"]
+  upstream --> challenges["Live challenge suite<br/>compact pressure-test flow"]
+
+  examples --> support["checked-in support inputs"]
+  support --> ingest["ingest.py"]
+  ingest --> pair["generated_facade.py + scaffold_report.json"]
+  pair --> demo["serve.py and use.py exercise the saved facade"]
+
+  challenges --> ladder["per-family ladders<br/>easy -> medium -> hard -> insane"]
+  ladder --> spec["challenge.toml + tiny fixtures"]
+  spec --> run["scaffold + manifest + workflow assertions"]
+  run --> reports["stable JSON / JUnit / Markdown reports"]
+```
 
 ### Real-World Examples
 

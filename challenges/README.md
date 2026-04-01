@@ -15,6 +15,28 @@ case exists and how to run it in isolation.
 - Unlike the real-world examples, they intentionally keep ingestion and workflow compressed into `challenge.toml` so contributors still have to solve the wrapping problem themselves.
 - They are still documented enough to serve as worked examples for contributors.
 
+## Suite Shape
+
+At the suite level, each family climbs a difficulty ladder while every
+individual case still follows the same deterministic scaffold-to-runtime path.
+
+```mermaid
+flowchart LR
+  ladder["Per-family ladder<br/>easy -> medium -> hard -> insane"] --> case["One catalogued challenge"]
+  case --> spec["challenge.toml"]
+  case --> fixtures["tiny fixtures or rendered inputs"]
+  case --> probe["availability probes"]
+  spec --> scaffold["scaffold package or command"]
+  probe --> scaffold
+  scaffold --> facade["generated facade"]
+  facade --> manifest["build manifest"]
+  spec --> workflow["workflow step(s) through the normal runtime"]
+  fixtures --> workflow["workflow step(s) through the normal runtime"]
+  manifest --> workflow
+  workflow --> reports["stable JSON / JUnit / Markdown reports"]
+  workflow --> artifacts["retained workflow artifacts"]
+```
+
 ## Run The Suite
 
 ```bash

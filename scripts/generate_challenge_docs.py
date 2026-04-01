@@ -272,6 +272,28 @@ def _render_family_ladders(specs: tuple[ChallengeSpec, ...], repo_root: Path) ->
     return lines
 
 
+def _render_suite_shape_diagram() -> list[str]:
+    """Render a Mermaid diagram for the overall challenge-suite flow."""
+    return [
+        "```mermaid",
+        "flowchart LR",
+        '  ladder["Per-family ladder<br/>easy -> medium -> hard -> insane"] --> case["One catalogued challenge"]',
+        '  case --> spec["challenge.toml"]',
+        '  case --> fixtures["tiny fixtures or rendered inputs"]',
+        '  case --> probe["availability probes"]',
+        '  spec --> scaffold["scaffold package or command"]',
+        "  probe --> scaffold",
+        '  scaffold --> facade["generated facade"]',
+        '  facade --> manifest["build manifest"]',
+        '  spec --> workflow["workflow step(s) through the normal runtime"]',
+        '  fixtures --> workflow["workflow step(s) through the normal runtime"]',
+        "  manifest --> workflow",
+        '  workflow --> reports["stable JSON / JUnit / Markdown reports"]',
+        '  workflow --> artifacts["retained workflow artifacts"]',
+        "```",
+    ]
+
+
 def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -> str:
     """Render the top-level challenge README overview."""
     lines = [
@@ -299,31 +321,42 @@ def _render_challenge_index(specs: tuple[ChallengeSpec, ...], repo_root: Path) -
         ),
         "- They are still documented enough to serve as worked examples for contributors.",
         "",
-        _heading("Run The Suite", 2),
+        _heading("Suite Shape", 2),
         "",
-        "```bash",
-        "make challenge-deps",
-        "make challenges-subset",
-        "make challenges-full",
-        "make challenge CASE=openmdao_file_utils",
-        "PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --tier all --family avl",
-        "```",
-        "",
-        _heading("Install Optional Runtimes", 2),
-        "",
-        "The broader challenge lane expects its extra CLI tools under the repo-local",
-        "`.challenge-tools/` prefix. The `challenge`, `challenges-subset`,",
-        "`challenges-full`, and `run-real-world-examples` targets prepend",
-        "`.challenge-tools/bin` to `PATH` automatically.",
-        "",
-        "```bash",
-        "make challenge-deps",
-        "make challenge-deps PROFILE=subset",
-        "```",
-        "",
-        _heading("Family Ladders", 2),
+        "At the suite level, each family climbs a difficulty ladder while every",
+        "individual case still follows the same deterministic scaffold-to-runtime path.",
         "",
     ]
+    lines.extend(_render_suite_shape_diagram())
+    lines.extend(
+        [
+            "",
+            _heading("Run The Suite", 2),
+            "",
+            "```bash",
+            "make challenge-deps",
+            "make challenges-subset",
+            "make challenges-full",
+            "make challenge CASE=openmdao_file_utils",
+            "PYTHONPATH=src .venv/bin/python scripts/run_challenges.py --tier all --family avl",
+            "```",
+            "",
+            _heading("Install Optional Runtimes", 2),
+            "",
+            "The broader challenge lane expects its extra CLI tools under the repo-local",
+            "`.challenge-tools/` prefix. The `challenge`, `challenges-subset`,",
+            "`challenges-full`, and `run-real-world-examples` targets prepend",
+            "`.challenge-tools/bin` to `PATH` automatically.",
+            "",
+            "```bash",
+            "make challenge-deps",
+            "make challenge-deps PROFILE=subset",
+            "```",
+            "",
+            _heading("Family Ladders", 2),
+            "",
+        ]
+    )
     lines.extend(_render_family_ladders(specs, repo_root))
     lines.extend(
         [
